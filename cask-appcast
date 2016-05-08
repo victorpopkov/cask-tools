@@ -1,0 +1,704 @@
+#!/usr/bin/env bash
+
+# Constants and globals
+readonly PROGRAM="$(basename "$0")"
+readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
+declare -a URLS
+declare -a REVIEW
+declare -i OPTIONS_COUNTER=0
+GITHUB_USER=$(git config --get github.user)
+GITHUB_TOKEN=$(git config --get github.token)
+GITHUB_PRERELEASE='false'
+DETAILED='true'
+normalize_hard='false'
+CHECKPOINT='false'
+PROVIDER='false'
+VERSION='false'
+DOWNLOADS='false'
+
+# check if 'xmlstarlet' and 'jq' are installed and configured
+if [[ ! $(which 'xmlstarlet') ]] || [[ ! $(which 'jq') ]]; then
+  case "${OSTYPE}" in
+    'darwin'*)
+      echo -e "$(tput setaf 1)
+        This script requires 'xmlstarlet' and 'jq' to be installed.
+        If you have [Homebrew](http://brew.sh/), you can install both with 'brew install xmlstarlet jq'.
+      $(tput sgr0)" | sed -E 's/ {8}//' >&2
+      ;;
+    'linux-gnu')
+      echo -e "$(tput setaf 1)
+        This script requires 'xmlstarlet' and 'jq' to be installed.
+        You can install both with 'apt-get install xmlstarlet jq'.
+      $(tput sgr0)" | sed -E 's/ {8}//' >&2
+      ;;
+    *)
+      echo -e "$(tput setaf 1)
+        This script requires 'xmlstarlet' and 'jq' to be installed.
+      $(tput sgr0)" | sed -E 's/ {8}//' >&2
+      ;;
+  esac
+  exit 1
+fi
+
+syntax_error() {
+  echo "${PROGRAM}: $1" >&2
+  echo "Try \`${PROGRAM} --help\` for more information." >&2
+  exit 1
+}
+
+error() {
+  echo -e "$(tput setaf 1)$1$(tput sgr0)"
+  exit 1
+}
+
+usage() {
+  echo "usage: ${PROGRAM} [options] [<appcast_urls>...]
+
+    Get the latest available version from appcast URL. Currently supports only Sparkle and GitHub Atom.
+
+    options:
+      -u <user>, --github-user <user>      GitHub username (default: 'git config --get github.user').
+      -t <token>, --github-token <token>   GitHub personal token (default: 'git config --get github.token').
+      -s <mode>, --stability <mode>        Try to get 'stable' or 'unstable' latest version if possible (default: 'stable').
+      -n <mode>, --normalize <mode>        Normalize Sparkle versions using 'soft' or 'hard' mode (default: 'soft').
+      -c, --checkpoint                     Output checkpoint.
+      -p, --provider                       Output provider (Sparkle or GitHub Atom).
+      -v, --version                        Output version and build (if available).
+      -d, --downloads                      Output downloads.
+      -h, --help                           Show this help." | sed -E 's/^ {4}//'
+}
+
+# exit if no argument or more than one argument was given
+if [[ "${#}" -eq 0 ]]; then
+  usage
+  exit 1
+fi
+
+# available flags
+while [[ "$1" ]]; do
+  case "$1" in
+    -u | --github-user)
+      GITHUB_USER="$2"
+      readonly GITHUB_USER
+      shift
+      ;;
+    -t | --github-token)
+      GITHUB_TOKEN="$2"
+      readonly GITHUB_TOKEN
+      shift
+      ;;
+    -s | --stability)
+      case "$2" in
+        stable)
+          GITHUB_PRERELEASE='false'
+          ;;
+        unstable)
+          GITHUB_PRERELEASE='true'
+          ;;
+        *)
+          error "The '--stability' should have one of the values: 'stable' or 'unstable'"
+          ;;
+      esac
+      shift
+      ;;
+    -n | --normalize)
+      case "$2" in
+        soft)
+          normalize_hard='false'
+          ;;
+        hard)
+          normalize_hard='true'
+          ;;
+        *)
+          error "The '--normalize' should have one of the values: 'soft' or 'hard'"
+          ;;
+      esac
+      shift
+      ;;
+    -c | --checkpoint)
+      ((OPTIONS_COUNTER++))
+      CHECKPOINT='true'
+      DETAILED='false'
+      ;;
+    -p | --provider)
+      ((OPTIONS_COUNTER++))
+      PROVIDER='true'
+      DETAILED='false'
+      ;;
+    -v | --version)
+      ((OPTIONS_COUNTER++))
+      VERSION='true'
+      DETAILED='false'
+      ;;
+    -d | --downloads)
+      ((OPTIONS_COUNTER++))
+      DOWNLOADS='true'
+      DETAILED='false'
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    -*)
+      syntax_error "unrecognized option: $1"
+      ;;
+    *)
+      URLS=("$@")
+      for url in "${URLS[@]}"; do
+        if [[ ! "${url}" =~ (https?|ftp|file)://[-A-Za-z0-9\+\&@#/%?=~_|!:,.\;]*[-A-Za-z0-9\+\&@#/%=~_|] ]]; then
+          if [[ "${#URLS[@]}" -gt 1 ]]; then error 'One of the provided appcast URLs is not valid'
+          else error 'The provided appcast URL is not valid'; fi
+        fi
+      done
+      break
+      ;;
+  esac
+  shift
+done
+
+# Divider to separate output in terminal.
+#
+# Globals:
+#   COLUMNS
+#
+# Returns the full-width terminal divider.
+divide() {
+  if [[ $(which hr) ]]; then hr '-'
+  else printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -; fi
+}
+
+# Version comparison.
+#
+# Use 'sort -V' if available, otherwise use custom solution.
+#
+# Arguments:
+#   $1 - First version
+#   $2 - Second version
+#
+# Returns:
+#   0 - First = second
+#   1 - First > second
+#   2 - First < second
+compare_versions() {
+  [[ "$1" == "$2" ]] && return 0
+
+  if echo | sort -Vr > /dev/null 2>&1; then
+    local versions
+    versions=($(printf '%s\n%s\n' "$1" "$2" | sort -Vr))
+    [[ "$1" == "${versions[0]}" ]] && return 1
+    [[ "$2" == "${versions[0]}" ]] && return 2
+  else
+    # inspired by: http://stackoverflow.com/a/4025065
+    local IFS='.'
+    local i ver1=(${1//[A-Za-z[:space:]\(\)]}) ver2=(${2//[A-Za-z[:space:]\(\)]})
+    for ((i = ${#ver1[@]}; i < ${#ver2[@]}; i++)); do ver1[i]=0; done
+    for ((i = 0; i < ${#ver1[@]}; i++)); do
+      [[ -z ${ver2[i]} ]] && ver2[i]=0
+      ((10#${ver1[i]} > 10#${ver2[i]})) && return 1
+      ((10#${ver1[i]} < 10#${ver2[i]})) && return 2
+    done
+  fi
+
+  return 0
+}
+
+# Create sha256 checksum from content that represents appcast checkpoint.
+#
+# Arguments:
+#   $1 - Content to generate checkpoint from
+#
+# Returns checkpoint.
+generate_appcast_checkpoint() {
+  echo "$1" | sed 's|<pubDate>[^<]*</pubDate>||g' | shasum --algorithm 256 | awk '{ print $1 }' && return 0 || return 1
+}
+
+# Get content from URL.
+#
+# Globals:
+#   BROWSER_HEADERS
+#
+# Arguments:
+#   $1 - URL
+#
+# Returns array with content and status code.
+get_url_content() {
+  curl --silent --compressed --location "$1" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}' 2>/dev/null
+}
+
+# Normalize version for some edge cases (safe to use).
+#
+# Arguments:
+#   $1 - Version
+#   $2 - Build
+#
+# Returns normalized version.
+normalize_version_safe() {
+  local version build
+
+  version="$1"
+  build="$2"
+
+  version="${version#[Vv][Ee][Rr][Ss][Ii][Oo][Nn]}" # Version3.0 => 3.0
+  version="${version/=./0.}"                        # =.9   => 0.9
+  version="${version#[Vv]}"                         # v3.0  => 3.0
+  version="${version/β/b}"                          # 3.0β5 => 3.0b5
+
+  if [[ ! -z "${build}" ]]; then
+    version="${version/\(${build}\)}"                     # 3.0(1995)      => 3.0
+    version="${version/\([Bb][Uu][Ii][Ll][Dd]${build}\)}" # 3.0(Build1995) => 3.0
+    version="${version/[Bb][Uu][Ii][Ll][Dd]${build}}"     # 3.0Build1995   => 3.0
+  fi
+
+  echo "${version}"
+}
+
+# Normalize version to most common form (unsafe to use).
+#
+# Arguments:
+#   $1 - Version
+#
+# Returns normalized version.
+normalize_version_hard() {
+  echo "$1" | sed 's/[^0-9.]*\([0-9A-Za-z.]*\).*/\1/' | xargs
+}
+
+# Process parsed Sparkle line to get variables.
+#
+# Arguments:
+#   $1 - Line in format: "<version>";"<build>";"<url>";"<title>"
+#
+# Returns array of variables.
+process_appcast_sparkle_line() {
+  local version version_before build url title
+  local -a vars
+
+  IFS=';' read -ra vars <<< "$1"
+
+  version="${vars[0]//[\"[:space:]]}"
+  readonly version_before="${version}"
+  readonly build="${vars[1]//[\"[:space:]]}"
+  readonly url=$(echo "${vars[2]}" | sed -e 's/"//g' | sed -e 's/["[:space:]]/%20/g')
+  readonly title="${vars[3]//[\"]}"
+
+  [[ -z "${version}" ]] && [[ ! -z "${build}" ]] && version="${build}"
+
+  if [[ -z "${version}" ]] && [[ -z "${build}" ]]; then
+    version=$(normalize_version_hard "${title}")
+  else
+    version=$(normalize_version_safe "${version}" "${build}")
+    [[ "${normalize_hard}" == 'true' ]] && version=$(normalize_version_hard "${version}")
+  fi
+
+  result=("${version}" "${build}" "${url}")
+  if [[ "${version}" == "${build}" ]] || [[ -z "${version_before}" ]]; then result=("${version}" "${url}"); fi
+
+  echo "${result[@]}" && return 0
+}
+
+# Parse content of Sparkle appcast to extract all values.
+#
+# Globals:
+#   PROGRAM
+#
+# Arguments:
+#   $1 - Content to parse
+#
+# Returns array of values.
+parse_appcast_sparkle_latest() {
+  local content xls transform
+  local -a lines first last values result
+
+  content=$(echo -e "$1" | sed -e $'s/></>\\\n</g') # convert single line XML to multiline
+  content=$(echo -e "${content}" | sed -e 's/ xmlns:sparkle=".*"/ xmlns:sparkle="http:\/\/www.andymatuschak.org\/xml-namespaces\/sparkle"/g') # make sparkle namespace more consistent and ignore others
+  content=$(echo -e "${content}" | sed -e 's/<!--</</g' | sed -e 's/\/>-->/\/>/g') # uncomment tags
+
+  xls=$(cat <<EOF
+<?xml version="1.0"?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+    <xsl:output method="text" omit-xml-declaration="yes" indent="no" />
+    <xsl:strip-space elements="*" />
+    <xsl:template match="//channel">
+        <xsl:for-each select="item">
+            <xsl:choose>
+                <xsl:when test="enclosure/@sparkle:shortVersionString or sparkle:shortVersionString">
+                    <xsl:choose>
+                        <xsl:when test="enclosure/@sparkle:shortVersionString">
+                            <xsl:text>"</xsl:text>
+                            <xsl:value-of select="enclosure/@sparkle:shortVersionString" />
+                            <xsl:text>";</xsl:text>
+                        </xsl:when>
+                        <xsl:when test="sparkle:shortVersionString">
+                            <xsl:text>"</xsl:text>
+                            <xsl:value-of select="sparkle:shortVersionString" />
+                            <xsl:text>";</xsl:text>
+                        </xsl:when>
+                    </xsl:choose>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:text>"";</xsl:text>
+                </xsl:otherwise>
+            </xsl:choose>
+            <xsl:choose>
+                <xsl:when test="enclosure/@sparkle:version or sparkle:version">
+                    <xsl:choose>
+                        <xsl:when test="enclosure/@sparkle:version">
+                            <xsl:text>"</xsl:text>
+                            <xsl:value-of select="enclosure/@sparkle:version" />
+                            <xsl:text>";</xsl:text>
+                        </xsl:when>
+                        <xsl:when test="sparkle:version">
+                            <xsl:text>"</xsl:text>
+                            <xsl:value-of select="sparkle:version" />
+                            <xsl:text>";</xsl:text>
+                        </xsl:when>
+                    </xsl:choose>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:text>"";</xsl:text>
+                </xsl:otherwise>
+            </xsl:choose>
+            <xsl:choose>
+                <xsl:when test="enclosure/@url or link">
+                    <xsl:choose>
+                        <xsl:when test="enclosure/@url">
+                            <xsl:text>"</xsl:text>
+                            <xsl:value-of select="enclosure/@url" />
+                            <xsl:text>";</xsl:text>
+                        </xsl:when>
+                        <xsl:when test="link">
+                            <xsl:text>"</xsl:text>
+                            <xsl:value-of select="link" />
+                            <xsl:text>";</xsl:text>
+                        </xsl:when>
+                    </xsl:choose>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:text>"";</xsl:text>
+                </xsl:otherwise>
+            </xsl:choose>
+            <xsl:choose>
+                <xsl:when test="title">
+                    <xsl:text>"</xsl:text>
+                    <xsl:value-of select="title" />
+                    <xsl:text>";</xsl:text>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:text>""</xsl:text>
+                </xsl:otherwise>
+            </xsl:choose>
+            <xsl:text>&#xa;</xsl:text>
+        </xsl:for-each>
+    </xsl:template>
+</xsl:stylesheet>
+EOF
+)
+
+  echo "${xls}" > "/tmp/${PROGRAM}_sparkle.xsl"
+
+  transform=$(xmlstarlet tr "/tmp/${PROGRAM}_sparkle.xsl" <<< "${content}" 2> /dev/null)
+  transform=$(echo "${transform}" | sed -e 's/^[^"]*//g' | sed -e 's/[^;]*$//g')
+
+  IFS=$'\n' read -rd '' -a lines <<< "${transform}"
+  if [[ "${#lines[@]}" -gt 0 ]]; then
+    readonly first=($(process_appcast_sparkle_line "${lines[0]}"))
+
+    if [[ "${#lines[@]}" -gt 1 ]]; then
+      readonly last=($(process_appcast_sparkle_line "${lines[${#lines[@]}-1]}"))
+
+      compare_versions "${first[0]}" "${last[0]}"
+      case $? in
+        0) values=("${first[@]}") ;; # =
+        1) values=("${first[@]}") ;; # >
+        2) values=("${last[@]}" );;  # <
+      esac
+    else
+      values=("${first[@]}")
+    fi
+    readonly values
+
+    echo "${values[@]}" && return 0
+  else
+    return 1
+  fi
+}
+
+# Parse content of GitHub Atom appcast to extract all values.
+#
+# Globals:
+#   GITHUB_USER
+#   GITHUB_TOKEN
+#   GITHUB_PRERELEASE
+#
+# Arguments:
+#   $1 - Content to parse
+#
+# Returns array of values.
+parse_appcast_github_latest() {
+  local user repo auth url out content latest_tag download_urls code
+  local -i code
+  local -a result
+
+  [[ ! -z "${GITHUB_USER}" ]] && [[ ! -z "${GITHUB_TOKEN}" ]] && auth=(--user "${GITHUB_USER}:${GITHUB_TOKEN}")
+
+  IFS='/' read -ra parts <<< "$1"
+  readonly parts
+  readonly user="${parts[3]}"
+  readonly repo="${parts[4]}"
+
+  readonly url="https://api.github.com/repos/${user}/${repo}/releases"
+  readonly out=$(curl --silent --compressed --location "${url}" "${auth[@]}" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}' 2>/dev/null)
+  readonly code=$(echo "${out}" | tail -n1)
+  readonly content=$(echo "${out}" | sed \$d)
+
+  latest_tag=$(echo "${content}" | jq ".|=sort_by(.created_at) | reverse | .[] | select(.prerelease == ${GITHUB_PRERELEASE}) | .tag_name" 2> /dev/null | head -1 | xargs)
+  if [[ -z "${latest_tag}" ]]; then
+    [[ "${GITHUB_PRERELEASE}" == 'true' ]] && GITHUB_PRERELEASE='false' || GITHUB_PRERELEASE='true'
+    latest_tag=$(echo "${content}" | jq ".|=sort_by(.created_at) | reverse | .[] | select(.prerelease == ${GITHUB_PRERELEASE}) | .tag_name" 2> /dev/null | head -1 | xargs)
+    [[ -z "${latest_tag}" ]] && [[ "${code}" -eq 403 ]] && return 2
+    [[ -z "${latest_tag}" ]] && return 1
+  fi
+
+  readonly download_urls=($(echo "${content}" | jq ".[] | select(.tag_name == \"${latest_tag}\") | .assets" | jq '.[] | .browser_download_url' 2> /dev/null | xargs))
+  latest_tag=$(grep -q 'v[0-9]' <<< "${latest_tag}" && echo "${latest_tag/v}" || echo "${latest_tag}") # v3.0 => 3.0
+  result+="${latest_tag}"
+  result+=("${download_urls[@]}")
+
+  echo "${result[@]}"
+}
+
+# Guess the appcast provider from the content.
+#
+# Arguments:
+#   $1 - Content
+#
+# Returns provider.
+get_appcast_provider() {
+  [[ "$1" =~ '<rss'.*'xmlns:sparkle' ]] && echo 'Sparkle' && return 0
+  [[ "$1" =~ '<feed'.*'<id>tag:github.com' ]] && echo 'GitHub Atom' && return 0
+  return 1
+}
+
+# Extract version number from URL or content.
+#
+# Arguments:
+#   $1 - URL     (required)
+#   $2 - Content (not required)
+#
+# Returns version.
+get_appcast_version() {
+  local url content out code values version
+
+  readonly url="$1"
+
+  content="$2"
+  if [[ -z "$2" ]]; then
+    readonly out=$(get_url_content "${url}")
+    readonly code=$(echo "${out}" | tail -n1)
+    content=$(echo "${out}" | sed \$d)
+  fi
+  readonly content
+
+  case "$(get_appcast_provider "${content}")" in
+    'Sparkle')
+      readonly values=($(parse_appcast_sparkle_latest "${content}"))
+      version="${values[0]}"
+      [[ "${#values[@]}" -eq 3 ]] && [[ "${values[0]}" != "${values[1]}" ]] && version="${values[0]},${values[1]}"
+      [[ ! -z "${version}" ]] && echo "${version}" && return 0
+    ;;
+    'GitHub Atom')
+      readonly values=($(parse_appcast_github_latest "${url}"))
+      [[ ! -z "${values[0]}" ]] && echo "${values[0]}" && return 0
+    ;;
+  esac
+
+  return 1
+}
+
+# define function to get appcast downloads
+get_appcast_downloads() {
+  local url content out code values download_url
+  local -a output
+
+  readonly url="$1"
+
+  content="$2"
+  if [[ -z "$2" ]]; then
+    readonly out=$(get_url_content "${url}")
+    readonly code=$(echo "${out}" | tail -n1)
+    content=$(echo "${out}" | sed \$d)
+  fi
+  readonly content
+
+  case "$(get_appcast_provider "${content}")" in
+    'Sparkle')
+      readonly values=($(parse_appcast_sparkle_latest "${content}"))
+      download_url="${values[1]}"
+      [[ "${#values[@]}" -eq 3 ]] && download_url="${values[2]}"
+      [[ ! -z "${download_url}" ]] && echo "${download_url}" && return 0
+    ;;
+    'GitHub Atom')
+      readonly values=($(parse_appcast_github_latest "${url}"))
+      if [[ "${#values[@]}" -gt 1 ]]; then
+        for ((i = 1; i < ${#values[@]}; i++)); do
+          output+=(${values[i]})
+        done
+        echo "${output[@]}" && return 0
+      fi
+    ;;
+  esac
+
+  return 1
+}
+
+# Add info to review.
+#
+# Globals:
+#   REVIEW
+#
+# Arguments:
+#   $1 - Name
+#   $2 - Value
+add_to_review() {
+  local name
+  [[ ! -z "$1" ]] && name="$1:" || name="$1"
+  REVIEW+=("$(printf "%-21s %s" "${name}" "$2")")
+}
+
+# Show review.
+#
+# Globals:
+#   REVIEW
+#
+# Returns review.
+show_review() {
+  [[ "${#REVIEW[@]}" -gt 0 ]] && printf '%s\n' "${REVIEW[@]}"
+}
+
+# Create review for Sparkle appcast.
+#
+# Arguments:
+#   $1 - Content
+review_sparkle() {
+  local values download_url
+
+  add_to_review 'Provider' 'Sparkle'
+  readonly values=($(parse_appcast_sparkle_latest "$1"))
+  if [[ "$?" -gt 0 ]]; then
+    add_to_review '' "$(tput setaf 3)no results available$(tput sgr0)"
+  else
+    download_url="${values[1]}"
+    [[ "${#values[@]}" -eq 3 ]] && download_url="${values[2]}"
+
+    add_to_review 'Latest version' "${values[0]}"
+    [[ "${#values[@]}" -eq 3 ]] && [[ "${values[0]}" != "${values[1]}" ]] && add_to_review 'Latest build' "${values[1]}"
+    add_to_review 'Latest download URL' "${download_url}"
+  fi
+}
+
+# Create review for GitHub Atom appcast.
+#
+# Globals:
+#   GITHUB_PRERELEASE
+#
+# Arguments:
+#   $1 - URL
+review_github() {
+  local url stat_name_downloads values
+  local -i status
+
+  add_to_review 'Provider' 'GitHub Atom'
+
+  readonly url="$1"
+  readonly values=($(parse_appcast_github_latest "${url}"))
+  readonly status="$?"
+
+  if [[ "${status}" -gt 0 ]]; then
+    case "${status}" in
+      2) add_to_review '' "$(tput setaf 1)API rate limit exceeded$(tput sgr0)";;
+      *) add_to_review '' "$(tput setaf 3)no results available$(tput sgr0)";;
+    esac
+  else
+    if [[ "${GITHUB_PRERELEASE}" == 'true' ]]; then label="$(tput setaf 3)Pre-release$(tput sgr0)"
+    else label="$(tput setaf 2)Latest$(tput sgr0)"; fi
+
+    [[ ! -z "${values[0]}" ]] && add_to_review 'Latest version' "$(printf "%s (%s)" "${values[0]}" "${label}")"
+    if [[ "${#values[@]}" -gt 1 ]]; then
+      stat_name_downloads='Latest download URL'
+      [[ "${#values[@]}" -gt 2 ]] && stat_name_downloads+='s'
+      add_to_review "${stat_name_downloads}" "${values[1]}"
+      for ((i = 2; i < ${#values[@]}; i++)); do
+        add_to_review '' "${values[i]}"
+      done
+    fi
+  fi
+}
+
+# Globals:
+#   URLS
+#   CHECKPOINT
+#   PROVIDER
+#   VERSION
+#   DOWNLOADS
+#   OPTIONS_COUNTER
+#   DETAILED
+#   REVIEW
+#
+# Arguments:
+#   $1 - URL
+main() {
+  local url out content code result status
+
+  readonly url="$1"
+  readonly out=$(get_url_content "${url}")
+  readonly content=$(echo "${out}" | sed \$d)
+  readonly code=$(echo "${out}" | tail -n1)
+
+  if [[ "${CHECKPOINT}" == 'true' ]]; then
+    result=$(generate_appcast_checkpoint "${content}")
+    [[ "$?" -eq 0 ]] && printf "%s" "${result}" || printf '-'
+    [[ "${OPTIONS_COUNTER}" -gt 1 ]] && printf ';'
+  fi
+
+  if [[ "${PROVIDER}" == 'true' ]]; then
+    result=$(get_appcast_provider "${content}")
+    [[ "$?" -eq 0 ]] && printf "%s" "${result}" || printf '-'
+    [[ "${OPTIONS_COUNTER}" -gt 1 ]] && printf ';'
+  fi
+
+  if [[ "${VERSION}" == 'true' ]]; then
+    result=$(get_appcast_version "${url}" "${content}")
+    [[ "$?" -eq 0 ]] && printf "%s" "${result}" || printf '-'
+    [[ "${OPTIONS_COUNTER}" -gt 1 ]] && printf ';'
+  fi
+
+  if [[ "${DOWNLOADS}" == 'true' ]]; then
+    result=$(get_appcast_downloads "${url}" "${content}")
+    [[ "$?" -eq 0 ]] && printf "%s" "${result}" || printf '-'
+    [[ "${OPTIONS_COUNTER}" -gt 1 ]] && printf ';'
+  fi
+
+  [[ "${code}" == 200 ]] && status="$(tput setaf 2)${code}$(tput sgr0)" || status="$(tput setaf 1)${code}$(tput sgr0)"
+
+  if [[ "${DETAILED}" == 'true' ]]; then
+    add_to_review 'Appcast' "$(tput setaf 7)${url}$(tput sgr0) (${status})"
+    add_to_review 'Checkpoint' "$(generate_appcast_checkpoint "${content}")"
+
+    case "$(get_appcast_provider "${content}")" in
+      'Sparkle')     review_sparkle "${content}";;
+      'GitHub Atom') review_github "${url}";;
+      *) add_to_review 'Provider' "$(tput setaf 1)unknown$(tput sgr0)";;
+    esac
+
+    show_review
+    [[ "${#URLS[@]}" -gt 1 ]] && divide
+    REVIEW=()
+  else
+    printf "\n"
+  fi
+}
+
+# process
+[[ "${DETAILED}" == 'true' ]] && [[ "${#URLS[@]}" -gt 1 ]] && printf "Checking %s appcasts...\n" "${#URLS[@]}" && divide
+for url in "${URLS[@]}"; do main "${url}"; done
+
+exit 0
