@@ -163,8 +163,8 @@ get_cask_version_appcast_checkpoint() {
   versions=($(grep "^\s*.version" < "${cask}" | awk '{ print $2 }' | sed -E 's/,$//' | xargs))
 
   for ((i = 0; i < ${#versions[@]}; i++)); do
-    [[ "$((i+1))" -lt "${#versions[@]}" ]] && next="version '${versions[$i+1]}'" || next=''
-    content=$(pcregrep -M "version '${versions[i]}'.*(\n|.)*${next}" < "${cask}")
+    [[ "$((i+1))" -lt "${#versions[@]}" ]] && next="/version '${versions[$i+1]}'/" || next='0'
+    content=$(awk "/version '${versions[i]}'/,${next}" < "${cask}")
     appcast=$(echo "${content}" | grep 'appcast ' | awk '{ print $2 }' | sed -E 's/,$//' | xargs)
     checkpoint=$(echo "${content}" | grep 'checkpoint: ' | awk '{ print $2 }' | sed -E 's/,$//' | xargs)
     printf "%s %s %s\n" "${versions[i]}" "${appcast}" "${checkpoint}"
