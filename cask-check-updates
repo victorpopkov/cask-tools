@@ -539,29 +539,27 @@ get_appcast_version() {
 # Returns URL with version.
 replace_version_in_url() {
   local -a parts
-  local -i major minor patch
-  local version url part major_minor
+  local version major minor patch url part
 
   url="$1"
-  readonly version=$(echo "$2" | sed 's/[^0-9.]*\([0-9.]*\).*/\1/' | xargs)
-  readonly parts=($(echo "${url}" | grep -o "#{version.[^}]*}" | xargs))
-  readonly major="${version%%.*}"
-  readonly major_minor="${version#*.}"
-  readonly minor="${major_minor%%.*}"
-  readonly patch="${major_minor##*.}"
+  readonly version=$(sed 's/[^0-9.]*\([0-9.]*\).*/\1/' <<< "$2" | xargs)
+  readonly parts=($(grep -o "#{version.[^}]*}" <<< "${url}" | xargs))
+  readonly major=$(cut -d '.' -f 1 <<< "${version}")
+  readonly minor=$(cut -d '.' -f 2 <<< "${version}")
+  readonly patch=$(cut -d '.' -f 3 <<< "${version}")
 
   for part in "${parts[@]}"; do
     case "${part}" in
-      '#{version}')                   url="${url//${part}/${version}}";;
-      '#{version.major}')             url="${url//${part}/${major}}";;
-      '#{version.minor}')             url="${url//${part}/${minor}}";;
-      '#{version.patch}')             url="${url//${part}/${patch}}";;
-      '#{version.major_minor}')       url="${url//${part}/${major}.${minor}}";;
-      '#{version.major_minor_patch}') url="${url//${part}/${major}.${minor}.${patch}}";;
-      '#{version.before_comma}')      url="${url//${part}/$(echo "$1" | cut -d ',' -f 1)}";;
-      '#{version.after_comma}')       url="${url//${part}/$(echo "$1" | cut -d ',' -f 2)}}";;
-      '#{version.before_colon}')      url="${url//${part}/$(echo "$1" | cut -d ':' -f 1)}";;
-      '#{version.after_colon}')       url="${url//${part}/$(echo "$1" | cut -d ':' -f 2)}}";;
+      '#{version}')                   url="${url//${part}/${version}}" ;;
+      '#{version.major}')             url="${url//${part}/${major}}" ;;
+      '#{version.minor}')             url="${url//${part}/${minor}}" ;;
+      '#{version.patch}')             url="${url//${part}/${patch}}" ;;
+      '#{version.major_minor}')       url="${url//${part}/${major}.${minor}}" ;;
+      '#{version.major_minor_patch}') url="${url//${part}/${major}.${minor}.${patch}}" ;;
+      '#{version.before_comma}')      url="${url//${part}/$(cut -d ',' -f 1 <<< "${2}")}" ;;
+      '#{version.after_comma}')       url="${url//${part}/$(cut -d ',' -f 2 <<< "${2}")}" ;;
+      '#{version.before_colon}')      url="${url//${part}/$(cut -d ':' -f 1 <<< "${2}")}" ;;
+      '#{version.after_colon}')       url="${url//${part}/$(cut -d ':' -f 2 <<< "${2}")}" ;;
       *) return 1;;
     esac
   done
