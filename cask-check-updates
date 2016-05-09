@@ -552,7 +552,7 @@ replace_version_in_url() {
 
   url="$1"
   readonly version=$(sed 's/[^0-9.]*\([0-9.]*\).*/\1/' <<< "$2" | xargs)
-  readonly parts=($(grep -o "#{version.[^}]*}" <<< "${url}" | xargs))
+  readonly parts=($(grep -o "#{version[^}]*}" <<< "${url}" | xargs))
   readonly major=$(cut -d '.' -f 1 <<< "${version}")
   readonly minor=$(cut -d '.' -f 2 <<< "${version}")
   readonly patch=$(cut -d '.' -f 3 <<< "${version}")
