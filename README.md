@@ -1,7 +1,22 @@
 # cask-scripts
+
 Collection of small scripts to help maintain the [Homebrew-Cask](https://github.com/caskroom/homebrew-cask) project:
  - [cask-appcast](#cask-appcast)
  - [cask-check-updates](#cask-check-updates)
+
+## Installation
+
+The easiest way to install these scripts is using the [homebrew-cask-scripts](https://github.com/victorpopkov/homebrew-cask-scripts) repository. You’ll need [Homebrew](http://brew.sh/) installed and then [Tap](https://github.com/Homebrew/homebrew/wiki/brew-tap) that repository by running:
+
+```bash
+brew tap victorpopkov/cask-scripts
+```
+
+Afterwards, install them as any other *formula*. For example, to install `cask-appcast`, run:
+
+```bash
+brew install cask-appcast
+```
 
 ## cask-appcast
 
@@ -60,7 +75,7 @@ Cask appcast:     https://github.com/atom/atom/releases.atom (200) | valid (86e6
 ...
 ```
 
-> The `-a/--all` option shows casks even if those are updated. The `-c/--checkpoints` validates appcast checkpoints.
+> The `-a/--all` option shows casks even if those are updated. The `-c/--checkpoints` validate appcast checkpoints.
 
 ```bash
 $ cd ~/path/to/homebrew-cask/Casks
