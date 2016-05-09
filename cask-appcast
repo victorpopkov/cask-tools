@@ -586,18 +586,21 @@ show_review() {
 # Arguments:
 #   $1 - Content
 review_sparkle() {
-  local values download_url
+  local values version build download_url
 
   add_to_review 'Provider' 'Sparkle'
   readonly values=($(parse_appcast_sparkle_latest "$1"))
   if [[ "$?" -gt 0 ]]; then
     add_to_review '' "$(tput setaf 3)no results available$(tput sgr0)"
   else
+    readonly version="${values[0]}"
+    readonly build="${values[1]}"
     download_url="${values[1]}"
     [[ "${#values[@]}" -eq 3 ]] && download_url="${values[2]}"
+    readonly download_url
 
-    add_to_review 'Latest version' "${values[0]}"
-    [[ "${#values[@]}" -eq 3 ]] && [[ "${values[0]}" != "${values[1]}" ]] && add_to_review 'Latest build' "${values[1]}"
+    add_to_review 'Latest version' "${version}"
+    [[ "${#values[@]}" -eq 3 ]] && [[ "${version}" != "${build}" ]] && add_to_review 'Latest build' "${build}"
     add_to_review 'Latest download URL' "${download_url}"
   fi
 }
