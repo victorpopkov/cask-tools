@@ -2,7 +2,7 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.1.1
+# Version:         0.1.2
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   13.05.2016
@@ -147,12 +147,22 @@ divide() {
 # Get value/values of a cask stanza.
 #
 # Arguments:
-#   $1 - Cask name
-#   $2 - Stanza name
+#   $1 - Cask name   (required)
+#   $2 - Stanza name (required)
+#   $3 - Content     (not required)
 #
 # Returns the stanza value.
 get_cask_stanza_value() {
-  grep "^\s*.$2" < "$1.rb" | awk '{ print $2 }' | sed -E 's/,$//' | xargs
+  local cask stanza content
+
+  readonly cask="$1"
+  readonly stanza="$2"
+
+  content="$3"
+  [[ -z "$3" ]] && content=$(cat "${cask}.rb")
+  readonly content
+
+  grep "${stanza} " <<< "${content}" | sed -e "s/${stanza} //g" -e 's/ //g' | awk '{ print $1 }' | sed -e 's/,$//' -e 's/^.//' -e 's/.$//'
 }
 
 # Get version, appcast and checkpoint for specific cask.
@@ -164,16 +174,19 @@ get_cask_stanza_value() {
 #   <version> <appcast> <checkpoint>
 get_cask_version_appcast_checkpoint() {
   local -a versions
-  local cask next content appcast checkpoint
+  local caskname cask next content appcast checkpoint
 
-  cask="$1.rb"
+  readonly caskname="$1"
+  readonly cask="${caskname}.rb"
   versions=($(grep "^\s*.version" < "${cask}" | awk '{ print $2 }' | sed -E 's/,$//' | xargs))
 
   for ((i = 0; i < ${#versions[@]}; i++)); do
     [[ "$((i+1))" -lt "${#versions[@]}" ]] && next="/version '${versions[$i+1]}'/" || next='0'
     content=$(awk "/version '${versions[i]}'/,${next}" < "${cask}")
-    appcast=$(echo "${content}" | grep 'appcast ' | awk '{ print $2 }' | sed -E 's/,$//' | xargs)
-    checkpoint=$(echo "${content}" | grep 'checkpoint: ' | awk '{ print $2 }' | sed -E 's/,$//' | xargs)
+
+    appcast=$(get_cask_stanza_value "${caskname}" 'appcast' "${content}")
+    checkpoint=$(get_cask_stanza_value "${caskname}" 'checkpoint:' "${content}")
+
     printf "%s %s %s\n" "${versions[i]}" "${appcast}" "${checkpoint}"
   done
 }
