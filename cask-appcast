@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+#
+# Get the latest available version from appcast URL.
+#
+# Version:         0.1.1
+# License:         The Unlicense (Public Domain)
+# Author:          Victor Popkov <victor@popkov.me>
+# Last modified:   13.05.2016
 
 # Constants and globals
 readonly PROGRAM="$(basename "$0")"
@@ -196,8 +203,8 @@ compare_versions() {
     # inspired by: http://stackoverflow.com/a/4025065
     local IFS='.'
     local i
-    first=(${first})
-    second=(${second})
+    first=(${first//A-Za-z})
+    second=(${second//[A-Za-z]})
     for ((i = ${#first[@]}; i < ${#second[@]}; i++)); do first[i]=0; done
     for ((i = 0; i < ${#first[@]}; i++)); do
       [[ -z "${second[i]}" ]] && second[i]=0
