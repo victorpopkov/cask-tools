@@ -2,7 +2,7 @@
 #
 # Get the latest available version from appcast URL.
 #
-# Version:         0.1.1
+# Version:         0.1.2
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   13.05.2016
@@ -174,71 +174,6 @@ divide() {
   else printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -; fi
 }
 
-# Version comparison.
-#
-# Use 'sort -V' if available, otherwise use custom solution.
-#
-# Arguments:
-#   $1 - First version
-#   $2 - Second version
-#
-# Returns:
-#   0 - First = second
-#   1 - First > second
-#   2 - First < second
-compare_versions() {
-  local first second
-
-  first=$(normalize_version_hard "$1")
-  second=$(normalize_version_hard "$2")
-
-  [[ "${first}" == "${second}" ]] && return 0
-
-  if echo | sort -Vr > /dev/null 2>&1; then
-    local versions
-    readonly versions=($(printf '%s\n%s\n' "${first}}" "${second}" | sort -Vr))
-    [[ "${first}" == "${versions[0]}" ]] && return 1
-    [[ "${second}" == "${versions[0]}" ]] && return 2
-  else
-    # inspired by: http://stackoverflow.com/a/4025065
-    local IFS='.'
-    local i
-    first=(${first//A-Za-z})
-    second=(${second//[A-Za-z]})
-    for ((i = ${#first[@]}; i < ${#second[@]}; i++)); do first[i]=0; done
-    for ((i = 0; i < ${#first[@]}; i++)); do
-      [[ -z "${second[i]}" ]] && second[i]=0
-      ((10#${first[i]} > 10#${second[i]})) && return 1
-      ((10#${first[i]} < 10#${second[i]})) && return 2
-    done
-  fi
-
-  return 0
-}
-
-# Create sha256 checksum from content that represents appcast checkpoint.
-#
-# Arguments:
-#   $1 - Content to generate checkpoint from
-#
-# Returns checkpoint.
-generate_appcast_checkpoint() {
-  echo "$1" | sed 's|<pubDate>[^<]*</pubDate>||g' | shasum --algorithm 256 | awk '{ print $1 }' && return 0 || return 1
-}
-
-# Get content from URL.
-#
-# Globals:
-#   BROWSER_HEADERS
-#
-# Arguments:
-#   $1 - URL
-#
-# Returns content and status code (last line).
-get_url_content() {
-  curl --silent --compressed --location "$1" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}' 2>/dev/null
-}
-
 # Normalize version for some edge cases (safe to use).
 #
 # Arguments:
@@ -274,6 +209,71 @@ normalize_version_safe() {
 # Returns normalized version.
 normalize_version_hard() {
   echo "$1" | sed 's/[^0-9.]*\([0-9A-Za-z.]*\).*/\1/' | xargs
+}
+
+# Version comparison.
+#
+# Use 'sort -V' if available, otherwise use custom solution.
+#
+# Arguments:
+#   $1 - First version
+#   $2 - Second version
+#
+# Returns:
+#   0 - First = second
+#   1 - First > second
+#   2 - First < second
+compare_versions() {
+  local first second
+
+  first=$(normalize_version_hard "$1")
+  second=$(normalize_version_hard "$2")
+
+  [[ "${first}" == "${second}" ]] && return 0
+
+  if echo | sort -Vr > /dev/null 2>&1; then
+    local versions
+    readonly versions=($(printf '%s\n%s\n' "${first}}" "${second}" | sort -Vr))
+    [[ "${first}" == "${versions[0]}" ]] && return 1
+    [[ "${second}" == "${versions[0]}" ]] && return 2
+  else
+    # inspired by: http://stackoverflow.com/a/4025065
+    local IFS='.'
+    local i
+    first=($(sed -e 's/[A-Za-z]//g' -e 's/\.\.//g' <<< "${first}"))
+    second=($(sed -e 's/[A-Za-z]//g' -e 's/\.\.//g' <<< "${second}"))
+    for ((i = ${#first[@]}; i < ${#second[@]}; i++)); do first[i]=0; done
+    for ((i = 0; i < ${#first[@]}; i++)); do
+      [[ -z "${second[i]}" ]] && second[i]=0
+      ((10#${first[i]} > 10#${second[i]})) && return 1
+      ((10#${first[i]} < 10#${second[i]})) && return 2
+    done
+  fi
+
+  return 0
+}
+
+# Create sha256 checksum from content that represents appcast checkpoint.
+#
+# Arguments:
+#   $1 - Content to generate checkpoint from
+#
+# Returns checkpoint.
+generate_appcast_checkpoint() {
+  echo "$1" | sed 's|<pubDate>[^<]*</pubDate>||g' | shasum --algorithm 256 | awk '{ print $1 }' && return 0 || return 1
+}
+
+# Get content from URL.
+#
+# Globals:
+#   BROWSER_HEADERS
+#
+# Arguments:
+#   $1 - URL
+#
+# Returns content and status code (last line).
+get_url_content() {
+  curl --silent --compressed --location "$1" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}' 2>/dev/null
 }
 
 # Process parsed Sparkle line to get variables.
