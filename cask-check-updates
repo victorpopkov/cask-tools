@@ -2,7 +2,7 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.1.2
+# Version:         0.2.2
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   13.05.2016
@@ -165,14 +165,14 @@ get_cask_stanza_value() {
   grep "${stanza} " <<< "${content}" | sed -e "s/${stanza} //g" -e 's/ //g' | awk '{ print $1 }' | sed -e 's/,$//' -e 's/^.//' -e 's/.$//'
 }
 
-# Get version, appcast and checkpoint for specific cask.
+# Get version, appcast, checkpoint and url for specific cask.
 #
 # Arguments:
 #   $1 - Cask name
 #
 # Returns values for each version as new line in format:
-#   <version> <appcast> <checkpoint>
-get_cask_version_appcast_checkpoint() {
+#   <version> <appcast> <checkpoint> <url>
+get_cask_version_appcast_checkpoint_url() {
   local -a versions
   local caskname cask next content appcast checkpoint
 
@@ -186,8 +186,9 @@ get_cask_version_appcast_checkpoint() {
 
     appcast=$(get_cask_stanza_value "${caskname}" 'appcast' "${content}")
     checkpoint=$(get_cask_stanza_value "${caskname}" 'checkpoint:' "${content}")
+    url=$(get_cask_stanza_value "${caskname}" 'url' "${content}")
 
-    printf "%s %s %s\n" "${versions[i]}" "${appcast}" "${checkpoint}"
+    printf "%s %s %s %s\n" "${versions[i]}" "${appcast}" "${checkpoint}" "${url}"
   done
 }
 
@@ -521,7 +522,7 @@ get_appcast_provider() {
   return 1
 }
 
-# Extract version number from URL or content.
+# Extract version number with download URL/URLs from appcast content.
 #
 # Arguments:
 #   $1 - Cask name (required)
@@ -529,8 +530,8 @@ get_appcast_provider() {
 #   $3 - Content   (not required)
 #
 # Returns version.
-get_appcast_version() {
-  local cask url content out code values version
+get_appcast_version_with_downloads() {
+  local cask url content out code values version download_url
 
   readonly cask="$1"
   readonly url="$2"
@@ -547,8 +548,13 @@ get_appcast_version() {
     'Sparkle')
       readonly values=($(parse_appcast_sparkle_latest "${cask}" "${content}"))
       version="${values[0]}"
-      [[ "${#values[@]}" -eq 3 ]] && [[ "${values[0]}" != "${values[1]}" ]] && version="${values[0]},${values[1]}"
-      [[ ! -z "${version}" ]] && echo "${version}" && return 0
+      if [[ "${#values[@]}" -eq 3 ]]; then
+        [[ "${values[0]}" != "${values[1]}" ]] && version="${values[0]},${values[1]}"
+        download_url="${values[2]}"
+      else
+        download_url="${values[1]}"
+      fi
+      echo "${version} ${download_url}" && return 0
     ;;
     'GitHub Atom')
       readonly values=($(parse_appcast_github_latest "${cask}" "${url}"))
@@ -585,15 +591,109 @@ replace_version_in_url() {
       '#{version.patch}')             url="${url//${part}/${patch}}" ;;
       '#{version.major_minor}')       url="${url//${part}/${major}.${minor}}" ;;
       '#{version.major_minor_patch}') url="${url//${part}/${major}.${minor}.${patch}}" ;;
-      '#{version.before_comma}')      url="${url//${part}/$(cut -d ',' -f 1 <<< "${2}")}" ;;
-      '#{version.after_comma}')       url="${url//${part}/$(cut -d ',' -f 2 <<< "${2}")}" ;;
-      '#{version.before_colon}')      url="${url//${part}/$(cut -d ':' -f 1 <<< "${2}")}" ;;
-      '#{version.after_colon}')       url="${url//${part}/$(cut -d ':' -f 2 <<< "${2}")}" ;;
+      '#{version.before_comma}')      url="${url//${part}/$(cut -d ',' -f 1 <<< "$2")}" ;;
+      '#{version.after_comma}')       url="${url//${part}/$(cut -d ',' -f 2 <<< "$2")}" ;;
+      '#{version.before_colon}')      url="${url//${part}/$(cut -d ':' -f 1 <<< "$2")}" ;;
+      '#{version.after_colon}')       url="${url//${part}/$(cut -d ':' -f 2 <<< "$2")}" ;;
       *) return 1;;
     esac
   done
 
   echo "${url}" && return 0
+}
+
+# Suggest version to use in casks download URL.
+#
+# Arguments:
+#   $1 - Cask name
+#   $2 - Current version
+#   $4 - Latest version
+#   $5 - Latest download URL
+#
+# Returns suggested version.
+suggest_cask_version() {
+  local cask version latest_version latest_build latest_download_url result devmate_version devmate_part delimeter
+
+  cask="$1"
+  version="$2"
+  latest_version="$(cut -d ',' -f 1 <<< "$3")"
+  latest_build="$(cut -d ',' -f 2 <<< "$3")"
+  latest_download_url=$(replace_version_in_url "$4" "$3")
+
+  [[ "${latest_version}" == "${latest_build}" ]] && latest_build=''
+
+  delimeter=$(sed -e 's/[A-Za-z0-9.]//g' <<< "${version}") # try guessing the delimeter from old version
+  [[ "${#delimeter}" -ne 1 ]] && delimeter=','
+
+  result="${latest_version}"
+  # [[ ! -z "${latest_build}" ]] && result="${latest_version}${delimeter}${latest_build}" || result="${latest_version}"
+
+  # dl.devmate.com
+  if [[ "${latest_download_url}" =~ dl.devmate.com ]]; then
+    devmate_version="$(cut -d '/' -f 5 <<< "${latest_download_url}")"
+    devmate_part="$(cut -d '/' -f 6 <<< "${latest_download_url}")"
+
+    if [[ "${#devmate_part}" -eq 10 ]]; then
+      if [[ ! -z "${latest_build}" ]] && [[ "${devmate_version}" == "${latest_build}" ]]; then
+        result="${latest_version},${latest_build}:${devmate_part}"
+      else
+        result="${latest_version}${delimeter}${devmate_part}"
+      fi
+    fi
+  fi
+
+  # cask specific
+  case "${cask}" in
+    'aliwangwang')          result="${latest_version}${delimeter}${latest_build}" ;;
+    'alternote')            result="${latest_version}${delimeter}${latest_build}" ;;
+    'appfresh')             result="${latest_version}${delimeter}${latest_build}" ;;
+    'automatic')            result="${latest_version}.${latest_build}" ;;
+    'beatport-pro')         result="${latest_version}${delimeter}${latest_build}" ;;
+    'boxcryptor')           result="${latest_version}.${latest_build}" ;;
+    'codekit')              result="${latest_version}${delimeter}${latest_build}" ;;
+    'cyberduck')            result="${latest_version}.${latest_build}" ;;
+    'daemon-tools-lite')    result="${latest_build}" ;;
+    'dradio')               result="${latest_version}${delimeter}${latest_build}" ;;
+    'dterm')                result="${latest_version}${delimeter}${latest_build}" ;;
+    'evernote')             result="${latest_version}${delimeter}${latest_build}" ;;
+    'findings')             result="${latest_version}${delimeter}${latest_build}" ;;
+    'flexiglass')           result="${latest_version}${delimeter}${latest_build}" ;;
+    'framer-studio')        result="${latest_version}" ;;
+    'gog-downloader')       result="${latest_version}${delimeter}${latest_build}" ;;
+    'graphicconverter')     result="${latest_version}${delimeter}${latest_build}" ;;
+    'hype')                 result="${latest_version}${delimeter}${latest_build}" ;;
+    'intensify-pro')        result="${latest_version}${delimeter}${latest_build}" ;;
+    'invisionsync')         result="${latest_version}${delimeter}${latest_build}" ;;
+    'jollysfastvnc')        result="${latest_version}${delimeter}${latest_build}" ;;
+    'kaleidoscope')         result="${latest_version}${delimeter}${latest_build}" ;;
+    'kamakiri')             result="${latest_version}${delimeter}${latest_build}" ;;
+    'kiwi')                 result="${latest_version}${delimeter}${latest_build}" ;;
+    'marked')               result="${latest_version}${latest_build}" ;;
+    'master-key')           result="${latest_build}" ;;
+    'monodraw')             result="b${latest_build}" ;;
+    'mountain-duck')        result="${latest_version}.${latest_build}" ;;
+    'mplayerx')             result="${latest_version}${delimeter}${latest_build}" ;;
+    'netnewswire')          result="${latest_version}${delimeter}${latest_build}" ;;
+    'nvalt')                result="${latest_version}${latest_build}" ;;
+    'papers')               result="${latest_version}${delimeter}${latest_build}" ;;
+    'pdfpen')               result="${latest_build}" ;;
+    'phoneexpander')        result="${latest_version}${delimeter}${latest_build}" ;;
+    'pixlr')                result="${latest_version}${delimeter}${latest_build}" ;;
+    'propresenter')         result="${latest_version}${delimeter}b${latest_build}" ;;
+    'snapheal-pro')         result="${latest_version}.${latest_build}" ;;
+    'soulver')              result="${latest_version}${delimeter}${latest_build}" ;;
+    'spillo')               result="${latest_build}${delimeter}${latest_version}" ;;
+    'splice')               result="${latest_version}${delimeter}${latest_build}" ;;
+    'stand')                result="${latest_version}${delimeter}${latest_build}" ;;
+    'stretchlink')          result="${latest_version}${delimeter}${latest_build}" ;;
+    'tripmode')             result="${latest_version}${delimeter}${latest_build}" ;;
+    'tvshows')              result="${latest_version}${delimeter}${latest_build}" ;;
+    'versions')             result="${latest_version}${delimeter}${latest_build}" ;;
+    'vox')                  result="${latest_build}${delimeter}${devmate_part}" ;;
+    'vox-preferences-pane') result="${latest_build}${delimeter}${devmate_part}" ;;
+  esac
+
+  echo "${result}"
 }
 
 # Add info to review.
@@ -628,12 +728,12 @@ show_review() {
 # Arguments:
 #   $1 - Cask name
 review_cask_versions() {
-  local -a versions appcasts checkpoints
+  local -a versions appcasts checkpoints urls latest
   local -i versions_max_length appcasts_counter code i status
-  local line version appcast checkpoint out content latest_checkpoint latest_version review_name review_value
+  local line version appcast checkpoint url out content latest_checkpoint latest_version suggested_version suggested_latest_version latest_url review_name review_value
 
   local -r cask="$1"
-  local -r values=$(get_cask_version_appcast_checkpoint "${cask}")
+  local -r values=$(get_cask_version_appcast_checkpoint_url "${cask}")
 
   IFS=$'\n' read -rd '' -a lines <<< "${values}"
 
@@ -642,6 +742,7 @@ review_cask_versions() {
     version="${line[0]}"
     appcast=$(replace_version_in_url "${line[1]}" "${version}")
     checkpoint="${line[2]}"
+    url="${line[3]}"
 
     [[ -z "${version}" ]] && continue
 
@@ -649,7 +750,9 @@ review_cask_versions() {
     versions+=("${version}")
     appcasts+=("${appcast}")
     checkpoints+=("${checkpoint}")
+    urls+=("${url}")
 
+    [[ "${#line[@]}" -lt 3 ]] && continue
     [[ -z "${appcast}" ]] && continue
     ((appcasts_counter++))
   done
@@ -658,6 +761,7 @@ review_cask_versions() {
     version="${versions[i]}"
     appcast="${appcasts[i]}"
     checkpoint="${checkpoints[i]}"
+    url="${urls[i]}"
 
     if [[ "${i}" -eq 0 ]]; then
       review_name='Cask version'
@@ -668,26 +772,41 @@ review_cask_versions() {
 
     review_value=$(printf "%-${versions_max_length}s" "${version}")
 
-    if [[ ! -z "${appcast}" ]]; then
+    if [[ ! -z "${appcast}" ]] && [[ ! -z "${checkpoint}" ]]; then
       out=$(get_url_content "${appcast}")
       code=$(echo "${out}" | tail -n1)
       content=$(echo "${out}" | sed \$d)
 
-      latest_checkpoint="$(generate_appcast_checkpoint "${content}")"
-      latest_version=$(get_appcast_version "${cask}" "${appcast}")
+      latest=($(get_appcast_version_with_downloads "${cask}" "${appcast}"))
       status="$?"
+      latest_checkpoint="$(generate_appcast_checkpoint "${content}")"
+      latest_version="${latest[0]}"
+      latest_url="${latest[1]}"
+
+      suggested_version=$(suggest_cask_version "${cask}" "${version}" "${version}" "${url}")
+      suggested_latest_version=$(suggest_cask_version "${cask}" "${version}" "${latest_version}" "${latest_url}")
 
       if [[ "${latest_checkpoint}" == "${checkpoint}" ]] && [[ "${status}" -eq 0 ]]; then
         review_value+=" | ${latest_version}"
-        [[ "${SHOW_ALL}" == 'true' ]] && output_csv "${cask}" "${appcast}" "${version}" "${latest_version}"
+        if [[ "${latest_version}" != "${suggested_latest_version}" ]]; then
+          review_value+=" → $(tput setaf 7)${suggested_latest_version}$(tput sgr0)"
+        fi
+        [[ "${SHOW_ALL}" == 'true' ]] && output_csv "${cask}" "${appcast}" "${version}" "${latest_version}" "${suggested_latest_version}"
       elif [[ "${status}" -eq 0 ]]; then
         if [[ "${latest_version}" =~ ${version} ]] || [[ "${version}" =~ ${latest_version} ]]; then
           review_value+=" | ${latest_version}"
-          [[ "${SHOW_ALL}" == 'true' ]] && output_csv "${cask}" "${appcast}" "${version}" "${latest_version}"
+          if [[ "${latest_version}" != "${suggested_version}" ]]; then
+            review_value+=" → $(tput setaf 7)${suggested_version}$(tput sgr0)"
+          fi
+          [[ "${SHOW_ALL}" == 'true' ]] && output_csv "${cask}" "${appcast}" "${version}" "${latest_version}" "${suggested_version}"
         else
           show='true'
-          review_value+=" | $(tput setaf 2)${latest_version}$(tput sgr0) (latest)"
-          output_csv "${cask}" "${appcast}" "${version}" "${latest_version}"
+          review_value+=" | $(tput setaf 2)${latest_version}$(tput sgr0)"
+          if [[ "${latest_version}" != "${suggested_latest_version}" ]]; then
+            review_value+=" → $(tput setaf 2)${suggested_latest_version}$(tput sgr0)"
+          fi
+          review_value+=" (latest)"
+          output_csv "${cask}" "${appcast}" "${version}" "${latest_version}" "${suggested_latest_version}"
         fi
       else
         review_value+=" | -"
@@ -713,7 +832,7 @@ review_cask_appcasts() {
   local version appcast checkpoint out code content latest_checkpoint latest_version review_name review_value status
 
   local -r cask="$1"
-  local -r values=$(get_cask_version_appcast_checkpoint "${cask}")
+  local -r values=$(get_cask_version_appcast_checkpoint_url "${cask}")
 
   IFS=$'\n' read -rd '' -a lines <<< "${values}"
 
@@ -723,6 +842,7 @@ review_cask_appcasts() {
     appcast=$(replace_version_in_url "${line[1]}" "${version}")
     checkpoint="${line[2]}"
 
+    [[ "${#line[@]}" -lt 3 ]] && continue
     [[ -z "${appcast}" ]] && continue
 
     [[ "${appcasts_max_length}" -lt "${#appcast}" ]] && appcasts_max_length="${#appcast}"
@@ -783,8 +903,9 @@ review_cask_appcasts() {
 #   $2 - Appcast
 #   $3 - Current version
 #   $4 - Latest version
+#   $5 - Suggested latest version
 output_csv() {
-  [[ "${OUTPUT}" == 'true' ]] && printf "\"%s\";\"%s\";\"%s\";\"%s\"\n" "$1" "$2" "$3" "$4" >> "${OUTPUT_PATH}"
+  [[ "${OUTPUT}" == 'true' ]] && printf "\"%s\";\"%s\";\"%s\";\"%s\";\"%s\"\n" "$1" "$2" "$3" "$4" "$5" >> "${OUTPUT_PATH}"
 }
 
 # Globals:
@@ -814,7 +935,7 @@ main() {
 # process
 [[ "${#CASKS[@]}" -eq 0 ]] && CASKS=($(egrep -lir --include '*.rb' "(appcast ')" . | xargs -n1 basename | sed 's|\.rb$||' | sort))
 [[ "${#CASKS[@]}" -gt 1 ]] && printf "Checking updates for %s casks...\n" "${#CASKS[@]}" && divide
-[[ "${OUTPUT}" == 'true' ]] && printf "\"%s\";\"%s\";\"%s\";\"%s\"\n" 'Name' 'Appcast' 'Current version' 'Latest version' > "${OUTPUT_PATH}"
+[[ "${OUTPUT}" == 'true' ]] && printf "\"%s\";\"%s\";\"%s\";\"%s\";\"%s\"\n" 'Name' 'Appcast' 'Current version' 'Latest version' 'Suggested latest version' > "${OUTPUT_PATH}"
 for cask in "${CASKS[@]}"; do main "${cask}"; done
 
 exit 0
