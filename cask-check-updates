@@ -2,7 +2,7 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.2.5
+# Version:         0.2.6
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   17.05.2016
@@ -13,6 +13,7 @@ readonly TEMP_DIR=$(mktemp -d)
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
 declare -a CASKS
 declare -a REVIEW
+declare -a CASKS_VERSION_DELIMETER_BUILD
 GITHUB_USER=$(git config --get github.user)
 GITHUB_TOKEN=$(git config --get github.token)
 GITHUB_PRERELEASE='false'
@@ -20,6 +21,47 @@ OUTPUT='false'
 OUTPUT_PATH=''
 SHOW_ALL='false'
 SHOW_CHECKPOINTS='false'
+
+# Casks which versions should have format: "<version><delimeter><build>"
+readonly CASKS_VERSION_DELIMETER_BUILD=(
+  'airmail-beta'
+  'aliwangwang'
+  'alternote'
+  'appfresh'
+  'appfresh'
+  'beatport-pro'
+  'cartographica'
+  'codekit'
+  'dradio'
+  'dterm'
+  'evernote'
+  'findings'
+  'flexiglass'
+  'gog-downloader'
+  'graphicconverter'
+  'hipchat'
+  'hype'
+  'intensify-pro'
+  'invisionsync'
+  'jollysfastvnc'
+  'kaleidoscope'
+  'kamakiri'
+  'kiwi'
+  'lytro-desktop'
+  'mplayerx'
+  'netnewswire'
+  'papers'
+  'phoneexpander'
+  'pixlr'
+  'sketch-beta'
+  'soulver'
+  'splice'
+  'stand'
+  'stretchlink'
+  'tripmode'
+  'tvshows'
+  'versions'
+)
 
 syntax_error() {
   echo "${PROGRAM}: $1" >&2
@@ -655,57 +697,28 @@ suggest_cask_version() {
 
   # cask specific
   case "${cask}" in
-    'airmail-beta')         result="${latest_version}${delimeter}${latest_build}" ;;
-    'aliwangwang')          result="${latest_version}${delimeter}${latest_build}" ;;
-    'alternote')            result="${latest_version}${delimeter}${latest_build}" ;;
-    'appfresh')             result="${latest_version}${delimeter}${latest_build}" ;;
-    'appfresh')             result="${latest_version}${delimeter}${latest_build}" ;;
     'automatic')            result="${latest_version}.${latest_build}" ;;
-    'beatport-pro')         result="${latest_version}${delimeter}${latest_build}" ;;
     'boxcryptor')           result="${latest_version}.${latest_build}" ;;
-    'cartographica')        result="${latest_version}${delimeter}${latest_build}" ;;
     'cockatrice')           result="${latest_version%%-Release}" ;;
-    'codekit')              result="${latest_version}${delimeter}${latest_build}" ;;
     'cyberduck')            result="${latest_version}.${latest_build}" ;;
     'daemon-tools-lite')    result="${latest_build}" ;;
     'darktable')            result="${latest_version//release-}" ;;
     'disablemonitor')       result="${latest_version//G}" ;;
-    'dradio')               result="${latest_version}${delimeter}${latest_build}" ;;
-    'dterm')                result="${latest_version}${delimeter}${latest_build}" ;;
-    'evernote')             result="${latest_version}${delimeter}${latest_build}" ;;
     'favs')                 result="${latest_version//.}" ;;
     'festify')              result="${latest_version%%beta}" ;;
-    'findings')             result="${latest_version}${delimeter}${latest_build}" ;;
-    'flexiglass')           result="${latest_version}${delimeter}${latest_build}" ;;
-    'framer-studio')        result="${latest_version}" ;;
-    'gog-downloader')       result="${latest_version}${delimeter}${latest_build}" ;;
+    'framer')               result="${latest_version}" ;;
     'goldencheetah')        result="${latest_version//V}" ;;
-    'graphicconverter')     result="${latest_version}${delimeter}${latest_build}" ;;
-    'hipchat')              result="${latest_version}${delimeter}${latest_build}" ;;
-    'hype')                 result="${latest_version}${delimeter}${latest_build}" ;;
-    'intensify-pro')        result="${latest_version}${delimeter}${latest_build}" ;;
-    'invisionsync')         result="${latest_version}${delimeter}${latest_build}" ;;
     'iterm2-nightly')       result="${latest_version%%-nightly}" ;;
-    'jollysfastvnc')        result="${latest_version}${delimeter}${latest_build}" ;;
-    'kaleidoscope')         result="${latest_version}${delimeter}${latest_build}" ;;
-    'kamakiri')             result="${latest_version}${delimeter}${latest_build}" ;;
-    'kiwi')                 result="${latest_version}${delimeter}${latest_build}" ;;
-    'lytro-desktop')        result="${latest_version}${delimeter}${latest_build}" ;;
     'macvim')               result="7.4.${latest_version//snapshot-}" ;;
     'marked')               result="${latest_version}${latest_build}" ;;
     'master-key')           result="${latest_build}" ;;
     'monodraw')             result="b${latest_build}" ;;
     'mountain-duck')        result="${latest_version}.${latest_build}" ;;
-    'mplayerx')             result="${latest_version}${delimeter}${latest_build}" ;;
-    'netnewswire')          result="${latest_version}${delimeter}${latest_build}" ;;
     'nvalt')                result="${latest_version}${latest_build}" ;;
     'openra')               result="${latest_version//release-}" ;;
     'osxfuse-beta')         result="${latest_version//osxfuse-}" ;;
-    'papers')               result="${latest_version}${delimeter}${latest_build}" ;;
     'pdfpen')               result="${latest_build}${delimeter}${devmate_part}" ;;
     'pdfpenpro')            result="${latest_build}${delimeter}${devmate_part}" ;;
-    'phoneexpander')        result="${latest_version}${delimeter}${latest_build}" ;;
-    'pixlr')                result="${latest_version}${delimeter}${latest_build}" ;;
     'pomotodo')             result="${latest_version}${delimeter}${hackplan_part}" ;;
     'propresenter')         result="${latest_version}${delimeter}b${latest_build}" ;;
     'qlcolorcode')          result="${latest_version//release-}" ;;
@@ -715,27 +728,24 @@ suggest_cask_version() {
     'quickradar')           result="${latest_version//beta/b}" ;;
     'sequel-pro')           result="${latest_version//release-}" ;;
     'shiftit')              result="${latest_version//version-}" ;;
-    'sketch-beta')          result="${latest_version}${delimeter}${latest_build}" ;;
     'snapheal-pro')         result="${latest_version}.${latest_build}" ;;
-    'soulver')              result="${latest_version}${delimeter}${latest_build}" ;;
     'soundflowerbed')       result="${latest_version%%-release}" ;;
     'spillo')               result="${latest_build}${delimeter}${latest_version}" ;;
-    'splice')               result="${latest_version}${delimeter}${latest_build}" ;;
     'sshfs')                result="${latest_version//osxfuse-sshfs-}" ;;
-    'stand')                result="${latest_version}${delimeter}${latest_build}" ;;
-    'stretchlink')          result="${latest_version}${delimeter}${latest_build}" ;;
     'subtitle-master')      result="${latest_version%%-SNAPSHOT}" ;;
     'supercollider')        result="${latest_version//Version-}" ;;
     'textexpander')         result="${latest_build}${delimeter}${devmate_part}" ;;
     'time-tracker')         result="${latest_version%%-binary}" ;;
     'tower-beta')           result="${latest_version}-${latest_build}${delimeter}${amazonaws_part}" ;;
-    'tripmode')             result="${latest_version}${delimeter}${latest_build}" ;;
-    'tvshows')              result="${latest_version}${delimeter}${latest_build}" ;;
-    'versions')             result="${latest_version}${delimeter}${latest_build}" ;;
     'vox')                  result="${latest_build}${delimeter}${devmate_part}" ;;
     'vox-preferences-pane') result="${latest_build}${delimeter}${devmate_part}" ;;
     'xld')                  result=$(sed -e "s/.\{4\}/&./" -e "s/.\{7\}/&./" <<< "${latest_version}") ;;
   esac
+
+  # "<version><delimeter><build>"
+  for cask_vb in "${CASKS_VERSION_DELIMETER_BUILD[@]}"; do
+    [[ "${cask}" == "${cask_vb}" ]] && result="${latest_version}${delimeter}${latest_build}"
+  done
 
   echo "${result}"
 }
