@@ -2,13 +2,14 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.2.4
+# Version:         0.2.5
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   13.05.2016
+# Last modified:   17.05.2016
 
 # Constants and globals
-readonly PROGRAM="$(basename "$0")"
+readonly PROGRAM=$(basename "$0")
+readonly TEMP_DIR=$(mktemp -d)
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
 declare -a CASKS
 declare -a REVIEW
@@ -435,9 +436,9 @@ parse_appcast_sparkle_latest() {
 EOF
 )
 
-  echo "${xls}" > "/tmp/${PROGRAM}_sparkle.xsl"
+  echo "${xls}" > "${TEMP_DIR}/${PROGRAM}_sparkle.xsl"
 
-  transform=$(xmlstarlet tr "/tmp/${PROGRAM}_sparkle.xsl" <<< "${content}" 2> /dev/null)
+  transform=$(xmlstarlet tr "${TEMP_DIR}/${PROGRAM}_sparkle.xsl" <<< "${content}" 2> /dev/null)
   transform=$(echo "${transform}" | sed -e 's/^[^"]*//g' | sed -e 's/[^;]*$//g')
 
   IFS=$'\n' read -rd '' -a lines <<< "${transform}"
