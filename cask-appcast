@@ -2,10 +2,10 @@
 #
 # Get the latest available version from appcast URL.
 #
-# Version:         0.1.4
+# Version:         0.2.0
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   17.05.2016
+# Last modified:   21.05.2016
 
 # Constants and globals
 readonly PROGRAM=$(basename "$0")
@@ -170,7 +170,7 @@ normalize_version_safe() {
   local version build
 
   version="$1"
-  build="$2"
+  readonly build="$2"
 
   version="${version#[Vv][Ee][Rr][Ss][Ii][Oo][Nn]}" # Version3.0 => 3.0
   version="${version/=./0.}"                        # =.9   => 0.9
@@ -193,7 +193,7 @@ normalize_version_safe() {
 #
 # Returns normalized version.
 normalize_version_hard() {
-  echo "$1" | sed 's/[^0-9.]*\([0-9A-Za-z.]*\).*/\1/' | xargs
+  sed 's/[^0-9.]*\([0-9A-Za-z.]*\).*/\1/' <<< "$1"
 }
 
 # Version comparison.
@@ -225,8 +225,8 @@ compare_versions() {
     # inspired by: http://stackoverflow.com/a/4025065
     local IFS='.'
     local i
-    first=($(sed -e 's/[A-Za-z]//g' -e 's/\.\.//g' <<< "${first}"))
-    second=($(sed -e 's/[A-Za-z]//g' -e 's/\.\.//g' <<< "${second}"))
+    first=($(sed -e 's/[A-Za-z]/ /g' <<< "${first}" | tr -s ' ' '.'))
+    second=($(sed -e 's/[A-Za-z]/ /g' <<< "${second}" | tr -s ' ' '.'))
     for ((i = ${#first[@]}; i < ${#second[@]}; i++)); do first[i]=0; done
     for ((i = 0; i < ${#first[@]}; i++)); do
       [[ -z "${second[i]}" ]] && second[i]=0
@@ -256,7 +256,9 @@ generate_appcast_checkpoint() {
 # Arguments:
 #   $1 - URL
 #
-# Returns content and status code (last line).
+# Returns array of values:
+#   <content>
+#   <http_code>
 get_url_content() {
   curl --silent --compressed --location "$1" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}' 2>/dev/null
 }
@@ -266,7 +268,10 @@ get_url_content() {
 # Arguments:
 #   $1 - Line in format: "<version>";"<build>";"<url>";"<title>"
 #
-# Returns array of variables.
+# Returns array of values:
+#   <version>
+#   <build>
+#   <url>
 process_appcast_sparkle_line() {
   local version version_before build url title
   local -a vars
@@ -279,6 +284,8 @@ process_appcast_sparkle_line() {
   readonly url=$(echo "${vars[2]}" | sed -e 's/"//g' | sed -e 's/["[:space:]]/%20/g')
   readonly title="${vars[3]//[\"]}"
 
+  [[ "$(normalize_version_hard "${title}")" != "${title}" ]] && [[ "${title//[\"[:space:]]}" == "${version}" ]] && version=''
+
   [[ -z "${version}" ]] && [[ ! -z "${build}" ]] && version="${build}"
 
   if [[ -z "${version}" ]] && [[ -z "${build}" ]]; then
@@ -286,6 +293,7 @@ process_appcast_sparkle_line() {
   else
     version=$(normalize_version_safe "${version}" "${build}")
   fi
+  readonly version
 
   result=("${version}" "${build}" "${url}")
   if [[ "${version}" == "${build}" ]] || [[ -z "${version_before}" ]]; then result=("${version}" "${url}"); fi
@@ -301,7 +309,10 @@ process_appcast_sparkle_line() {
 # Arguments:
 #   $1 - Content to parse
 #
-# Returns array of values.
+# Returns array of values:
+#   <version>
+#   <build>
+#   <url>
 parse_appcast_sparkle_latest() {
   local content xls transform
   local -a lines first last values result
@@ -309,6 +320,7 @@ parse_appcast_sparkle_latest() {
   content=$(echo -e "$1" | sed -e $'s/></>\\\n</g') # convert single line XML to multiline
   content=$(echo -e "${content}" | sed -e 's/ xmlns:sparkle=".*"/ xmlns:sparkle="http:\/\/www.andymatuschak.org\/xml-namespaces\/sparkle"/g') # make sparkle namespace more consistent and ignore others
   content=$(echo -e "${content}" | sed -e 's/<!--</</g' | sed -e 's/\/>-->/\/>/g') # uncomment tags
+  readonly content
 
   xls=$(cat <<EOF
 <?xml version="1.0"?>
@@ -407,7 +419,7 @@ EOF
       case $? in
         0) values=("${first[@]}") ;; # =
         1) values=("${first[@]}") ;; # >
-        2) values=("${last[@]}" );;  # <
+        2) values=("${last[@]}") ;;  # <
       esac
     else
       values=("${first[@]}")
@@ -428,12 +440,14 @@ EOF
 #   GITHUB_PRERELEASE
 #
 # Arguments:
-#   $1 - Content to parse
+#   $1 - URL
 #
-# Returns array of values.
+# Returns array of values:
+#   <prerelease>      (true|false)
+#   <version>
+#   <download_urls>   (array)
 parse_appcast_github_latest() {
-  local user repo auth url out content latest_tag download_urls code
-  local -i code
+  local user repo auth url out code content latest_tag prerelease_tag version prerelease download_urls
   local -a result
 
   [[ ! -z "${GITHUB_USER}" ]] && [[ ! -z "${GITHUB_TOKEN}" ]] && auth=(--user "${GITHUB_USER}:${GITHUB_TOKEN}")
@@ -448,17 +462,24 @@ parse_appcast_github_latest() {
   readonly code=$(echo "${out}" | tail -n1)
   readonly content=$(echo "${out}" | sed \$d)
 
-  latest_tag=$(echo "${content}" | jq ".|=sort_by(.created_at) | reverse | .[] | select(.prerelease == ${GITHUB_PRERELEASE}) | .tag_name" 2> /dev/null | head -1 | xargs)
-  if [[ -z "${latest_tag}" ]]; then
-    [[ "${GITHUB_PRERELEASE}" == 'true' ]] && GITHUB_PRERELEASE='false' || GITHUB_PRERELEASE='true'
-    latest_tag=$(echo "${content}" | jq ".|=sort_by(.created_at) | reverse | .[] | select(.prerelease == ${GITHUB_PRERELEASE}) | .tag_name" 2> /dev/null | head -1 | xargs)
-    [[ -z "${latest_tag}" ]] && [[ "${code}" -eq 403 ]] && return 2
-    [[ -z "${latest_tag}" ]] && return 1
-  fi
+  [[ "${code}" -eq 403 ]] && return 2
 
-  readonly download_urls=($(echo "${content}" | jq ".[] | select(.tag_name == \"${latest_tag}\") | .assets" | jq '.[] | .browser_download_url' 2> /dev/null | xargs))
-  latest_tag=$(grep -q 'v[0-9]' <<< "${latest_tag}" && echo "${latest_tag/v}" || echo "${latest_tag}") # v3.0 => 3.0
-  result+="${latest_tag}"
+  readonly latest_tag=$(echo "${content}" | jq ".|=sort_by(.created_at) | reverse | .[] | select(.prerelease == false) | .tag_name" 2> /dev/null | head -1 | xargs)
+  readonly prerelease_tag=$(echo "${content}" | jq ".|=sort_by(.created_at) | reverse | .[] | select(.prerelease == true) | .tag_name" 2> /dev/null | head -1 | xargs)
+
+  version="${latest_tag}"
+  compare_versions "${latest_tag}" "${prerelease_tag}"
+  [[ "$?" -eq 2 ]] && [[ "${GITHUB_PRERELEASE}" == 'true' ]] && version="${prerelease_tag}" # if latest_tag < prerelease_tag
+
+  [[ -z "${version}" ]] && return 1
+
+  prerelease='false'
+  [[ "${version}" == "${prerelease_tag}" ]] && prerelease='true'
+
+  readonly download_urls=($(echo "${content}" | jq ".[] | select(.tag_name == \"${version}\") | .assets" | jq '.[] | .browser_download_url' 2> /dev/null | xargs))
+  version=$(grep -q 'v[0-9]' <<< "${version}" && echo "${version/v}" || echo "${version}") # v3.0 => 3.0
+  result+=("${prerelease}")
+  result+=("${version}")
   result+=("${download_urls[@]}")
 
   echo "${result[@]}"
@@ -505,7 +526,7 @@ get_appcast_version() {
     ;;
     'GitHub Atom')
       readonly values=($(parse_appcast_github_latest "${url}"))
-      [[ ! -z "${values[0]}" ]] && echo "${values[0]}" && return 0
+      [[ ! -z "${values[1]}" ]] && echo "${values[1]}" && return 0
     ;;
   esac
 
@@ -537,7 +558,7 @@ get_appcast_downloads() {
     'GitHub Atom')
       readonly values=($(parse_appcast_github_latest "${url}"))
       if [[ "${#values[@]}" -gt 1 ]]; then
-        for ((i = 1; i < ${#values[@]}; i++)); do
+        for ((i = 2; i < ${#values[@]}; i++)); do
           output+=(${values[i]})
         done
         echo "${output[@]}" && return 0
@@ -619,15 +640,14 @@ review_github() {
       *) add_to_review '' "$(tput setaf 3)no results available$(tput sgr0)";;
     esac
   else
-    if [[ "${GITHUB_PRERELEASE}" == 'true' ]]; then label="$(tput setaf 3)Pre-release$(tput sgr0)"
-    else label="$(tput setaf 2)Latest$(tput sgr0)"; fi
+    [[ "${values[0]}" == 'true' ]] && label="$(tput setaf 3)Pre-release$(tput sgr0)" || label="$(tput setaf 2)Latest$(tput sgr0)"
+    [[ ! -z "${values[1]}" ]] && add_to_review 'Latest version' "$(printf "%s (%s)" "${values[1]}" "${label}")"
 
-    [[ ! -z "${values[0]}" ]] && add_to_review 'Latest version' "$(printf "%s (%s)" "${values[0]}" "${label}")"
-    if [[ "${#values[@]}" -gt 1 ]]; then
+    if [[ "${#values[@]}" -gt 2 ]]; then
       stat_name_downloads='Latest download URL'
-      [[ "${#values[@]}" -gt 2 ]] && stat_name_downloads+='s'
-      add_to_review "${stat_name_downloads}" "${values[1]}"
-      for ((i = 2; i < ${#values[@]}; i++)); do
+      [[ "${#values[@]}" -gt 3 ]] && stat_name_downloads+='s'
+      add_to_review "${stat_name_downloads}" "${values[2]}"
+      for ((i = 3; i < ${#values[@]}; i++)); do
         add_to_review '' "${values[i]}"
       done
     fi
