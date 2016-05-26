@@ -6,6 +6,8 @@ Collection of small scripts to help maintain the [Homebrew-Cask](https://github.
 
 ## Installation
 
+### Mac OS X
+
 The easiest way to install these scripts is using the [homebrew-cask-scripts](https://github.com/victorpopkov/homebrew-cask-scripts) repository. You’ll need [Homebrew](http://brew.sh/) installed and then [Tap](https://github.com/Homebrew/homebrew/wiki/brew-tap) that repository by running:
 
 ```bash
@@ -16,6 +18,14 @@ Afterwards, install them as any other *formula*. For example, to install `cask-a
 
 ```bash
 brew install cask-appcast
+```
+
+### Linux
+
+```bash
+wget -q https://raw.githubusercontent.com/victorpopkov/cask-scripts/master/<script_name>
+chmod +x <script_name>
+mv <script_name> /usr/local/bin/
 ```
 
 ## cask-appcast
@@ -75,7 +85,7 @@ Cask appcast:     https://github.com/atom/atom/releases.atom (200) | valid (86e6
 ...
 ```
 
-> The `-a/--all` option shows casks even if those are updated. The `-c/--checkpoints` validate appcast checkpoints.
+> The `-a/--all` option shows casks even if those are updated. The `-c/--checkpoints` validates appcast checkpoints.
 
 ```bash
 $ cd ~/path/to/homebrew-cask/Casks
