@@ -2,12 +2,13 @@
 #
 # Get the latest available version from appcast URL.
 #
-# Version:         0.2.0
+# Version:         0.2.1
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   21.05.2016
 
 # Constants and globals
+readonly VERSION='0.2.1'
 readonly PROGRAM=$(basename "$0")
 readonly TEMP_DIR=$(mktemp -d)
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
@@ -20,7 +21,7 @@ GITHUB_PRERELEASE='false'
 DETAILED='true'
 CHECKPOINT='false'
 PROVIDER='false'
-VERSION='false'
+APP_VERSION='false'
 DOWNLOADS='false'
 
 # check if 'xmlstarlet' and 'jq' are installed and configured
@@ -69,8 +70,9 @@ usage() {
       -s <mode>, --stability <mode>        Try to get 'stable' or 'unstable' latest version if possible (default: 'stable').
       -c, --checkpoint                     Output checkpoint.
       -p, --provider                       Output provider (Sparkle or GitHub Atom).
-      -v, --version                        Output version and build (if available).
+      -V, --app-version                    Output app version and build (if available).
       -d, --downloads                      Output downloads.
+      -v, --version                        Show current script version.
       -h, --help                           Show this help." | sed -E 's/^ {4}//'
 }
 
@@ -117,15 +119,19 @@ while [[ "$1" ]]; do
       PROVIDER='true'
       DETAILED='false'
       ;;
-    -v | --version)
+    -V | --app-version)
       ((OPTIONS_COUNTER++))
-      VERSION='true'
+      APP_VERSION='true'
       DETAILED='false'
       ;;
     -d | --downloads)
       ((OPTIONS_COUNTER++))
       DOWNLOADS='true'
       DETAILED='false'
+      ;;
+    -v | --version)
+      echo "${VERSION}"
+      exit 0
       ;;
     -h | --help)
       usage
@@ -147,6 +153,9 @@ while [[ "$1" ]]; do
   esac
   shift
 done
+
+# exit if no URLs provided
+[[ "${#URLS[@]}" -eq 0 ]] && error 'The appcast URL not provided'
 
 # Divider to separate output in terminal.
 #
@@ -658,7 +667,7 @@ review_github() {
 #   URLS
 #   CHECKPOINT
 #   PROVIDER
-#   VERSION
+#   APP_VERSION
 #   DOWNLOADS
 #   OPTIONS_COUNTER
 #   DETAILED
@@ -686,7 +695,7 @@ main() {
     [[ "${OPTIONS_COUNTER}" -gt 1 ]] && printf ';'
   fi
 
-  if [[ "${VERSION}" == 'true' ]]; then
+  if [[ "${APP_VERSION}" == 'true' ]]; then
     result=$(get_appcast_version "${url}" "${content}")
     [[ "$?" -eq 0 ]] && printf "%s" "${result}" || printf '-'
     [[ "${OPTIONS_COUNTER}" -gt 1 ]] && printf ';'
