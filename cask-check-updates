@@ -2,13 +2,13 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.3.0
+# Version:         0.3.1
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   21.05.2016
+# Last modified:   26.05.2016
 
 # Constants and globals
-readonly VERSION='0.3.0'
+readonly VERSION='0.3.1'
 readonly PROGRAM=$(basename "$0")
 readonly TEMP_DIR=$(mktemp -d)
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
@@ -59,6 +59,7 @@ readonly CASKS_VERSION_DELIMETER_BUILD=(
   'splice'
   'stand'
   'stretchlink'
+  'the-hit-list'
   'tripmode'
   'tvshows'
   'versions'
@@ -730,6 +731,7 @@ suggest_cask_version() {
     'disablemonitor')       result="${latest_version//G}" ;;
     'favs')                 result="${latest_version//.}" ;;
     'festify')              result="${latest_version%%beta}" ;;
+    'flixster-video')       result="${latest_version//-v*}" ;;
     'framer')               result="${latest_version}" ;;
     'goldencheetah')        result="${latest_version//V}" ;;
     'iterm2-nightly')       result="${latest_version%%-nightly}" ;;
@@ -745,6 +747,7 @@ suggest_cask_version() {
     'pdfpenpro')            result="${latest_build}${delimeter}${devmate_part}" ;;
     'pomotodo')             result="${latest_version}${delimeter}${hackplan_part}" ;;
     'propresenter')         result="${latest_version}${delimeter}b${latest_build}" ;;
+    'qblocker')             result="${latest_build}${delimeter}${devmate_part}" ;;
     'qlcolorcode')          result="${latest_version//release-}" ;;
     'qldds')                result=$(sed -e "s/.\{1\}/&./" <<< "${latest_version//rel-}") ;;
     'qlvideo')              result=$(sed -e "s/.\{1\}/&./" <<< "${latest_version//rel-}") ;;
@@ -799,7 +802,7 @@ show_review() {
 }
 
 # Review cask versions.
-# 
+#
 # Globals:
 #   SHOW_ALL
 #
