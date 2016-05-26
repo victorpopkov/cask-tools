@@ -2,13 +2,13 @@
 #
 # Get the latest available version from appcast URL.
 #
-# Version:         0.2.1
+# Version:         0.2.2
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   21.05.2016
+# Last modified:   26.05.2016
 
 # Constants and globals
-readonly VERSION='0.2.1'
+readonly VERSION='0.2.2'
 readonly PROGRAM=$(basename "$0")
 readonly TEMP_DIR=$(mktemp -d)
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
@@ -48,17 +48,36 @@ if [[ ! $(which 'xmlstarlet') ]] || [[ ! $(which 'jq') ]]; then
   exit 1
 fi
 
+# Display syntax error.
+#
+# Globals:
+#   PROGRAM
+#
+# Arguments:
+#   $1 - Error description
+#
+# Returns exit status 1.
 syntax_error() {
   echo "${PROGRAM}: $1" >&2
   echo "Try \`${PROGRAM} --help\` for more information." >&2
   exit 1
 }
 
+# Display error.
+#
+# Arguments:
+#   $1 - Error description
+#
+# Returns exit status 1.
 error() {
   echo -e "$(tput setaf 1)$1$(tput sgr0)"
   exit 1
 }
 
+# Display help.
+#
+# Globals:
+#   PROGRAM
 usage() {
   echo "usage: ${PROGRAM} [options] [<appcast_urls>...]
 
@@ -161,8 +180,6 @@ done
 #
 # Globals:
 #   COLUMNS
-#
-# Returns the full-width terminal divider.
 divide() {
   if [[ $(which hr) ]]; then hr '-'
   else printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -; fi
@@ -265,9 +282,7 @@ generate_appcast_checkpoint() {
 # Arguments:
 #   $1 - URL
 #
-# Returns array of values:
-#   <content>
-#   <http_code>
+# Returns content and status code (last line).
 get_url_content() {
   curl --silent --compressed --location "$1" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}' 2>/dev/null
 }
@@ -542,7 +557,13 @@ get_appcast_version() {
   return 1
 }
 
-# define function to get appcast downloads
+# Extract download URLs from appcast URL or content.
+#
+# Arguments:
+#   $1 - URL     (required)
+#   $2 - Content (not required)
+#
+# Returns array of dowload URLs.
 get_appcast_downloads() {
   local url content out code values download_url
   local -a output
@@ -596,8 +617,6 @@ add_to_review() {
 #
 # Globals:
 #   REVIEW
-#
-# Returns review.
 show_review() {
   [[ "${#REVIEW[@]}" -gt 0 ]] && printf '%s\n' "${REVIEW[@]}"
 }

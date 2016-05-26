@@ -2,13 +2,13 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.3.2
+# Version:         0.3.3
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   26.05.2016
 
 # Constants and globals
-readonly VERSION='0.3.2'
+readonly VERSION='0.3.3'
 readonly PROGRAM=$(basename "$0")
 readonly TEMP_DIR=$(mktemp -d)
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
@@ -65,44 +65,6 @@ readonly CASKS_VERSION_DELIMETER_BUILD=(
   'versions'
 )
 
-syntax_error() {
-  echo "${PROGRAM}: $1" >&2
-  echo "Try \`${PROGRAM} --help\` for more information." >&2
-  exit 1
-}
-
-error() {
-  echo "$(tput setaf 1)$1$(tput sgr0)" >&2
-  exit 1
-}
-
-usage() {
-  echo "usage: ${PROGRAM} [options]
-
-    Find outdated casks and their latest versions.
-
-    options:
-      -u <user>, --github-user <user>      GitHub username (default: 'git config --get github.user').
-      -t <token>, --github-token <token>   GitHub personal token (default: 'git config --get github.token').
-      -o <filepath>, --output <filepath>   Output the results into file using CSV format.
-      -s <mode>, --stability <mode>        Try to get 'stable' or 'unstable' latest version if possible (default: 'stable').
-      -a, --all                            Show and output also all updated casks.
-      -c, --checkpoints                    Include checkpoints validations.
-      -v, --version                        Show current script version.
-      -h, --help                           Show this help." | sed -E 's/^ {4}//'
-}
-
-# Divider to separate output in terminal.
-#
-# Globals:
-#   COLUMNS
-#
-# Returns the full-width terminal divider.
-divide() {
-  if [[ $(which hr) ]]; then hr '-'
-  else printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -; fi
-}
-
 # check if 'xmlstarlet' and 'jq' are installed and configured
 if [[ ! $(which 'xmlstarlet') ]] || [[ ! $(which 'jq') ]]; then
   case "${OSTYPE}" in
@@ -127,10 +89,60 @@ if [[ ! $(which 'xmlstarlet') ]] || [[ ! $(which 'jq') ]]; then
   exit 1
 fi
 
-# check if in correct directory
-if ! pwd | grep -q 'homebrew-.*/Casks'; then
-  error "You need to be inside a '/homebrew-*/Casks' directory"
-fi
+# Display syntax error.
+#
+# Globals:
+#   PROGRAM
+#
+# Arguments:
+#   $1 - Error description
+#
+# Returns exit status 1.
+syntax_error() {
+  echo "${PROGRAM}: $1" >&2
+  echo "Try \`${PROGRAM} --help\` for more information." >&2
+  exit 1
+}
+
+# Display error.
+#
+# Arguments:
+#   $1 - Error description
+#
+# Returns exit status 1.
+error() {
+  echo "$(tput setaf 1)$1$(tput sgr0)" >&2
+  exit 1
+}
+
+# Display help.
+#
+# Globals:
+#   PROGRAM
+usage() {
+  echo "usage: ${PROGRAM} [options]
+
+    Find outdated casks and their latest versions.
+
+    options:
+      -u <user>, --github-user <user>      GitHub username (default: 'git config --get github.user').
+      -t <token>, --github-token <token>   GitHub personal token (default: 'git config --get github.token').
+      -o <filepath>, --output <filepath>   Output the results into file using CSV format.
+      -s <mode>, --stability <mode>        Try to get 'stable' or 'unstable' latest version if possible (default: 'stable').
+      -a, --all                            Show and output also all updated casks.
+      -c, --checkpoints                    Include checkpoints validations.
+      -v, --version                        Show current script version.
+      -h, --help                           Show this help." | sed -E 's/^ {4}//'
+}
+
+# Divider to separate output in terminal.
+#
+# Globals:
+#   COLUMNS
+divide() {
+  if [[ $(which hr) ]]; then hr '-'
+  else printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -; fi
+}
 
 # available flags
 while [[ "$1" ]]; do
@@ -197,6 +209,11 @@ while [[ "$1" ]]; do
   esac
   shift
 done
+
+# check if in correct directory
+if ! pwd | grep -q 'homebrew-.*/Casks'; then
+  error "You need to be inside a '/homebrew-*/Casks' directory"
+fi
 
 # Get value/values of a cask stanza.
 #
@@ -346,9 +363,7 @@ generate_appcast_checkpoint() {
 # Arguments:
 #   $1 - URL
 #
-# Returns array of values:
-#   <content>
-#   <http_code>
+# Returns content and status code (last line).
 get_url_content() {
   curl --silent --compressed --location "$1" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}' 2>/dev/null
 }
@@ -799,8 +814,6 @@ add_to_review() {
 #
 # Globals:
 #   REVIEW
-#
-# Returns review.
 show_review() {
   [[ "${#REVIEW[@]}" -gt 0 ]] && printf '%s\n' "${REVIEW[@]}"
 }
