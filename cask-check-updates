@@ -2,13 +2,13 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.3.4
+# Version:         0.4.0
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   28.05.2016
 
 # Constants and globals
-readonly VERSION='0.3.4'
+readonly VERSION='0.4.0'
 readonly PROGRAM=$(basename "$0")
 readonly TEMP_DIR=$(mktemp -d)
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
@@ -24,7 +24,7 @@ SHOW_ALL='false'
 SHOW_CHECKPOINTS='false'
 
 # Casks which versions should have format: "<version><delimeter><build>"
-readonly CASKS_VERSION_DELIMETER_BUILD=(
+declare -a -r CASKS_VERSION_DELIMETER_BUILD=(
   'airmail-beta'
   'aliwangwang'
   'alternote'
@@ -65,6 +65,11 @@ readonly CASKS_VERSION_DELIMETER_BUILD=(
   'tripmode'
   'tvshows'
   'versions'
+)
+
+# Casks which appcasts contain multiple apps/tags
+declare -a -r CASKS_MATCHING_TAG=(
+  'adobe-bloodhound' 'Bloodhound'
 )
 
 # check if 'xmlstarlet' and 'jq' are installed and configured
@@ -153,36 +158,26 @@ while [[ "$1" ]]; do
       SHOW_ALL='true'
       ;;
     -c | --checkpoints)
-      SHOW_CHECKPOINTS='true'
-      readonly SHOW_CHECKPOINTS
+      readonly SHOW_CHECKPOINTS='true'
       ;;
     -u | --github-user)
-      GITHUB_USER="$2"
-      readonly GITHUB_USER
+      readonly GITHUB_USER="$2"
       shift
       ;;
     -t | --github-token)
-      GITHUB_TOKEN="$2"
-      readonly GITHUB_TOKEN
+      readonly GITHUB_TOKEN="$2"
       shift
       ;;
     -o | --output)
-      OUTPUT='true'
-      OUTPUT_PATH="$2"
-      readonly OUTPUT OUTPUT_PATH
+      readonly OUTPUT='true'
+      readonly OUTPUT_PATH="$2"
       shift
       ;;
     -s | --stability)
       case "$2" in
-        stable)
-          GITHUB_PRERELEASE='false'
-          ;;
-        unstable)
-          GITHUB_PRERELEASE='true'
-          ;;
-        *)
-          error "The stability should have one of the values: 'stable' or 'unstable'"
-          ;;
+        stable)   GITHUB_PRERELEASE='false' ;;
+        unstable) GITHUB_PRERELEASE='true' ;;
+        *) error "The '--stability' should have one of the values: 'stable' or 'unstable'" ;;
       esac
       shift
       ;;
@@ -204,7 +199,6 @@ while [[ "$1" ]]; do
       done
       [[ "$#" != "${#CASKS[@]}" ]] && [[ "${#CASKS[@]}" -eq 0 ]] && exit 1
 
-      divide
       readonly SHOW_ALL='true'
       break
       ;;
@@ -548,18 +542,20 @@ EOF
 # Globals:
 #   GITHUB_USER
 #   GITHUB_TOKEN
+#   BROWSER_HEADERS
 #   GITHUB_PRERELEASE
 #
 # Arguments:
 #   $1 - Cask name
 #   $2 - Content to parse
+#   $3 - Match tag
 #
 # Returns array of values:
 #   <prerelease>      (true|false)
 #   <version>
 #   <download_urls>   (array)
 parse_appcast_github_latest() {
-  local cask user repo auth url out code content latest_tag prerelease_tag version prerelease download_urls
+  local auth cask user repo match url out code content latest_tag prerelease_tag version prerelease download_urls
   local -a result
 
   [[ ! -z "${GITHUB_USER}" ]] && [[ ! -z "${GITHUB_TOKEN}" ]] && auth=(--user "${GITHUB_USER}:${GITHUB_TOKEN}")
@@ -569,6 +565,7 @@ parse_appcast_github_latest() {
   readonly parts
   readonly user="${parts[3]}"
   readonly repo="${parts[4]}"
+  readonly match="$3"
 
   readonly url="https://api.github.com/repos/${user}/${repo}/releases"
   readonly out=$(curl --silent --compressed --location "${url}" "${auth[@]}" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}' 2>/dev/null)
@@ -577,8 +574,17 @@ parse_appcast_github_latest() {
 
   [[ "${code}" -eq 403 ]] && return 2
 
-  readonly latest_tag=$(echo "${content}" | jq ".|=sort_by(.created_at) | reverse | .[] | select(.prerelease == false) | .tag_name" 2> /dev/null | head -1 | xargs)
-  readonly prerelease_tag=$(echo "${content}" | jq ".|=sort_by(.created_at) | reverse | .[] | select(.prerelease == true) | .tag_name" 2> /dev/null | head -1 | xargs)
+  if [[ ! -z "${match}" ]]; then
+    latest_tag=$(echo "${content}" | jq ".|=sort_by(.created_at) | reverse | .[] | select(.prerelease == false) | .tag_name" 2> /dev/null | grep -i "${match}" | head -1 | xargs)
+    prerelease_tag=$(echo "${content}" | jq ".|=sort_by(.created_at) | reverse | .[] | select(.prerelease == true) | .tag_name" 2> /dev/null | grep -i "${match}" | head -1 | xargs)
+  fi
+
+  if [[ -z "${latest_tag}" ]] && [[ -z "${prerelease_tag}" ]]; then
+    latest_tag=$(echo "${content}" | jq ".|=sort_by(.created_at) | reverse | .[] | select(.prerelease == false) | .tag_name" 2> /dev/null | head -1 | xargs)
+    prerelease_tag=$(echo "${content}" | jq ".|=sort_by(.created_at) | reverse | .[] | select(.prerelease == true) | .tag_name" 2> /dev/null | head -1 | xargs)
+  fi
+
+  readonly latest_tag prerelease_tag
 
   version="${latest_tag}"
   compare_versions "${latest_tag}" "${prerelease_tag}"
@@ -613,6 +619,9 @@ get_appcast_provider() {
 
 # Extract version number with download URL/URLs from appcast content.
 #
+# Globals:
+#   CASKS_MATCHING_TAG
+#
 # Arguments:
 #   $1 - Cask name (required)
 #   $2 - URL       (required)
@@ -620,7 +629,7 @@ get_appcast_provider() {
 #
 # Returns version.
 get_appcast_version_with_downloads() {
-  local cask url content out code values version download_url
+  local cask url content out code values version download_url tag
 
   readonly cask="$1"
   readonly url="$2"
@@ -646,7 +655,17 @@ get_appcast_version_with_downloads() {
       echo "${version} ${download_url}" && return 0
     ;;
     'GitHub Atom')
-      readonly values=($(parse_appcast_github_latest "${cask}" "${url}"))
+      tag=''
+      for i in "${!CASKS_MATCHING_TAG[@]}"; do
+        if [[ $((i%2)) -ne 0 ]]; then
+          key="${CASKS_MATCHING_TAG[$i-1]}"
+          value="${CASKS_MATCHING_TAG[$i]}"
+
+          [[ "${key}" == "${cask}" ]] && tag="${value}"
+        fi
+      done
+
+      readonly values=($(parse_appcast_github_latest "${cask}" "${url}" "${tag}"))
       [[ ! -z "${values[1]}" ]] && echo "${values[1]}" && return 0
     ;;
   esac
@@ -692,6 +711,9 @@ replace_version_in_url() {
 }
 
 # Suggest version to use in casks download URL.
+#
+# Globals:
+#   CASKS_VERSION_DELIMETER_BUILD
 #
 # Arguments:
 #   $1 - Cask name
