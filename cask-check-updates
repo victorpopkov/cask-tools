@@ -2,13 +2,13 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.3.3
+# Version:         0.3.4
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   26.05.2016
+# Last modified:   28.05.2016
 
 # Constants and globals
-readonly VERSION='0.3.3'
+readonly VERSION='0.3.4'
 readonly PROGRAM=$(basename "$0")
 readonly TEMP_DIR=$(mktemp -d)
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
@@ -51,9 +51,11 @@ readonly CASKS_VERSION_DELIMETER_BUILD=(
   'lytro-desktop'
   'mplayerx'
   'netnewswire'
+  'otomatic'
   'papers'
   'phoneexpander'
   'pixlr'
+  'simple-hub'
   'sketch-beta'
   'soulver'
   'splice'
@@ -710,6 +712,7 @@ suggest_cask_version() {
   [[ "${latest_version}" == "${latest_build}" ]] && latest_build=''
 
   delimeter=$(sed -e 's/[A-Za-z0-9.]//g' <<< "${version}") # try guessing the delimeter from old version
+  [[ -z "${delimeter}" ]] && delimeter='.'
   [[ "${#delimeter}" -ne 1 ]] && delimeter=','
 
   result="${latest_version}"
