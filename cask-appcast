@@ -2,13 +2,13 @@
 #
 # Get the latest available version from appcast URL.
 #
-# Version:         0.3.0
+# Version:         0.3.1
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   28.05.2016
+# Last modified:   29.05.2016
 
 # Constants and globals
-readonly VERSION='0.3.0'
+readonly VERSION='0.3.1'
 readonly PROGRAM=$(basename "$0")
 readonly TEMP_DIR=$(mktemp -d)
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
@@ -649,14 +649,20 @@ review_sparkle() {
   if [[ "$?" -gt 0 ]]; then
     add_to_review '' "$(tput setaf 3)no results available$(tput sgr0)"
   else
-    readonly version="${values[0]}"
-    readonly build="${values[1]}"
+    version="${values[0]}"
+    build="${values[1]}"
     download_url="${values[1]}"
     [[ "${#values[@]}" -eq 3 ]] && download_url="${values[2]}"
-    readonly download_url
 
+    # version
+    [[ -z "${version}" ]] && version='-'
     add_to_review 'Latest version' "${version}"
+
+    # build
     [[ "${#values[@]}" -eq 3 ]] && [[ "${version}" != "${build}" ]] && add_to_review 'Latest build' "${build}"
+
+    # download url
+    [[ -z "${download_url}" ]] && download_url='-'
     add_to_review 'Latest download URL' "${download_url}"
   fi
 }
@@ -669,7 +675,7 @@ review_sparkle() {
 # Arguments:
 #   $1 - URL
 review_github() {
-  local url stat_name_downloads values
+  local url stat_name_downloads values version
   local -i status
 
   add_to_review 'Provider' 'GitHub Atom'
@@ -685,15 +691,19 @@ review_github() {
     esac
   else
     [[ "${values[0]}" == 'true' ]] && label="$(tput setaf 3)Pre-release$(tput sgr0)" || label="$(tput setaf 2)Latest$(tput sgr0)"
-    [[ ! -z "${values[1]}" ]] && add_to_review 'Latest version' "$(printf "%s (%s)" "${values[1]}" "${label}")"
+    [[ ! -z "${values[1]}" ]] && version="$(printf "%s (%s)" "${values[1]}" "${label}")" || version='-'
 
+    add_to_review 'Latest version' "${version}"
+
+    stat_name_downloads='Latest download URL'
     if [[ "${#values[@]}" -gt 2 ]]; then
-      stat_name_downloads='Latest download URL'
       [[ "${#values[@]}" -gt 3 ]] && stat_name_downloads+='s'
       add_to_review "${stat_name_downloads}" "${values[2]}"
       for ((i = 3; i < ${#values[@]}; i++)); do
         add_to_review '' "${values[i]}"
       done
+    else
+      add_to_review "${stat_name_downloads}" '-'
     fi
   fi
 }
@@ -742,24 +752,31 @@ main() {
     [[ "${OPTIONS_COUNTER}" -gt 1 ]] && printf ';'
   fi
 
-  [[ "${code}" == 200 ]] && status="$(tput setaf 2)${code}$(tput sgr0)" || status="$(tput setaf 1)${code}$(tput sgr0)"
+  [[ "${code}" -eq 200 ]] && status="$(tput setaf 2)${code}$(tput sgr0)" || status="$(tput setaf 1)${code}$(tput sgr0)"
 
   if [[ "${DETAILED}" == 'true' ]]; then
     add_to_review 'Appcast' "$(tput setaf 7)${url}$(tput sgr0) (${status})"
-    add_to_review 'Checkpoint' "$(generate_appcast_checkpoint "${content}")"
 
-    case "$(get_appcast_provider "${content}")" in
-      'Sparkle')     review_sparkle "${content}";;
-      'GitHub Atom') review_github "${url}";;
-      *) add_to_review 'Provider' "$(tput setaf 1)unknown$(tput sgr0)";;
-    esac
+    if [[ "${code}" -ne 200 ]]; then
+      add_to_review 'Status' "$(tput setaf 1)HTTP Error ${code}$(tput sgr0)"
+    else
+      add_to_review 'Checkpoint' "$(generate_appcast_checkpoint "${content}")"
+
+      case "$(get_appcast_provider "${content}")" in
+        'Sparkle')     review_sparkle "${content}";;
+        'GitHub Atom') review_github "${url}";;
+        *) add_to_review 'Provider' "$(tput setaf 1)unknown$(tput sgr0)";;
+      esac
+    fi
 
     show_review
-    [[ "${#URLS[@]}" -gt 1 ]] && divide
+    [[ "${#URLS[@]}" -gt 1 ]] && [[ "${URLS[${#URLS[@]}-1]}" != "${url}" ]] && divide
     REVIEW=()
   else
     printf "\n"
   fi
+
+  [[ "${code}" -eq 200 ]] && return 0 || return 1
 }
 
 # process
