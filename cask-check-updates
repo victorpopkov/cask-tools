@@ -2,13 +2,13 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.4.0
+# Version:         0.4.1
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   28.05.2016
+# Last modified:   29.05.2016
 
 # Constants and globals
-readonly VERSION='0.4.0'
+readonly VERSION='0.4.1'
 readonly PROGRAM=$(basename "$0")
 readonly TEMP_DIR=$(mktemp -d)
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
@@ -422,10 +422,17 @@ parse_appcast_sparkle_latest() {
   local -a lines first last values result
 
   readonly cask="$1"
-  content=$(echo -e "$2" | sed -e $'s/></>\\\n</g') # convert single line XML to multiline
-  content=$(echo -e "${content}" | sed -e 's/ xmlns:sparkle=".*"/ xmlns:sparkle="http:\/\/www.andymatuschak.org\/xml-namespaces\/sparkle"/g') # make sparkle namespace more consistent and ignore others
-  content=$(echo -e "${content}" | sed -e 's/<!--</</g' | sed -e 's/\/>-->/\/>/g') # uncomment tags
-  readonly content
+
+  content=$(sed -e $'s/></>\\\n</g' <<< "$2") # convert single line XML to multiline
+
+  # make sparkle namespace more consistent and ignore others
+  if [[ "${content}" =~ '<rss'.*'xmlns:sparkle' ]]; then
+    content=$(sed -e 's/ xmlns:sparkle=".*"/ xmlns:sparkle="http:\/\/www.andymatuschak.org\/xml-namespaces\/sparkle"/g' <<< "${content}")
+  else
+    content=$(sed -e 's/<rss/<rss xmlns:sparkle="http:\/\/www.andymatuschak.org\/xml-namespaces\/sparkle"/g' <<< "${content}")
+  fi
+
+  readonly content=$(sed -e 's/<!--</</g' -e 's/\/>-->/\/>/g' <<< "${content}") # uncomment tags
 
   xls=$(cat <<EOF
 <?xml version="1.0"?>
@@ -511,7 +518,7 @@ EOF
   echo "${xls}" > "${TEMP_DIR}/${PROGRAM}_sparkle.xsl"
 
   transform=$(xmlstarlet tr "${TEMP_DIR}/${PROGRAM}_sparkle.xsl" <<< "${content}" 2> /dev/null)
-  transform=$(echo "${transform}" | sed -e 's/^[^"]*//g' | sed -e 's/[^;]*$//g')
+  transform=$(sed -e 's/^[^"]*//g' -e 's/[^;]*$//g' <<< "${transform}")
 
   IFS=$'\n' read -rd '' -a lines <<< "${transform}"
   if [[ "${#lines[@]}" -gt 0 ]]; then
@@ -612,9 +619,23 @@ parse_appcast_github_latest() {
 #
 # Returns provider.
 get_appcast_provider() {
-  [[ "$1" =~ '<rss'.*'xmlns:sparkle' ]] && echo 'Sparkle' && return 0
-  [[ "$1" =~ '<feed'.*'<id>tag:github.com' ]] && echo 'GitHub Atom' && return 0
-  return 1
+  local content result
+
+  readonly content="$1"
+
+  # GitHub
+  [[ "${content}" =~ '<feed'.*'<id>tag:github.com' ]] && result='GitHub Atom'
+
+  # RSS
+  if [[ "${content}" =~ '<rss'.* ]]; then
+    # Sparkle
+    [[ "${content}" =~ '<rss'.*'xmlns:sparkle' ]] && result='Sparkle'
+    [[ "${content}" =~ '<item'.*'<enclosure' ]] && result='Sparkle'
+  fi
+
+  echo "${result}"
+
+  [[ -z "${result}" ]] && return 1 || return 0
 }
 
 # Extract version number with download URL/URLs from appcast content.
