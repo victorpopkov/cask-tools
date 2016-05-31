@@ -2,15 +2,14 @@
 #
 # Get the latest available version from appcast URL.
 #
-# Version:         0.3.4
+# Version:         0.3.5
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   31.05.2016
 
 # Constants and globals
-readonly VERSION='0.3.4'
+readonly VERSION='0.3.5'
 readonly PROGRAM=$(basename "$0")
-readonly TEMP_DIR=$(mktemp -d)
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
 declare -a URLS
 declare -a REVIEW
@@ -258,6 +257,46 @@ get_url_content() {
   curl --silent --compressed --location "$1" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}' 2>/dev/null
 }
 
+# Format XML content using xmlstarlet and uncomment tags.
+#
+# Arguments:
+#   $1 - Content
+#
+# Returns formatted XML and return status.
+format_xml() {
+  local content
+
+  content="$1"
+  [[ -z "${content}" ]] && return 1
+
+  content=$(xmlstarlet fo -s 4 -o -D -N <<< "${content}" 2> /dev/null)
+  content=$(awk '{ sub(/<!--([[:space:]]*)?</, "<"); sub(/>([[:space:]]*)?-->/, ">"); print }' <<< "${content}") # uncomment tags
+
+  echo "${content}"
+  return 0
+}
+
+# Make Sparkle namespaces more consistent.
+#
+# Arguments:
+#   $1 - Content
+#
+# Returns XML with fixed namespaces and status.
+fix_sparkle_xmlns() {
+  local content
+
+  readonly content="$1"
+  [[ -z "${content}" ]] && return 1
+
+  if [[ "${content}" =~ '<rss'.*'xmlns:sparkle' ]]; then
+    sed -e 's/ xmlns:sparkle=".*"/ xmlns:sparkle="http:\/\/www.andymatuschak.org\/xml-namespaces\/sparkle"/g' <<< "${content}"
+  else
+    sed -e 's/<rss/<rss xmlns:sparkle="http:\/\/www.andymatuschak.org\/xml-namespaces\/sparkle"/g' <<< "${content}"
+  fi
+
+  return 0
+}
+
 # Transform Sparkle line to array of values.
 #
 # Arguments:
@@ -289,141 +328,50 @@ get_sparkle_version_build_url() {
   echo "${result[@]}"
 }
 
-# Parse content of Sparkle appcast to extract all values.
-#
-# Globals:
-#   PROGRAM
+# Get latest version values from content of Sparkle appcast.
 #
 # Arguments:
-#   $1 - Content to parse
+#   $1 - Content
 #
-# Returns array of values:
+# Returns status and array of values of latest version:
 #   <version>
 #   <build>
 #   <url>
-parse_appcast_sparkle_latest() {
-  local content xls transform
+get_sparkle_latest() {
+  local IFS content transform
   local -a lines first last values result
 
-  content=$(sed -e $'s/></>\\\n</g' <<< "${1}") # convert single line XML to multiline
+  content=$(fix_sparkle_xmlns "$1")
+  content=$(format_xml "${content}")
+  readonly content
 
-  # make sparkle namespace more consistent and ignore others
-  if [[ "${content}" =~ '<rss'.*'xmlns:sparkle' ]]; then
-    content=$(sed -e 's/ xmlns:sparkle=".*"/ xmlns:sparkle="http:\/\/www.andymatuschak.org\/xml-namespaces\/sparkle"/g' <<< "${content}")
-  else
-    content=$(sed -e 's/<rss/<rss xmlns:sparkle="http:\/\/www.andymatuschak.org\/xml-namespaces\/sparkle"/g' <<< "${content}")
-  fi
-
-  readonly content=$(sed -e 's/<!--</</g' -e 's/\/>-->/\/>/g' <<< "${content}") # uncomment tags
-
-  xls=$(cat <<EOF
-<?xml version="1.0"?>
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
-    <xsl:output method="text" omit-xml-declaration="yes" indent="no" />
-    <xsl:strip-space elements="*" />
-    <xsl:template match="//channel">
-        <xsl:for-each select="item">
-            <xsl:choose>
-                <xsl:when test="enclosure/@sparkle:shortVersionString or sparkle:shortVersionString">
-                    <xsl:choose>
-                        <xsl:when test="enclosure/@sparkle:shortVersionString">
-                            <xsl:text>"</xsl:text>
-                            <xsl:value-of select="enclosure/@sparkle:shortVersionString" />
-                            <xsl:text>";</xsl:text>
-                        </xsl:when>
-                        <xsl:when test="sparkle:shortVersionString">
-                            <xsl:text>"</xsl:text>
-                            <xsl:value-of select="sparkle:shortVersionString" />
-                            <xsl:text>";</xsl:text>
-                        </xsl:when>
-                    </xsl:choose>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:text>"";</xsl:text>
-                </xsl:otherwise>
-            </xsl:choose>
-            <xsl:choose>
-                <xsl:when test="enclosure/@sparkle:version or sparkle:version">
-                    <xsl:choose>
-                        <xsl:when test="enclosure/@sparkle:version">
-                            <xsl:text>"</xsl:text>
-                            <xsl:value-of select="enclosure/@sparkle:version" />
-                            <xsl:text>";</xsl:text>
-                        </xsl:when>
-                        <xsl:when test="sparkle:version">
-                            <xsl:text>"</xsl:text>
-                            <xsl:value-of select="sparkle:version" />
-                            <xsl:text>";</xsl:text>
-                        </xsl:when>
-                    </xsl:choose>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:text>"";</xsl:text>
-                </xsl:otherwise>
-            </xsl:choose>
-            <xsl:choose>
-                <xsl:when test="enclosure/@url or link">
-                    <xsl:choose>
-                        <xsl:when test="enclosure/@url">
-                            <xsl:text>"</xsl:text>
-                            <xsl:value-of select="enclosure/@url" />
-                            <xsl:text>";</xsl:text>
-                        </xsl:when>
-                        <xsl:when test="link">
-                            <xsl:text>"</xsl:text>
-                            <xsl:value-of select="link" />
-                            <xsl:text>";</xsl:text>
-                        </xsl:when>
-                    </xsl:choose>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:text>"";</xsl:text>
-                </xsl:otherwise>
-            </xsl:choose>
-            <xsl:choose>
-                <xsl:when test="title">
-                    <xsl:text>"</xsl:text>
-                    <xsl:value-of select="title" />
-                    <xsl:text>";</xsl:text>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:text>""</xsl:text>
-                </xsl:otherwise>
-            </xsl:choose>
-            <xsl:text>&#xa;</xsl:text>
-        </xsl:for-each>
-    </xsl:template>
-</xsl:stylesheet>
-EOF
-)
-
-  echo "${xls}" > "${TEMP_DIR}/${PROGRAM}_sparkle.xsl"
-
-  transform=$(xmlstarlet tr "${TEMP_DIR}/${PROGRAM}_sparkle.xsl" <<< "${content}" 2> /dev/null)
-  transform=$(sed -e 's/^[^"]*//g' -e 's/[^;]*$//g' <<< "${transform}")
+  readonly transform=$(xmlstarlet sel -t -m '//channel/item' \
+-o '"' -i 'sparkle:shortVersionString' -v 'sparkle:shortVersionString' --else -v 'enclosure/@sparkle:shortVersionString' -b -o '";' \
+-o '"' -i 'sparkle:version' -v 'sparkle:version' --else -v 'enclosure/@sparkle:version' -b -o '";' \
+-o '"' -i 'link' -v 'link' --else -v 'enclosure/@url' -b -o '";' \
+-o '"' -v 'title' -o '";' -n <<< "${content}" 2> /dev/null)
 
   IFS=$'\n' read -rd '' -a lines <<< "${transform}"
-  if [[ "${#lines[@]}" -gt 0 ]]; then
-    readonly first=($(get_sparkle_version_build_url "${lines[0]}"))
+  [[ "${#lines[@]}" -eq 0 ]] && return 1
 
-    if [[ "${#lines[@]}" -gt 1 ]]; then
-      readonly last=($(get_sparkle_version_build_url "${lines[${#lines[@]}-1]}"))
+  readonly first=($(get_sparkle_version_build_url "${lines[0]}"))
 
-      compare_versions "${first[0]}" "${last[0]}"
-      case $? in
-        0) values=("${first[@]}") ;; # =
-        1) values=("${first[@]}") ;; # >
-        2) values=("${last[@]}") ;;  # <
-      esac
-    else
-      values=("${first[@]}")
-    fi
-    readonly values
+  if [[ "${#lines[@]}" -gt 1 ]]; then
+    readonly last=($(get_sparkle_version_build_url "${lines[${#lines[@]}-1]}"))
 
-    echo "${values[@]}" && return 0
+    compare_versions "${first[0]}" "${last[0]}"
+    case $? in
+      0) values=("${first[@]}") ;; # =
+      1) values=("${first[@]}") ;; # >
+      2) values=("${last[@]}") ;;  # <
+    esac
   else
-    return 1
+    values=("${first[@]}")
   fi
+  readonly values
+
+  echo "${values[@]}"
+  return 0
 }
 
 # Parse content of GitHub Atom appcast to extract all values.
@@ -546,13 +494,13 @@ get_appcast_version() {
 
   case "$(get_appcast_provider "${content}")" in
     'Sparkle')
-      readonly values=($(parse_appcast_sparkle_latest "${content}"))
+      readonly values=($(get_sparkle_latest "${content}"))
       version="${values[0]}"
       [[ "${#values[@]}" -eq 3 ]] && [[ "${values[0]}" != "${values[1]}" ]] && version="${values[0]},${values[1]}"
       [[ ! -z "${version}" ]] && echo "${version}" && return 0
     ;;
     'GitHub Atom')
-      readonly values=($(parse_appcast_github_latest "${url}" "${MATCHING_TAG}"))
+      readonly values=($(get_sparkle_latest "${url}" "${MATCHING_TAG}"))
       [[ ! -z "${values[1]}" ]] && echo "${values[1]}" && return 0
     ;;
   esac
@@ -586,13 +534,13 @@ get_appcast_downloads() {
 
   case "$(get_appcast_provider "${content}")" in
     'Sparkle')
-      readonly values=($(parse_appcast_sparkle_latest "${content}"))
+      readonly values=($(get_sparkle_latest "${content}"))
       download_url="${values[1]}"
       [[ "${#values[@]}" -eq 3 ]] && download_url="${values[2]}"
       [[ ! -z "${download_url}" ]] && echo "${download_url}" && return 0
     ;;
     'GitHub Atom')
-      readonly values=($(parse_appcast_github_latest "${url}" "${MATCHING_TAG}"))
+      readonly values=($(get_sparkle_latest "${url}" "${MATCHING_TAG}"))
       if [[ "${#values[@]}" -gt 1 ]]; then
         for ((i = 2; i < ${#values[@]}; i++)); do
           output+=(${values[i]})
@@ -635,7 +583,7 @@ review_sparkle() {
   local values version build download_url
 
   add_to_review 'Provider' 'Sparkle'
-  readonly values=($(parse_appcast_sparkle_latest "$1"))
+  readonly values=($(get_sparkle_latest "$1"))
   if [[ "$?" -gt 0 ]]; then
     add_to_review '' "$(tput setaf 3)no results available$(tput sgr0)"
   else
