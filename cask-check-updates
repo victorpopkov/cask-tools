@@ -2,13 +2,13 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.4.2
+# Version:         0.4.3
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   31.05.2016
 
 # Constants and globals
-readonly VERSION='0.4.2'
+readonly VERSION='0.4.3'
 readonly PROGRAM=$(basename "$0")
 readonly TEMP_DIR=$(mktemp -d)
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
@@ -211,6 +211,15 @@ if ! pwd | grep -q 'homebrew-.*/Casks'; then
   error "You need to be inside a '/homebrew-*/Casks' directory"
 fi
 
+# Unquote a piped string and remove a trailing comma.
+#
+# Returns unquoted string.
+unquote() {
+  while read -r data; do
+    sed -e 's/,$//' -e "s/^\([\"']\)\(.*\)\1\$/\2/g" <<< "${data}"
+  done
+}
+
 # Get value/values of a cask stanza.
 #
 # Arguments:
@@ -232,30 +241,44 @@ get_cask_stanza_value() {
   grep "${stanza} " <<< "${content}" | sed -e "s/${stanza} //g" -e 's/ //g' | awk '{ print $1 }' | sed -e 's/,$//' -e 's/^.//' -e 's/.$//'
 }
 
-# Get version, appcast, checkpoint and url for specific cask.
+# Get appcast, checkpoint and url for each version of the cask.
 #
 # Arguments:
 #   $1 - Cask name
 #
-# Returns values for each version as new line in format:
-#   <version> <appcast> <checkpoint> <url>
+# Returns values of each version line by line format:
+#   "<version>" "<appcast>" "<checkpoint>" "<url>"
 get_cask_version_appcast_checkpoint_url() {
-  local -a versions
   local caskname cask next content appcast checkpoint
+  local -a versions urls appcasts checkpoints line
 
   readonly caskname="$1"
   readonly cask="${caskname}.rb"
-  versions=($(grep "^\s*.version" < "${cask}" | awk '{ print $2 }' | sed -E 's/,$//' | xargs))
+  readonly versions=($(grep "^\s*.version " < "${cask}" | awk '{ print $2 }' | unquote))
+  readonly appcasts=($(grep "^\s*.appcast " < "${cask}" | awk '{ print $2 }' | unquote))
+  readonly checkpoints=($(grep "^\s*.checkpoint: " < "${cask}" | awk '{ print $2 }' | unquote))
+  readonly urls=($(grep "^\s*.url " < "${cask}" | awk '{ print $2 }' | unquote))
 
   for ((i = 0; i < ${#versions[@]}; i++)); do
+    line=()
+
     [[ "$((i+1))" -lt "${#versions[@]}" ]] && next="/version '${versions[$i+1]}'/" || next='0'
     content=$(awk "/version '${versions[i]}'/,${next}" < "${cask}")
 
     appcast=$(get_cask_stanza_value "${caskname}" 'appcast' "${content}")
     checkpoint=$(get_cask_stanza_value "${caskname}" 'checkpoint:' "${content}")
-    url=$(get_cask_stanza_value "${caskname}" 'url' "${content}")
+    if [[ "${#versions[@]}" -gt "${#urls[@]}" ]] || [[ "${#versions[@]}" -eq "${#urls[@]}" ]]; then
+      [[ "${#urls[@]}" -gt 1 ]] && url=$(get_cask_stanza_value "${caskname}" 'url' "${content}") || url="${urls[0]}"
+    else
+      url="${urls[${#urls[@]}-1]}"
+    fi
 
-    printf "%s %s %s %s\n" "${versions[i]}" "${appcast}" "${checkpoint}" "${url}"
+    line+=("\"${versions[i]}\"")
+    line+=("\"${appcast}\"")
+    line+=("\"${checkpoint}\"")
+    line+=("\"${url}\"")
+
+    echo "${line[@]}"
   done
 }
 
