@@ -2,13 +2,13 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.4.1
+# Version:         0.4.2
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   29.05.2016
+# Last modified:   31.05.2016
 
 # Constants and globals
-readonly VERSION='0.4.1'
+readonly VERSION='0.4.2'
 readonly PROGRAM=$(basename "$0")
 readonly TEMP_DIR=$(mktemp -d)
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
@@ -259,44 +259,14 @@ get_cask_version_appcast_checkpoint_url() {
   done
 }
 
-# Normalize version for some edge cases (safe to use).
-#
-# Arguments:
-#   $1 - Cask name
-#   $2 - Version
-#   $3 - Build
-#
-# Returns normalized version.
-normalize_version_safe() {
-  local cask version build
-
-  readonly cask="$1"
-  version="$2"
-  readonly build="$3"
-
-  version="${version#[Vv][Ee][Rr][Ss][Ii][Oo][Nn]}"                            # Version3.0 => 3.0
-  version=$(tr '[:upper:]' '[:lower:]' <<< "${version}" | sed "s/^${cask}-//") # <caskname>-3.0 => 3.0
-  version="${version/=./0.}"                                                   # =.9   => 0.9
-  version="${version#[Vv]}"                                                    # v3.0  => 3.0
-  version="${version/β/b}"                                                     # 3.0β5 => 3.0b5
-
-  if [[ ! -z "${build}" ]]; then
-    version="${version/\(${build}\)}"                     # 3.0(1995)      => 3.0
-    version="${version/\([Bb][Uu][Ii][Ll][Dd]${build}\)}" # 3.0(Build1995) => 3.0
-    version="${version/[Bb][Uu][Ii][Ll][Dd]${build}}"     # 3.0Build1995   => 3.0
-  fi
-
-  echo "${version}"
-}
-
-# Normalize version to most common form (unsafe to use).
+# Extract version from string.
 #
 # Arguments:
 #   $1 - Version
 #
-# Returns normalized version.
-normalize_version_hard() {
-  sed 's/[^0-9.]*\([0-9A-Za-z.]*\).*/\1/' <<< "$1"
+# Returns version.
+extract_version() {
+  sed -e 's/[^0-9.]*\([0-9A-Za-z.]*\).*/\1/' <<< "$1"
 }
 
 # Version comparison.
@@ -314,8 +284,8 @@ normalize_version_hard() {
 compare_versions() {
   local first second
 
-  first=$(normalize_version_hard "$1")
-  second=$(normalize_version_hard "$2")
+  first=$(extract_version "$1")
+  second=$(extract_version "$2")
 
   [[ "${first}" == "${second}" ]] && return 0
 
@@ -367,19 +337,17 @@ get_url_content() {
 # Process parsed Sparkle line to get variables.
 #
 # Arguments:
-#   $1 - Cask name
-#   $2 - Line in format: "<version>";"<build>";"<url>";"<title>"
+#   $1 - Line in format: "<version>";"<build>";"<url>";"<title>"
 #
 # Returns array of values:
 #   <version>
 #   <build>
 #   <url>
 process_appcast_sparkle_line() {
-  local cask version version_before build url title
+  local version version_before build url title
   local -a vars
 
-  readonly cask="$1"
-  IFS=';' read -ra vars <<< "$2"
+  IFS=';' read -ra vars <<< "$1"
 
   version="${vars[0]//[\"[:space:]]}"
   readonly version_before="${version}"
@@ -387,15 +355,8 @@ process_appcast_sparkle_line() {
   readonly url=$(echo "${vars[2]}" | sed -e 's/"//g' | sed -e 's/["[:space:]]/%20/g')
   readonly title="${vars[3]//[\"]}"
 
-  [[ "$(normalize_version_hard "${title}")" != "${title}" ]] && [[ "${title//[\"[:space:]]}" == "${version}" ]] && version=''
-
   [[ -z "${version}" ]] && [[ ! -z "${build}" ]] && version="${build}"
-
-  if [[ -z "${version}" ]] && [[ -z "${build}" ]]; then
-    version=$(normalize_version_hard "${title}")
-  else
-    version=$(normalize_version_safe "${cask}" "${version}" "${build}")
-  fi
+  [[ -z "${version}" ]] && [[ -z "${build}" ]] && version=$(extract_version "${title}")
   readonly version
 
   result=("${version}" "${build}" "${url}")
@@ -410,20 +371,17 @@ process_appcast_sparkle_line() {
 #   PROGRAM
 #
 # Arguments:
-#   $1 - Cask name
-#   $2 - Content to parse
+#   $1 - Content to parse
 #
 # Returns array of values:
 #   <version>
 #   <build>
 #   <url>
 parse_appcast_sparkle_latest() {
-  local cask content xls transform
+  local content xls transform
   local -a lines first last values result
 
-  readonly cask="$1"
-
-  content=$(sed -e $'s/></>\\\n</g' <<< "$2") # convert single line XML to multiline
+  content=$(sed -e $'s/></>\\\n</g' <<< "${1}") # convert single line XML to multiline
 
   # make sparkle namespace more consistent and ignore others
   if [[ "${content}" =~ '<rss'.*'xmlns:sparkle' ]]; then
@@ -522,10 +480,10 @@ EOF
 
   IFS=$'\n' read -rd '' -a lines <<< "${transform}"
   if [[ "${#lines[@]}" -gt 0 ]]; then
-    readonly first=($(process_appcast_sparkle_line "${cask}" "${lines[0]}"))
+    readonly first=($(process_appcast_sparkle_line "${lines[0]}"))
 
     if [[ "${#lines[@]}" -gt 1 ]]; then
-      readonly last=($(process_appcast_sparkle_line "${cask}" "${lines[${#lines[@]}-1]}"))
+      readonly last=($(process_appcast_sparkle_line "${lines[${#lines[@]}-1]}"))
 
       compare_versions "${first[0]}" "${last[0]}"
       case $? in
@@ -665,7 +623,7 @@ get_appcast_version_with_downloads() {
 
   case "$(get_appcast_provider "${content}")" in
     'Sparkle')
-      readonly values=($(parse_appcast_sparkle_latest "${cask}" "${content}"))
+      readonly values=($(parse_appcast_sparkle_latest "${content}"))
       version="${values[0]}"
       if [[ "${#values[@]}" -eq 3 ]]; then
         [[ "${values[0]}" != "${values[1]}" ]] && version="${values[0]},${values[1]}"
