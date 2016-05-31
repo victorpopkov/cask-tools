@@ -2,13 +2,13 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.4.3
+# Version:         0.4.4
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   31.05.2016
 
 # Constants and globals
-readonly VERSION='0.4.3'
+readonly VERSION='0.4.4'
 readonly PROGRAM=$(basename "$0")
 readonly TEMP_DIR=$(mktemp -d)
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
@@ -675,41 +675,53 @@ get_appcast_version_with_downloads() {
   return 1
 }
 
-# Replace version in url (string interpolation).
+# Interpolate version into string.
 #
 # Arguments:
-#   $1 - URL
+#   $1 - String
 #   $2 - Version
 #
-# Returns URL with version.
-replace_version_in_url() {
-  local -a parts
-  local version major minor patch url part
+# Returns string with version.
+interpolate_version() {
+  local IFS version_original version_only major minor patch string string_part version_part replace
+  local -a string_parts version_parts
 
-  url="$1"
-  readonly version=$(sed 's/[^0-9.]*\([0-9.]*\).*/\1/' <<< "$2" | xargs)
-  readonly parts=($(grep -o "#{version[^}]*}" <<< "${url}" | xargs))
-  readonly major=$(cut -d '.' -f 1 <<< "${version}")
-  readonly minor=$(cut -d '.' -f 2 <<< "${version}")
-  readonly patch=$(cut -d '.' -f 3 <<< "${version}")
+  string="$1"
+  readonly version_original="$2"
+  readonly version_only=$(sed -e 's/[^0-9.]*\([0-9.]*\).*/\1/' <<< "${version_original}")
+  readonly string_parts=($(grep -o "#{version[^}]*}" <<< "${string}" | xargs))
 
-  for part in "${parts[@]}"; do
-    case "${part}" in
-      '#{version}')                   url="${url//${part}/${version}}" ;;
-      '#{version.major}')             url="${url//${part}/${major}}" ;;
-      '#{version.minor}')             url="${url//${part}/${minor}}" ;;
-      '#{version.patch}')             url="${url//${part}/${patch}}" ;;
-      '#{version.major_minor}')       url="${url//${part}/${major}.${minor}}" ;;
-      '#{version.major_minor_patch}') url="${url//${part}/${major}.${minor}.${patch}}" ;;
-      '#{version.before_comma}')      url="${url//${part}/$(cut -d ',' -f 1 <<< "$2")}" ;;
-      '#{version.after_comma}')       url="${url//${part}/$(cut -d ',' -f 2 <<< "$2")}" ;;
-      '#{version.before_colon}')      url="${url//${part}/$(cut -d ':' -f 1 <<< "$2")}" ;;
-      '#{version.after_colon}')       url="${url//${part}/$(cut -d ':' -f 2 <<< "$2")}" ;;
-      *) return 1;;
-    esac
+  for string_part in "${string_parts[@]}"; do
+    if [[ "${string_part}" == '#{version}' ]]; then
+      string="${string//${string_part}/${version_original}}"
+      continue
+    fi
+
+    IFS='.' read -ra version_parts <<< "$(sed -e 's/^#{version//' -e 's/}$//' -e 's/^\.//' <<< "${string_part}")"
+
+    for version_part in "${version_parts[@]}"; do
+      replace=''
+      major=$(cut -d '.' -f 1 <<< "${version_only}")
+      minor=$(cut -d '.' -f 2 <<< "${version_only}")
+      patch=$(cut -d '.' -f 3 <<< "${version_only}")
+
+      case "${version_part}" in
+        'major')             replace+="${major}" ;;
+        'minor')             replace+="${minor}" ;;
+        'patch')             replace+="${patch}" ;;
+        'major_minor')       replace+="${major}.${minor}" ;;
+        'major_minor_patch') replace+="${major}.${minor}.${patch}" ;;
+        'before_comma')      replace+="$(cut -d ',' -f 1 <<< "${version_original}")" ;;
+        'after_comma')       replace+="$(cut -d ',' -f 2 <<< "${version_original}")" ;;
+        'before_colon')      replace+="$(cut -d ':' -f 1 <<< "${version_original}")" ;;
+        'after_colon')       replace+="$(cut -d ':' -f 2 <<< "${version_original}")" ;;
+      esac
+    done
+
+    string="${string//${string_part}/${replace}}"
   done
 
-  echo "${url}" && return 0
+  echo "${string}"
 }
 
 # Suggest version to use in casks download URL.
@@ -731,7 +743,7 @@ suggest_cask_version() {
   version="$2"
   latest_version="$(cut -d ',' -f 1 <<< "$3")"
   latest_build="$(cut -d ',' -f 2 <<< "$3")"
-  latest_download_url=$(replace_version_in_url "$4" "$3")
+  latest_download_url=$(interpolate_version "$4" "$3")
 
   [[ "${latest_version}" == "${latest_build}" ]] && latest_build=''
 
@@ -865,7 +877,7 @@ review_cask_versions() {
   for line in "${lines[@]}"; do
     line=($(echo "${line}" | xargs))
     version="${line[0]}"
-    appcast=$(replace_version_in_url "${line[1]}" "${version}")
+    appcast=$(interpolate_version "${line[1]}" "${version}")
     checkpoint="${line[2]}"
     url="${line[3]}"
 
@@ -964,7 +976,7 @@ review_cask_appcasts() {
   for line in "${lines[@]}"; do
     line=($(echo "${line}" | xargs))
     version="${line[0]}"
-    appcast=$(replace_version_in_url "${line[1]}" "${version}")
+    appcast=$(interpolate_version "${line[1]}" "${version}")
     checkpoint="${line[2]}"
 
     [[ "${#line[@]}" -lt 3 ]] && continue
