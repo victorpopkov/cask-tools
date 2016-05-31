@@ -2,13 +2,13 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.4.4
+# Version:         0.4.5
 # License:         The Unlicense (Public Domain)
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   31.05.2016
 
 # Constants and globals
-readonly VERSION='0.4.4'
+readonly VERSION='0.4.5'
 readonly PROGRAM=$(basename "$0")
 readonly TEMP_DIR=$(mktemp -d)
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
@@ -334,14 +334,14 @@ compare_versions() {
   return 0
 }
 
-# Create sha256 checksum from content that represents appcast checkpoint.
+# Create sha256 checksum from that represents appcast checkpoint from piped content string.
 #
 # Arguments:
-#   $1 - Content to generate checkpoint from
+#   $1 - Content
 #
 # Returns checkpoint.
 generate_appcast_checkpoint() {
-  echo "$1" | sed 's|<pubDate>[^<]*</pubDate>||g' | shasum --algorithm 256 | awk '{ print $1 }' && return 0 || return 1
+  sed -e 's/<pubDate>[^<]*<\/pubDate>//g' <<< "$1" | shasum --algorithm 256 | awk '{ print $1 }'
 }
 
 # Get content from URL.
@@ -357,7 +357,7 @@ get_url_content() {
   curl --silent --compressed --location "$1" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}' 2>/dev/null
 }
 
-# Process parsed Sparkle line to get variables.
+# Transform Sparkle line to array of values.
 #
 # Arguments:
 #   $1 - Line in format: "<version>";"<build>";"<url>";"<title>"
@@ -366,7 +366,7 @@ get_url_content() {
 #   <version>
 #   <build>
 #   <url>
-process_appcast_sparkle_line() {
+get_sparkle_version_build_url() {
   local version version_before build url title
   local -a vars
 
@@ -385,7 +385,7 @@ process_appcast_sparkle_line() {
   result=("${version}" "${build}" "${url}")
   if [[ "${version}" == "${build}" ]] || [[ -z "${version_before}" ]]; then result=("${version}" "${url}"); fi
 
-  echo "${result[@]}" && return 0
+  echo "${result[@]}"
 }
 
 # Parse content of Sparkle appcast to extract all values.
@@ -503,10 +503,10 @@ EOF
 
   IFS=$'\n' read -rd '' -a lines <<< "${transform}"
   if [[ "${#lines[@]}" -gt 0 ]]; then
-    readonly first=($(process_appcast_sparkle_line "${lines[0]}"))
+    readonly first=($(get_sparkle_version_build_url "${lines[0]}"))
 
     if [[ "${#lines[@]}" -gt 1 ]]; then
-      readonly last=($(process_appcast_sparkle_line "${lines[${#lines[@]}-1]}"))
+      readonly last=($(get_sparkle_version_build_url "${lines[${#lines[@]}-1]}"))
 
       compare_versions "${first[0]}" "${last[0]}"
       case $? in
@@ -598,7 +598,7 @@ parse_appcast_github_latest() {
 # Arguments:
 #   $1 - Content
 #
-# Returns provider.
+# Returns provider and status.
 get_appcast_provider() {
   local content result
 
@@ -613,10 +613,14 @@ get_appcast_provider() {
     [[ "${content}" =~ '<rss'.*'xmlns:sparkle' ]] && result='Sparkle'
     [[ "${content}" =~ '<item'.*'<enclosure' ]] && result='Sparkle'
   fi
+  readonly result
 
-  echo "${result}"
+  if [[ ! -z "${result}" ]]; then
+    echo "${result}"
+    return 0
+  fi
 
-  [[ -z "${result}" ]] && return 1 || return 0
+  return 1
 }
 
 # Extract version number with download URL/URLs from appcast content.
