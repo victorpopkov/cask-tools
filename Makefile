@@ -9,4 +9,15 @@ help:
 test:
 	bats test/
 
+install:
+	@mkdir -p ${DESTDIR}${PREFIX}/bin
+	@mkdir -p ${DESTDIR}${PREFIX}/libexec/cask-scripts
+	@cp -f bin/* ${DESTDIR}${PREFIX}/bin
+	@cp -R libexec/* ${DESTDIR}${PREFIX}/libexec
+
+uninstall:
+	@rm -R ${DESTDIR}${PREFIX}/libexec/cask-scripts
+	@rm ${DESTDIR}${PREFIX}/bin/cask-appcast
+	@rm ${DESTDIR}${PREFIX}/bin/cask-check-updates
+
 .PHONY: help test
