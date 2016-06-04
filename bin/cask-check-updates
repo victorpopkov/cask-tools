@@ -2,17 +2,16 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.4.6
-# License:         The Unlicense (Public Domain)
+# Version:         0.4.7
+# License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   31.05.2016
+# Last modified:   04.06.2016
 
 # Constants and globals
-readonly VERSION='0.4.6'
+readonly VERSION='0.4.7'
 readonly PROGRAM=$(basename "$0")
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
 declare -a CASKS
-declare -a REVIEW
 declare -a CASKS_VERSION_DELIMETER_BUILD
 GITHUB_USER=$(git config --get github.user)
 GITHUB_TOKEN=$(git config --get github.token)
@@ -21,6 +20,24 @@ OUTPUT='false'
 OUTPUT_PATH=''
 SHOW_ALL='false'
 SHOW_CHECKPOINTS='false'
+
+# Getting this script's absoute path even when dealing with multi-level symlinks
+SOURCE="${BASH_SOURCE[0]}"
+DIR=$(dirname "$SOURCE")
+while [ -h "$SOURCE" ]; do
+  SOURCE=$(readlink "$SOURCE")
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+done
+BASE_PATH="$(cd "$DIR/.." && pwd)"
+readonly SOURCE DIR BASE_PATH
+
+# shellcheck source=/dev/null
+source "$BASE_PATH/lib/general.bash"
+# shellcheck source=/dev/null
+source "$BASE_PATH/lib/appcast.bash"
+# shellcheck source=/dev/null
+source "$BASE_PATH/lib/cask.bash"
 
 # Casks which versions should have format: "<version><delimeter><build>"
 declare -a -r CASKS_VERSION_DELIMETER_BUILD=(
@@ -95,32 +112,6 @@ if [[ ! $(which 'xmlstarlet') ]] || [[ ! $(which 'jq') ]]; then
   exit 1
 fi
 
-# Display syntax error.
-#
-# Globals:
-#   PROGRAM
-#
-# Arguments:
-#   $1 - Error description
-#
-# Returns exit status 1.
-syntax_error() {
-  echo "${PROGRAM}: $1" >&2
-  echo "Try \`${PROGRAM} --help\` for more information." >&2
-  exit 1
-}
-
-# Display error.
-#
-# Arguments:
-#   $1 - Error description
-#
-# Returns exit status 1.
-error() {
-  echo "$(tput setaf 1)$1$(tput sgr0)" >&2
-  exit 1
-}
-
 # Display help.
 #
 # Globals:
@@ -139,15 +130,6 @@ usage() {
       -c, --checkpoints                    Include checkpoints validations.
       -v, --version                        Show current script version.
       -h, --help                           Show this help." | sed -E 's/^ {4}//'
-}
-
-# Divider to separate output in terminal.
-#
-# Globals:
-#   COLUMNS
-divide() {
-  if [[ $(which hr) ]]; then hr '-'
-  else printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -; fi
 }
 
 # available flags
@@ -210,367 +192,6 @@ if ! pwd | grep -q 'homebrew-.*/Casks'; then
   error "You need to be inside a '/homebrew-*/Casks' directory"
 fi
 
-# Unquote a piped string and remove a trailing comma.
-#
-# Returns unquoted string.
-unquote() {
-  while read -r data; do
-    sed -e 's/,$//' -e "s/^\([\"']\)\(.*\)\1\$/\2/g" <<< "${data}"
-  done
-}
-
-# Get value/values of a cask stanza.
-#
-# Arguments:
-#   $1 - Cask name   (required)
-#   $2 - Stanza name (required)
-#   $3 - Content     (not required)
-#
-# Returns the stanza value.
-get_cask_stanza_value() {
-  local cask stanza content
-
-  readonly cask="$1"
-  readonly stanza="$2"
-
-  content="$3"
-  [[ -z "$3" ]] && content=$(cat "${cask}.rb")
-  readonly content
-
-  grep "${stanza} " <<< "${content}" | sed -e "s/${stanza} //g" -e 's/ //g' | awk '{ print $1 }' | sed -e 's/,$//' -e 's/^.//' -e 's/.$//'
-}
-
-# Get appcast, checkpoint and url for each version of the cask.
-#
-# Arguments:
-#   $1 - Cask name
-#
-# Returns values of each version line by line format:
-#   "<version>" "<appcast>" "<checkpoint>" "<url>"
-get_cask_version_appcast_checkpoint_url() {
-  local caskname cask next content appcast checkpoint
-  local -a versions urls appcasts checkpoints line
-
-  readonly caskname="$1"
-  readonly cask="${caskname}.rb"
-  readonly versions=($(grep "^\s*.version " < "${cask}" | awk '{ print $2 }' | unquote))
-  readonly appcasts=($(grep "^\s*.appcast " < "${cask}" | awk '{ print $2 }' | unquote))
-  readonly checkpoints=($(grep "^\s*.checkpoint: " < "${cask}" | awk '{ print $2 }' | unquote))
-  readonly urls=($(grep "^\s*.url " < "${cask}" | awk '{ print $2 }' | unquote))
-
-  for ((i = 0; i < ${#versions[@]}; i++)); do
-    line=()
-
-    [[ "$((i+1))" -lt "${#versions[@]}" ]] && next="/version '${versions[$i+1]}'/" || next='0'
-    content=$(awk "/version '${versions[i]}'/,${next}" < "${cask}")
-
-    appcast=$(get_cask_stanza_value "${caskname}" 'appcast' "${content}")
-    checkpoint=$(get_cask_stanza_value "${caskname}" 'checkpoint:' "${content}")
-    if [[ "${#versions[@]}" -gt "${#urls[@]}" ]] || [[ "${#versions[@]}" -eq "${#urls[@]}" ]]; then
-      [[ "${#urls[@]}" -gt 1 ]] && url=$(get_cask_stanza_value "${caskname}" 'url' "${content}") || url="${urls[0]}"
-    else
-      url="${urls[${#urls[@]}-1]}"
-    fi
-
-    line+=("\"${versions[i]}\"")
-    line+=("\"${appcast}\"")
-    line+=("\"${checkpoint}\"")
-    line+=("\"${url}\"")
-
-    echo "${line[@]}"
-  done
-}
-
-# Extract version from string.
-#
-# Arguments:
-#   $1 - Version
-#
-# Returns version.
-extract_version() {
-  sed -e 's/[^0-9.]*\([0-9A-Za-z.]*\).*/\1/' <<< "$1"
-}
-
-# Version comparison.
-#
-# Use 'sort -V' if available, otherwise use custom solution.
-#
-# Arguments:
-#   $1 - First version
-#   $2 - Second version
-#
-# Returns:
-#   0 - First = second
-#   1 - First > second
-#   2 - First < second
-compare_versions() {
-  local first second
-
-  first=$(extract_version "$1")
-  second=$(extract_version "$2")
-
-  [[ "${first}" == "${second}" ]] && return 0
-
-  if echo | sort -Vr > /dev/null 2>&1; then
-    local versions
-    readonly versions=($(printf '%s\n%s\n' "${first}}" "${second}" | sort -Vr))
-    [[ "${first}" == "${versions[0]}" ]] && return 1
-    [[ "${second}" == "${versions[0]}" ]] && return 2
-  else
-    # inspired by: http://stackoverflow.com/a/4025065
-    local IFS='.'
-    local i
-    first=($(sed -e 's/[A-Za-z]/ /g' <<< "${first}" | tr -s ' ' '.'))
-    second=($(sed -e 's/[A-Za-z]/ /g' <<< "${second}" | tr -s ' ' '.'))
-    for ((i = ${#first[@]}; i < ${#second[@]}; i++)); do first[i]=0; done
-    for ((i = 0; i < ${#first[@]}; i++)); do
-      [[ -z "${second[i]}" ]] && second[i]=0
-      ((10#${first[i]} > 10#${second[i]})) && return 1
-      ((10#${first[i]} < 10#${second[i]})) && return 2
-    done
-  fi
-
-  return 0
-}
-
-# Create sha256 checksum from that represents appcast checkpoint from piped content string.
-#
-# Arguments:
-#   $1 - Content
-#
-# Returns checkpoint.
-generate_appcast_checkpoint() {
-  sed -e 's/<pubDate>[^<]*<\/pubDate>//g' <<< "$1" | shasum --algorithm 256 | awk '{ print $1 }'
-}
-
-# Get content from URL.
-#
-# Globals:
-#   BROWSER_HEADERS
-#
-# Arguments:
-#   $1 - URL
-#
-# Returns content and status code (last line).
-get_url_content() {
-  curl --silent --compressed --location "$1" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}' 2>/dev/null
-}
-
-# Format XML content using xmlstarlet and uncomment tags.
-#
-# Arguments:
-#   $1 - Content
-#
-# Returns formatted XML and return status.
-format_xml() {
-  local content
-
-  content="$1"
-  [[ -z "${content}" ]] && return 1
-
-  content=$(xmlstarlet fo -s 4 -o -D -N <<< "${content}" 2> /dev/null)
-  content=$(awk '{ sub(/<!--([[:space:]]*)?</, "<"); sub(/>([[:space:]]*)?-->/, ">"); print }' <<< "${content}") # uncomment tags
-
-  echo "${content}"
-  return 0
-}
-
-# Make Sparkle namespaces more consistent.
-#
-# Arguments:
-#   $1 - Content
-#
-# Returns XML with fixed namespaces and status.
-fix_sparkle_xmlns() {
-  local content
-
-  readonly content="$1"
-  [[ -z "${content}" ]] && return 1
-
-  if [[ "${content}" =~ '<rss'.*'xmlns:sparkle' ]]; then
-    sed -e 's/ xmlns:sparkle=".*"/ xmlns:sparkle="http:\/\/www.andymatuschak.org\/xml-namespaces\/sparkle"/g' <<< "${content}"
-  else
-    sed -e 's/<rss/<rss xmlns:sparkle="http:\/\/www.andymatuschak.org\/xml-namespaces\/sparkle"/g' <<< "${content}"
-  fi
-
-  return 0
-}
-
-# Transform Sparkle line to array of values.
-#
-# Arguments:
-#   $1 - Line in format: "<version>";"<build>";"<url>";"<title>"
-#
-# Returns array of values:
-#   <version>
-#   <build>
-#   <url>
-get_sparkle_version_build_url() {
-  local version version_before build url title
-  local -a vars
-
-  IFS=';' read -ra vars <<< "$1"
-
-  version="${vars[0]//[\"[:space:]]}"
-  readonly version_before="${version}"
-  readonly build="${vars[1]//[\"[:space:]]}"
-  readonly url=$(echo "${vars[2]}" | sed -e 's/"//g' | sed -e 's/["[:space:]]/%20/g')
-  readonly title="${vars[3]//[\"]}"
-
-  [[ -z "${version}" ]] && [[ ! -z "${build}" ]] && version="${build}"
-  [[ -z "${version}" ]] && [[ -z "${build}" ]] && version=$(extract_version "${title}")
-  readonly version
-
-  result=("${version}" "${build}" "${url}")
-  if [[ "${version}" == "${build}" ]] || [[ -z "${version_before}" ]]; then result=("${version}" "${url}"); fi
-
-  echo "${result[@]}"
-}
-
-# Get latest version values from content of Sparkle appcast.
-#
-# Arguments:
-#   $1 - Content
-#
-# Returns status and array of values of latest version:
-#   <version>
-#   <build>
-#   <url>
-get_sparkle_latest() {
-  local IFS content transform
-  local -a lines first last values result
-
-  content=$(fix_sparkle_xmlns "$1")
-  content=$(format_xml "${content}")
-  readonly content
-
-  readonly transform=$(xmlstarlet sel -t -m '//channel/item' \
--o '"' -i 'sparkle:shortVersionString' -v 'sparkle:shortVersionString' --else -v 'enclosure/@sparkle:shortVersionString' -b -o '";' \
--o '"' -i 'sparkle:version' -v 'sparkle:version' --else -v 'enclosure/@sparkle:version' -b -o '";' \
--o '"' -i 'link' -v 'link' --else -v 'enclosure/@url' -b -o '";' \
--o '"' -v 'title' -o '";' -n <<< "${content}" 2> /dev/null)
-
-  IFS=$'\n' read -rd '' -a lines <<< "${transform}"
-  [[ "${#lines[@]}" -eq 0 ]] && return 1
-
-  readonly first=($(get_sparkle_version_build_url "${lines[0]}"))
-
-  if [[ "${#lines[@]}" -gt 1 ]]; then
-    readonly last=($(get_sparkle_version_build_url "${lines[${#lines[@]}-1]}"))
-
-    compare_versions "${first[0]}" "${last[0]}"
-    case $? in
-      0) values=("${first[@]}") ;; # =
-      1) values=("${first[@]}") ;; # >
-      2) values=("${last[@]}") ;;  # <
-    esac
-  else
-    values=("${first[@]}")
-  fi
-  readonly values
-
-  echo "${values[@]}"
-  return 0
-}
-
-# Parse content of GitHub Atom appcast to extract all values.
-#
-# Globals:
-#   GITHUB_USER
-#   GITHUB_TOKEN
-#   BROWSER_HEADERS
-#   GITHUB_PRERELEASE
-#
-# Arguments:
-#   $1 - Cask name
-#   $2 - Content to parse
-#   $3 - Match tag
-#
-# Returns array of values:
-#   <prerelease>      (true|false)
-#   <version>
-#   <download_urls>   (array)
-parse_appcast_github_latest() {
-  local auth cask user repo match url out code content latest_tag prerelease_tag version prerelease download_urls
-  local -a result
-
-  [[ ! -z "${GITHUB_USER}" ]] && [[ ! -z "${GITHUB_TOKEN}" ]] && auth=(--user "${GITHUB_USER}:${GITHUB_TOKEN}")
-
-  readonly cask="${1}"
-  IFS='/' read -ra parts <<< "$2"
-  readonly parts
-  readonly user="${parts[3]}"
-  readonly repo="${parts[4]}"
-  readonly match="$3"
-
-  readonly url="https://api.github.com/repos/${user}/${repo}/releases"
-  readonly out=$(curl --silent --compressed --location "${url}" "${auth[@]}" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}' 2>/dev/null)
-  readonly code=$(echo "${out}" | tail -n1)
-  readonly content=$(echo "${out}" | sed \$d)
-
-  [[ "${code}" -eq 403 ]] && return 2
-
-  if [[ ! -z "${match}" ]]; then
-    latest_tag=$(echo "${content}" | jq ".|=sort_by(.created_at) | reverse | .[] | select(.prerelease == false) | .tag_name" 2> /dev/null | grep -i "${match}" | head -1 | xargs)
-    prerelease_tag=$(echo "${content}" | jq ".|=sort_by(.created_at) | reverse | .[] | select(.prerelease == true) | .tag_name" 2> /dev/null | grep -i "${match}" | head -1 | xargs)
-  fi
-
-  if [[ -z "${latest_tag}" ]] && [[ -z "${prerelease_tag}" ]]; then
-    latest_tag=$(echo "${content}" | jq ".|=sort_by(.created_at) | reverse | .[] | select(.prerelease == false) | .tag_name" 2> /dev/null | head -1 | xargs)
-    prerelease_tag=$(echo "${content}" | jq ".|=sort_by(.created_at) | reverse | .[] | select(.prerelease == true) | .tag_name" 2> /dev/null | head -1 | xargs)
-  fi
-
-  readonly latest_tag prerelease_tag
-
-  version="${latest_tag}"
-  compare_versions "${latest_tag}" "${prerelease_tag}"
-  [[ "$?" -eq 2 ]] && [[ "${GITHUB_PRERELEASE}" == 'true' ]] && version="${prerelease_tag}" # if latest_tag < prerelease_tag
-
-  [[ -z "${version}" ]] && return 1
-
-  prerelease='false'
-  [[ "${version}" == "${prerelease_tag}" ]] && prerelease='true'
-
-  readonly download_urls=($(echo "${content}" | jq ".[] | select(.tag_name == \"${latest_tag}\") | .assets" | jq '.[] | .browser_download_url' 2> /dev/null | xargs))
-  version=$(grep -q 'v[0-9]' <<< "${version}" && echo "${version/v}" || echo "${version}") # v3.0 => 3.0
-  grep -iq "${cask}" <<< "${version}" && version=$(tr '[:upper:]' '[:lower:]' <<< "${latest_tag}" | sed "s/^${cask}-//") # <caskname>-3.0 => 3.0
-  result+=("${prerelease}")
-  result+=("${version}")
-  result+=("${download_urls[@]}")
-
-  echo "${result[@]}"
-}
-
-# Guess the appcast provider from the content.
-#
-# Arguments:
-#   $1 - Content
-#
-# Returns provider and status.
-get_appcast_provider() {
-  local content result
-
-  readonly content="$1"
-
-  # GitHub
-  [[ "${content}" =~ '<feed'.*'<id>tag:github.com' ]] && result='GitHub Atom'
-
-  # RSS
-  if [[ "${content}" =~ '<rss'.* ]]; then
-    # Sparkle
-    [[ "${content}" =~ '<rss'.*'xmlns:sparkle' ]] && result='Sparkle'
-    [[ "${content}" =~ '<item'.*'<enclosure' ]] && result='Sparkle'
-  fi
-  readonly result
-
-  if [[ ! -z "${result}" ]]; then
-    echo "${result}"
-    return 0
-  fi
-
-  return 1
-}
-
 # Extract version number with download URL/URLs from appcast content.
 #
 # Globals:
@@ -619,61 +240,12 @@ get_appcast_version_with_downloads() {
         fi
       done
 
-      readonly values=($(parse_appcast_github_latest "${cask}" "${url}" "${tag}"))
+      readonly values=($(get_github_atom_latest "${url}" "${tag}"))
       [[ ! -z "${values[1]}" ]] && echo "${values[1]}" && return 0
     ;;
   esac
 
   return 1
-}
-
-# Interpolate version into string.
-#
-# Arguments:
-#   $1 - String
-#   $2 - Version
-#
-# Returns string with version.
-interpolate_version() {
-  local IFS version_original version_only major minor patch string string_part version_part replace
-  local -a string_parts version_parts
-
-  string="$1"
-  readonly version_original="$2"
-  readonly version_only=$(sed -e 's/[^0-9.]*\([0-9.]*\).*/\1/' <<< "${version_original}")
-  readonly string_parts=($(grep -o "#{version[^}]*}" <<< "${string}" | xargs))
-
-  for string_part in "${string_parts[@]}"; do
-    if [[ "${string_part}" == '#{version}' ]]; then
-      string="${string//${string_part}/${version_original}}"
-      continue
-    fi
-
-    IFS='.' read -ra version_parts <<< "$(sed -e 's/^#{version//' -e 's/}$//' -e 's/^\.//' <<< "${string_part}")"
-
-    for version_part in "${version_parts[@]}"; do
-      replace=''
-      major=$(cut -d '.' -f 1 <<< "${version_only}")
-      minor=$(cut -d '.' -f 2 <<< "${version_only}")
-      patch=$(cut -d '.' -f 3 <<< "${version_only}")
-
-      case "${version_part}" in
-        'major')             replace+="${major}" ;;
-        'minor')             replace+="${minor}" ;;
-        'patch')             replace+="${patch}" ;;
-        'major_minor')       replace+="${major}.${minor}" ;;
-        'major_minor_patch') replace+="${major}.${minor}.${patch}" ;;
-        'before_comma')      replace+="$(cut -d ',' -f 1 <<< "${version_original}")" ;;
-        'after_comma')       replace+="$(cut -d ',' -f 2 <<< "${version_original}")" ;;
-        'before_colon')      replace+="$(cut -d ':' -f 1 <<< "${version_original}")" ;;
-        'after_colon')       replace+="$(cut -d ':' -f 2 <<< "${version_original}")" ;;
-      esac
-    done
-
-    string="${string//${string_part}/${replace}}"
-  done
-
-  echo "${string}"
 }
 
 # Suggest version to use in casks download URL.
@@ -785,28 +357,6 @@ suggest_cask_version() {
   done
 
   echo "${result}"
-}
-
-# Add info to review.
-#
-# Globals:
-#   REVIEW
-#
-# Arguments:
-#   $1 - Name
-#   $2 - Value
-add_to_review() {
-  local name
-  [[ ! -z "$1" ]] && name="$1:" || name="$1"
-  REVIEW+=("$(printf "%-17s %s" "${name}" "$2")")
-}
-
-# Show review.
-#
-# Globals:
-#   REVIEW
-show_review() {
-  [[ "${#REVIEW[@]}" -gt 0 ]] && printf '%s\n' "${REVIEW[@]}"
 }
 
 # Review cask versions.
@@ -999,7 +549,6 @@ output_csv() {
 
 # Globals:
 #   SHOW_CHECKPOINTS
-#   REVIEW
 #
 # Arguments:
 #   $1 - Cask
@@ -1016,7 +565,11 @@ main() {
 
   [[ "${SHOW_ALL}" == 'true' ]] && show='true'
   [[ "${show}" == 'true' ]] && show_review
-  REVIEW=()
+
+  # shellcheck disable=SC2034
+  REVIEW_NAMES=()
+  # shellcheck disable=SC2034
+  REVIEW_VALUES=()
 
   [[ "${show}" == 'true' ]] && [[ "${#CASKS[@]}" -gt 1 ]] && divide
 }
