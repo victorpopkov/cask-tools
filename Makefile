@@ -8,7 +8,7 @@ help:
 
 install:
 	@mkdir -p ${DESTDIR}${PREFIX}/bin
-	@mkdir -p ${DESTDIR}${PREFIX}/libexec/cask-scripts
+	@mkdir -p ${DESTDIR}${PREFIX}/libexec
 	@cp -f bin/* ${DESTDIR}${PREFIX}/bin
 	@cp -R libexec/* ${DESTDIR}${PREFIX}/libexec
 
@@ -19,6 +19,6 @@ uninstall:
 
 # Bats is used for testing: https://github.com/sstephenson/bats
 test:
-	bats test/
+	test/bats/bin/bats test/
 
 .PHONY: help install uninstall test
