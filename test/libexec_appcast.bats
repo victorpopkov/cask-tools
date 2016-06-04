@@ -1,8 +1,8 @@
 #!/usr/bin/env bats
 load test_helper
-load ../lib/general
-load ../lib/appcast
-load ../lib/cask
+load ../libexec/cask-scripts/general
+load ../libexec/cask-scripts/appcast
+load ../libexec/cask-scripts/cask
 
 # generate_appcast_checkpoint()
 @test "generate_appcast_checkpoint() when no arguments passed" {

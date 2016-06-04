@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
-load ../lib/general
-load ../lib/appcast
-load ../lib/cask
+load ../libexec/cask-scripts/general
+load ../libexec/cask-scripts/appcast
+load ../libexec/cask-scripts/cask
 
 @test "syntax_error() when PROGRAM='example' and argument 'unexpected error'" {
   PROGRAM='example'
