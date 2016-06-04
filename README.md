@@ -19,9 +19,36 @@ casks.
 
 ## Installation
 
+### Linux
+
+Even though [Homebrew-Cask](https://github.com/caskroom/homebrew-cask) was
+created specifically for OS X, most of the scripts provided in the current
+repository can be used on Linux. The installation procedure is quite simple:
+just clone this repository somewhere on your system and then use `install`
+target of the provided Makefile:
+
+```bash
+git clone https://github.com/victorpopkov/cask-scripts.git
+cd cask-scripts
+make install
+```
+
+The same thing goes for uninstallation procedure: just use `uninstall` target if
+you would like to completely remove `cask-scripts` from your system.
+
+#### Dependencies
+
+The scripts need [jq](https://github.com/stedolan/jq) and
+[xmlstarlet](http://xmlstar.sourceforge.net/) to be installed on your system.
+To install both on Linux just run:
+
+```bash
+apt-get install jq xmlstarlet
+```
+
 ### Mac OS X
 
-The easiest way to install these scripts is using the
+The easiest way to install these scripts on OS X is using the
 [homebrew-cask-scripts](https://github.com/victorpopkov/homebrew-cask-scripts)
 repository. You’ll need [Homebrew](http://brew.sh/) installed and then
 [Tap](https://github.com/Homebrew/homebrew/wiki/brew-tap) that repository by
@@ -38,11 +65,16 @@ install `cask-appcast`, run:
 brew install cask-appcast
 ```
 
+Alternatively, you can use install target of the provided Makefile the same way
+as you would install them on Linux. However, using [Homebrew](http://brew.sh/)
+is the more recommended way for OS X, since it also installs all the
+dependencies.
+
 ## Running tests
 
-For testing purposes [Bats](https://github.com/sstephenson/bats) is used, so
-before running tests make sure it's installed on your system. After that you can
-run all the tests using `make test` or `bats test` commands.
+For testing purposes, [Bats](https://github.com/sstephenson/bats) is bundled
+into this project. In order to run the tests simply use `test` target of the
+provided Makefile: `make test`
 
 ## License
 
