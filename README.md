@@ -38,6 +38,12 @@ install `cask-appcast`, run:
 brew install cask-appcast
 ```
 
+## Running tests
+
+For testing purposes [Bats](https://github.com/sstephenson/bats) is used, so
+before running tests make sure it's installed on your system. After that you can
+run all the tests using `make test` or `bats test` commands.
+
 ## License
 
 Released under the [MIT License](https://opensource.org/licenses/MIT).
