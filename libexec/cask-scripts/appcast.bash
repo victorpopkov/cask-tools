@@ -7,9 +7,10 @@
 # Last modified:   05.06.2016
 
 # Constants and globals
-GITHUB_USER=$(git config --get github.user)
-GITHUB_TOKEN=$(git config --get github.token)
-GITHUB_PRERELEASE='false'
+declare BROWSER_HEADERS
+declare GITHUB_USER
+declare GITHUB_TOKEN
+declare GITHUB_PRERELEASE
 
 # Create sha256 checksum from that represents appcast checkpoint from piped content string.
 #

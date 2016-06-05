@@ -7,6 +7,9 @@
 # Last modified:   05.06.2016
 
 # Constants and globals
+declare PROGRAM
+declare VERSION
+declare BROWSER_HEADERS
 declare -a REVIEW_NAMES
 declare -a REVIEW_VALUES
 
