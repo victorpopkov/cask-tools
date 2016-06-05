@@ -6,6 +6,11 @@
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   05.06.2016
 
+# Constants and globals
+GITHUB_USER=$(git config --get github.user)
+GITHUB_TOKEN=$(git config --get github.token)
+GITHUB_PRERELEASE='false'
+
 # Create sha256 checksum from that represents appcast checkpoint from piped content string.
 #
 # Arguments:

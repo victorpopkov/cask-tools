@@ -4,7 +4,7 @@
 #
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   04.06.2016
+# Last modified:   05.06.2016
 
 # Constants and globals
 declare -a REVIEW_NAMES
@@ -34,6 +34,17 @@ syntax_error() {
 error() {
   echo -e "$(tput setaf 1)$1$(tput sgr0)"
   exit 1
+}
+
+# Display version.
+#
+# Globals:
+#   VERSION
+#
+# Returns exit status 0.
+version() {
+  echo -e "${VERSION}"
+  exit 0
 }
 
 # Divider to separate output in terminal.
@@ -79,16 +90,24 @@ add_to_review() {
 #   REVIEW_NAMES
 #   REVIEW_VALUES
 #
+# Arguments:
+#   $1 - Length of the name string (optional)
+#
 # Returns status.
 show_review() {
   local name
   local -i name_max_length
 
-  # get the longest length of the name string
-  name_max_length=0
-  for name in "${REVIEW_NAMES[@]}"; do
-    [[ "${name_max_length}" -lt "${#name}" ]] && name_max_length="${#name}"
-  done
+  if [[ -z "$1" ]]; then
+    # get the longest length of the name string
+    name_max_length=0
+    for name in "${REVIEW_NAMES[@]}"; do
+      [[ "${name_max_length}" -lt "${#name}" ]] && name_max_length="${#name}"
+    done
+  else
+    name_max_length="$1"
+    name_max_length=$((name_max_length-4))
+  fi
 
   [[ "${#REVIEW_VALUES[@]}" -eq 0 ]] && return 1
 

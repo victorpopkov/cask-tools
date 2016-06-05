@@ -45,6 +45,14 @@ load ../libexec/cask-scripts/cask
   [ "${output}" == "'test\"" ]
 }
 
+# version()
+@test "version() when VERSION global is set to 1.0.0" {
+  readonly VERSION='1.0.0'
+  run version
+  [ "${status}" -eq 0 ]
+  [ "${output}" == '1.0.0' ]
+}
+
 # add_to_review() and show_review()
 @test "add_to_review() and show_review() when one named value added" {
   add_to_review 'Name' 'value one'
@@ -76,6 +84,15 @@ load ../libexec/cask-scripts/cask
   [ "${status}" -eq 0 ]
   [ "${lines[0]}" == 'Name:   value one' ]
   [ "${lines[1]}" == '        value two' ]
+}
+
+@test "add_to_review() and show_review() when multiple named values added and optional length argument is passed" {
+  add_to_review 'Name' 'value one'
+  add_to_review 'Longer name' 'value two'
+  run show_review 20
+  [ "${status}" -eq 0 ]
+  [ "${lines[0]}" == 'Name:               value one' ]
+  [ "${lines[1]}" == 'Longer name:        value two' ]
 }
 
 @test "show_review() when nothing to display" {

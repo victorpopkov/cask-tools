@@ -2,21 +2,18 @@
 #
 # Get the latest available version from appcast URL.
 #
-# Version:         0.3.7
+# Version:         0.3.8
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   04.06.2016
+# Last modified:   05.06.2016
 
 # Constants and globals
-readonly VERSION='0.3.7'
+readonly VERSION='0.3.8'
 readonly PROGRAM=$(basename "$0")
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
 declare -a URLS
 declare -i OPTIONS_COUNTER=0
-GITHUB_USER=$(git config --get github.user)
-GITHUB_TOKEN=$(git config --get github.token)
 MATCHING_TAG=''
-GITHUB_PRERELEASE='false'
 DETAILED='true'
 CHECKPOINT='false'
 PROVIDER='false'
@@ -87,9 +84,9 @@ usage() {
       -h, --help                           Show this help." | sed -E 's/^ {4}//'
 }
 
-# exit if no argument or more than one argument was given
-if [[ "${#}" -eq 0 ]]; then
-  usage
+# exit if no arguments
+if [[ "$#" -eq 0 ]]; then
+  usage >&2
   exit 1
 fi
 
@@ -97,17 +94,24 @@ fi
 while [[ "$1" ]]; do
   case "$1" in
     -u | --github-user)
-      readonly GITHUB_USER="$2"
+      # shellcheck disable=SC2034
+      GITHUB_USER="$2"
       shift
       ;;
     -t | --github-token)
-      readonly GITHUB_TOKEN="$2"
+      # shellcheck disable=SC2034
+      GITHUB_TOKEN="$2"
       shift
       ;;
     -s | --stability)
       case "$2" in
-        stable)   GITHUB_PRERELEASE='false' ;;
-        unstable) GITHUB_PRERELEASE='true' ;;
+        stable)
+          GITHUB_PRERELEASE='false'
+          ;;
+        unstable)
+          # shellcheck disable=SC2034
+          GITHUB_PRERELEASE='true'
+          ;;
         *) error "The '--stability' should have one of the values: 'stable' or 'unstable'" ;;
       esac
       shift
@@ -137,8 +141,7 @@ while [[ "$1" ]]; do
       DETAILED='false'
       ;;
     -v | --version)
-      echo "${VERSION}"
-      exit 0
+      version
       ;;
     -h | --help)
       usage
@@ -379,7 +382,7 @@ main() {
       esac
     fi
 
-    show_review
+    show_review 24
     [[ "${#URLS[@]}" -gt 1 ]] && [[ "${URLS[${#URLS[@]}-1]}" != "${url}" ]] && divide
   else
     printf "\n"

@@ -2,13 +2,13 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.4.8
+# Version:         0.4.9
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   04.06.2016
+# Last modified:   05.06.2016
 
 # Constants and globals
-readonly VERSION='0.4.8'
+readonly VERSION='0.4.9'
 readonly PROGRAM=$(basename "$0")
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
 declare -a CASKS
@@ -142,11 +142,13 @@ while [[ "$1" ]]; do
       readonly SHOW_CHECKPOINTS='true'
       ;;
     -u | --github-user)
-      readonly GITHUB_USER="$2"
+      # shellcheck disable=SC2034
+      GITHUB_USER="$2"
       shift
       ;;
     -t | --github-token)
-      readonly GITHUB_TOKEN="$2"
+      # shellcheck disable=SC2034
+      GITHUB_TOKEN="$2"
       shift
       ;;
     -o | --output)
@@ -156,15 +158,19 @@ while [[ "$1" ]]; do
       ;;
     -s | --stability)
       case "$2" in
-        stable)   GITHUB_PRERELEASE='false' ;;
-        unstable) GITHUB_PRERELEASE='true' ;;
+        stable)
+          GITHUB_PRERELEASE='false'
+          ;;
+        unstable)
+          # shellcheck disable=SC2034
+          GITHUB_PRERELEASE='true'
+          ;;
         *) error "The '--stability' should have one of the values: 'stable' or 'unstable'" ;;
       esac
       shift
       ;;
     -v | --version)
-      echo "${VERSION}"
-      exit 0
+      version
       ;;
     -h | --help)
       usage
@@ -564,7 +570,7 @@ main() {
   [[ "${SHOW_CHECKPOINTS}" == 'true' ]] && review_cask_appcasts "${cask}"
 
   [[ "${SHOW_ALL}" == 'true' ]] && show='true'
-  [[ "${show}" == 'true' ]] && show_review
+  [[ "${show}" == 'true' ]] && show_review 17
 
   # shellcheck disable=SC2034
   REVIEW_NAMES=()
