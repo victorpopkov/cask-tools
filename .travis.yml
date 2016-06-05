@@ -1,0 +1,28 @@
+language: bash
+
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+      sudo: required
+    - os: osx
+      osx_image: xcode7.3
+
+addons:
+  apt:
+    packages:
+      - jq
+      - xmlstarlet
+
+before install:
+  - if [[ "$TRAVIS_OS_NAME" == 'osx' ]]; then brew update; fi
+  - if [[ "$TRAVIS_OS_NAME" == 'osx' ]]; then brew install jq xmlstarlet; fi
+
+script:
+  - make test
+
+notifications:
+  email: false
+  slack:
+    rooms:
+      - secure: "FANSvoKYj3BAh2RpRcXMRGxMu/cc198m4vaoQaB5j1TBgBKRlomQlXKy23ol8dW+As/zrAxoannPTxgex0JpWQe0NZOSBoCiUHN/BseP0QtfmLpoMRJLkxmEXMi+tZbaHHKo0DJ7jlxbIdr4WhF2WVBEOZ3GJ6vDDGurdLajB4GG9g0/gxcF5uNRVQc+lXxlo5TMAbJbMfXl94q7UfnfkC7WNV4fFhHMQmBEuQBxf0GHkhwvcnauTJia848rrssLg8OqV/kzyASBwlAF0fewCtXYgsXFuOTL1B6Ffd6LLyOuf99iDScPyMvJnGeeHocFJrQEKUe5X5EcaloG/cDbpoKsF9kOWpOLiklAbC+MUomH1S/SlT+/4ZMTmE/CfKTkQqRjjWgjfpmZQVLvB+nIAYrCFmbQkuD1wdrdirmhBDDIEBvEWcwG2euizATUAJUswjb+/7JKXhVdWsylGeYh70wmdtzWisEBY9HN1aB3QFlxYjbLqOkP49Fjlg1odn4/qCTnatVmtsM7Y2oFAS6y07rNoyEPZmfqjjRWQl3lLGFkb3su1rV4GofgeQsT0/YplUFbUvJ8wXlkj003oAJqwWA1Qw8+UvX8Z2u7F4EISAjnvX0vGp+Jyfy8NjF4fTYENeZGJfLdXcDQ7WWXndNh02NYFyfCly4CgH9df3qaTbQ="

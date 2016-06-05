@@ -150,7 +150,7 @@ compare_versions() {
 
   if echo | sort -Vr > /dev/null 2>&1; then
     local versions
-    readonly versions=($(printf '%s\n%s\n' "${first}}" "${second}" | sort -Vr))
+    readonly versions=($(printf '%s\n%s\n' "${first}" "${second}" | sort -Vr))
     [[ "${first}" == "${versions[0]}" ]] && return 1
     [[ "${second}" == "${versions[0]}" ]] && return 2
   else
