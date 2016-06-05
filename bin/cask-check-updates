@@ -2,24 +2,10 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.4.9
+# Version:         0.4.10
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   05.06.2016
-
-# Constants and globals
-readonly VERSION='0.4.9'
-readonly PROGRAM=$(basename "$0")
-readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
-declare -a CASKS
-declare -a CASKS_VERSION_DELIMETER_BUILD
-GITHUB_USER=$(git config --get github.user)
-GITHUB_TOKEN=$(git config --get github.token)
-GITHUB_PRERELEASE='false'
-OUTPUT='false'
-OUTPUT_PATH=''
-SHOW_ALL='false'
-SHOW_CHECKPOINTS='false'
+# Last modified:   06.06.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -29,8 +15,21 @@ while [ -h "${SOURCE}" ]; do
   [[ ${SOURCE} != /* ]] && SOURCE="${DIR}/${SOURCE}"
   DIR="$(cd -P "$(dirname "${SOURCE}")" && pwd)"
 done
-BASE_PATH="$(cd "${DIR}/.." && pwd)"
-readonly SOURCE DIR BASE_PATH
+readonly SOURCE DIR
+
+# Constants and globals
+readonly VERSION='0.4.10'
+readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
+readonly PROGRAM=$(basename "$0")
+readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
+declare -a CASKS
+GITHUB_USER=$(git config --get github.user)
+GITHUB_TOKEN=$(git config --get github.token)
+GITHUB_PRERELEASE='false'
+OUTPUT='false'
+OUTPUT_PATH=''
+SHOW_ALL='false'
+SHOW_CHECKPOINTS='false'
 
 # shellcheck source=/dev/null
 source "${BASE_PATH}/libexec/cask-scripts/general.bash"

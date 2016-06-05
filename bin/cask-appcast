@@ -2,13 +2,24 @@
 #
 # Get the latest available version from appcast URL.
 #
-# Version:         0.3.8
+# Version:         0.3.9
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   05.06.2016
+# Last modified:   06.06.2016
+
+# Getting this script's absoute path even when dealing with multi-level symlinks
+SOURCE="${BASH_SOURCE[0]}"
+DIR=$(dirname "${SOURCE}")
+while [ -h "${SOURCE}" ]; do
+  SOURCE=$(readlink "${SOURCE}")
+  [[ ${SOURCE} != /* ]] && SOURCE="${DIR}/${SOURCE}"
+  DIR="$(cd -P "$(dirname "${SOURCE}")" && pwd)"
+done
+readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.3.8'
+readonly VERSION='0.3.9'
+readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
 declare -a URLS
@@ -22,17 +33,6 @@ CHECKPOINT='false'
 PROVIDER='false'
 APP_VERSION='false'
 DOWNLOADS='false'
-
-# Getting this script's absoute path even when dealing with multi-level symlinks
-SOURCE="${BASH_SOURCE[0]}"
-DIR=$(dirname "${SOURCE}")
-while [ -h "${SOURCE}" ]; do
-  SOURCE=$(readlink "${SOURCE}")
-  [[ ${SOURCE} != /* ]] && SOURCE="${DIR}/${SOURCE}"
-  DIR="$(cd -P "$(dirname "${SOURCE}")" && pwd)"
-done
-BASE_PATH="$(cd "${DIR}/.." && pwd)"
-readonly SOURCE DIR BASE_PATH
 
 # shellcheck source=/dev/null
 source "${BASE_PATH}/libexec/cask-scripts/general.bash"
