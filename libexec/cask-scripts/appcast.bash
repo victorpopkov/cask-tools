@@ -4,7 +4,7 @@
 #
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   04.06.2016
+# Last modified:   05.06.2016
 
 # Create sha256 checksum from that represents appcast checkpoint from piped content string.
 #
@@ -87,7 +87,7 @@ format_xml() {
   content="$1"
   [[ -z "${content}" ]] && return 1
 
-  content=$(xmlstarlet fo -s 4 -o -D -N <<< "${content}" 2> /dev/null)
+  content=$(xmlstarlet fo -s 2 -D -N <<< "${content}" 2> /dev/null)
   content=$(awk '{ sub(/<!--([[:space:]]*)?</, "<"); sub(/>([[:space:]]*)?-->/, ">"); print }' <<< "${content}") # uncomment tags
 
   echo "${content}"

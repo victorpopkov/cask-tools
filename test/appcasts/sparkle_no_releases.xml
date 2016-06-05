@@ -1,8 +1,9 @@
+<?xml version="1.0"?>
 <rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
-    <channel>
-        <title>App</title>
-        <link>https://example.com/app/</link>
-        <description><![CDATA[App Description]]></description>
-        <language>en</language>
-    </channel>
+  <channel>
+    <title>App</title>
+    <link>https://example.com/app/</link>
+    <description><![CDATA[App Description]]></description>
+    <language>en</language>
+  </channel>
 </rss>

@@ -13,55 +13,55 @@ load ../libexec/cask-scripts/cask
 @test "generate_appcast_checkpoint(): github_default.xml" {
   cd "${BATS_TEST_DIRNAME}/appcasts"
   run generate_appcast_checkpoint "$(cat 'github_default.xml')"
-  [ "${output}" == 'e5e904ede055143aed47a9c416234f5deaba2a34eb818e596bf9103ec778f9fa' ]
+  [ "${output}" == '1e92c6187485bdafa39716f824ddf8c1233e776fd23f9a0d42032bedc92edfb8' ]
 }
 
 @test "generate_appcast_checkpoint(): sparkle_default.xml" {
   cd "${BATS_TEST_DIRNAME}/appcasts"
   run generate_appcast_checkpoint "$(cat 'sparkle_default.xml')"
-  [ "${output}" == '1a591f1ac72a35c7975e6ab2655c6d1133d37d6e391d71186cbdb3f0dd8eb5bc' ]
+  [ "${output}" == '583743f5e8662cb223baa5e718224fa11317b0983dbf8b3c9c8d412600b6936c' ]
 }
 
 @test "generate_appcast_checkpoint(): sparkle_default_asc.xml" {
   cd "${BATS_TEST_DIRNAME}/appcasts"
   run generate_appcast_checkpoint "$(cat 'sparkle_default_asc.xml')"
-  [ "${output}" == '23fa71264825eab29a9b90a5ca97ef4c0af7e8d84c5c7838526e6d7fe1ddf954' ]
+  [ "${output}" == '8ad0cd8d67f12ed75fdfbf74e904ef8b82084875c959bec00abd5a166c512b5d' ]
 }
 
 @test "generate_appcast_checkpoint(): sparkle_attributes_as_elements.xml" {
   cd "${BATS_TEST_DIRNAME}/appcasts"
   run generate_appcast_checkpoint "$(cat 'sparkle_attributes_as_elements.xml')"
-  [ "${output}" == '7c88c7f11aba3c14edf352546193823c27b27b7d415f7b75a11ef3d014333177' ]
+  [ "${output}" == '06a16fc0d5c7f8e18ca04dbc52138159b5438cdb929e033dae6ddebca7e710fc' ]
 }
 
 @test "generate_appcast_checkpoint(): sparkle_multiple_enclosure.xml" {
   cd "${BATS_TEST_DIRNAME}/appcasts"
   run generate_appcast_checkpoint "$(cat 'sparkle_multiple_enclosure.xml')"
-  [ "${output}" == 'f38a42eecf0efec53f30f628700218b0d3478c88c268a4606ada91c61fc0317a' ]
+  [ "${output}" == '6ba0ab0e37d4280803ff2f197aaf362a3553849fb296a64bc946eda1bdb759c7' ]
 }
 
 @test "generate_appcast_checkpoint(): sparkle_incorrect_namespace.xml" {
   cd "${BATS_TEST_DIRNAME}/appcasts"
   run generate_appcast_checkpoint "$(cat 'sparkle_incorrect_namespace.xml')"
-  [ "${output}" == '13b5a5220765dcf37052c4aacf837e5e4525cfbb0870b798e8aa2ce06e179057' ]
+  [ "${output}" == 'f7ced8023765dc7f37c3597da7a1f8d33b3c22cc764e329babd3df16effdd245' ]
 }
 
 @test "generate_appcast_checkpoint(): sparkle_without_namespaces.xml" {
   cd "${BATS_TEST_DIRNAME}/appcasts"
   run generate_appcast_checkpoint "$(cat 'sparkle_without_namespaces.xml')"
-  [ "${output}" == 'bf5229e9d0f3b476438705d370689fc3c7ce609ea814f3361f5a0e539b644bf3' ]
+  [ "${output}" == 'd4cdd55c6dbf944d03c5267f3f7be4a9f7c2f1b94929359ce7e21aeef3b0747b' ]
 }
 
 @test "generate_appcast_checkpoint(): sparkle_no_releases.xml" {
   cd "${BATS_TEST_DIRNAME}/appcasts"
   run generate_appcast_checkpoint "$(cat 'sparkle_no_releases.xml')"
-  [ "${output}" == '4fcd8a16f930604696785a189ae4028670a29f000564493c69b49e10fbee222b' ]
+  [ "${output}" == '65911706576dab873c2b30b2d6505581d17f8e2c763da7320cfb06bbc2d4eaca' ]
 }
 
 @test "generate_appcast_checkpoint(): unknown.xml" {
   cd "${BATS_TEST_DIRNAME}/appcasts"
   run generate_appcast_checkpoint "$(cat 'unknown.xml')"
-  [ "${output}" == 'd1ec5c6b7701e7aa859eb0e6b154f12ad0beed6755bdcea2f2f6afd711e35b62' ]
+  [ "${output}" == 'cfed64a67417a29011b607e6194a2e06e447ceee681d2b5c0daee77a8bdac673' ]
 }
 
 # get_appcast_provider()
@@ -142,19 +142,19 @@ load ../libexec/cask-scripts/cask
 @test "fix_sparkle_xmlns() when Sparkle namespace is incorrect (sparkle_incorrect_namespace.xml)" {
   cd "${BATS_TEST_DIRNAME}/appcasts"
   run cat 'sparkle_incorrect_namespace.xml'
-  [ "${lines[0]}" == '<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:sparkle="https://example.com/xml-namespaces/sparkle" version="2.0">' ]
+  [ "${lines[1]}" == '<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:sparkle="https://example.com/xml-namespaces/sparkle" version="2.0">' ]
   run fix_sparkle_xmlns "$(cat 'sparkle_incorrect_namespace.xml')"
   [ "${status}" -eq 0 ]
-  [ "${lines[0]}" == '<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">' ]
+  [ "${lines[1]}" == '<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">' ]
 }
 
 @test "fix_sparkle_xmlns() when Sparkle namespaces are not specified (sparkle_without_namespaces.xml)" {
   cd "${BATS_TEST_DIRNAME}/appcasts"
   run cat 'sparkle_without_namespaces.xml'
-  [ "${lines[0]}" == '<rss version="2.0">' ]
+  [ "${lines[1]}" == '<rss version="2.0">' ]
   run fix_sparkle_xmlns "$(cat 'sparkle_without_namespaces.xml')"
   [ "${status}" -eq 0 ]
-  [ "${lines[0]}" == '<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">' ]
+  [ "${lines[1]}" == '<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">' ]
 }
 
 # format_xml()
@@ -166,11 +166,12 @@ load ../libexec/cask-scripts/cask
 @test "format_xml() should uncomment tags (sparkle_default.xml)" {
   cd "${BATS_TEST_DIRNAME}/appcasts"
   run cat 'sparkle_default.xml'
-  [ "${lines[11]}" == '            <!--<enclosure sparkle:version="200" sparkle:shortVersionString="2.0.0" url="https://example.com/app_2.0.0.dmg" length="100000" type="application/octet-stream"/>-->' ]
-  [ "${lines[18]}" == '            <!-- <enclosure sparkle:version="110" sparkle:shortVersionString="1.1.0" url="https://example.com/app_1.1.0.dmg" length="100000" type="application/octet-stream"/> -->' ]
+  [ "${lines[12]}" == '      <!--<enclosure sparkle:version="200" sparkle:shortVersionString="2.0.0" url="https://example.com/app_2.0.0.dmg" length="100000" type="application/octet-stream"/>-->' ]
+  [ "${lines[19]}" == '      <!-- <enclosure sparkle:version="110" sparkle:shortVersionString="1.1.0" url="https://example.com/app_1.1.0.dmg" length="100000" type="application/octet-stream"/> -->' ]
   run format_xml "$(cat 'sparkle_default.xml')"
-  [ "${lines[11]}" == '            <enclosure sparkle:version="200" sparkle:shortVersionString="2.0.0" url="https://example.com/app_2.0.0.dmg" length="100000" type="application/octet-stream"/>' ]
-  [ "${lines[18]}" == '            <enclosure sparkle:version="110" sparkle:shortVersionString="1.1.0" url="https://example.com/app_1.1.0.dmg" length="100000" type="application/octet-stream"/>' ]
+  echo "${output}"
+  [ "${lines[12]}" == '      <enclosure sparkle:version="200" sparkle:shortVersionString="2.0.0" url="https://example.com/app_2.0.0.dmg" length="100000" type="application/octet-stream"/>' ]
+  [ "${lines[19]}" == '      <enclosure sparkle:version="110" sparkle:shortVersionString="1.1.0" url="https://example.com/app_1.1.0.dmg" length="100000" type="application/octet-stream"/>' ]
 }
 
 # get_sparkle_version_build_url()
