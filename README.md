@@ -1,5 +1,7 @@
 # cask-scripts
 
+[![Build Status](https://travis-ci.org/victorpopkov/cask-scripts.svg?branch=master)](https://travis-ci.org/victorpopkov/cask-scripts)
+
 Collection of small scripts designed to help maintain the
 [Homebrew-Cask](https://github.com/caskroom/homebrew-cask) project.
 
