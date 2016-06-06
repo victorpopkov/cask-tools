@@ -28,7 +28,6 @@ load ../libexec/cask-scripts/cask
   [ "${output}" == 'http://flyingmeat.com/acorn/' ]
   run get_cask_stanza_value 'acorn' 'license'
   [ "${status}" -eq 0 ]
-  echo "${output}"
   [ "${output}" == ':commercial' ]
 }
 
@@ -59,7 +58,8 @@ load ../libexec/cask-scripts/cask
 @test "get_cask_version_appcast_checkpoint_url() when single version and appcast, but multiple download urls (praat.rb)" {
   run get_cask_version_appcast_checkpoint_url 'praat'
   [ "${status}" -eq 0 ]
-  [ "${lines[0]}" == '"6.0.16" "https://github.com/praat/praat/releases.atom" "a260a0ac0d3fdc0cab09f8d9788c9022fc6c12c0cbe801e98b5cdadeb8300f0d" "http://www.fon.hum.uva.nl/praat/praat#{version.no_dots}_mac64.dmg"' ]
+  [ "${lines[0]}" == '"6.0.16" "https://github.com/praat/praat/releases.atom" "a260a0ac0d3fdc0cab09f8d9788c9022fc6c12c0cbe801e98b5cdadeb8300f0d" "http://www.fon.hum.uva.nl/praat/praat#{version.no_dots}_mac32.dmg"' ]
+  [ "${lines[1]}" == '"6.0.16" "https://github.com/praat/praat/releases.atom" "a260a0ac0d3fdc0cab09f8d9788c9022fc6c12c0cbe801e98b5cdadeb8300f0d" "http://www.fon.hum.uva.nl/praat/praat#{version.no_dots}_mac64.dmg"' ]
 }
 
 @test "get_cask_version_appcast_checkpoint_url() when equal number of separate versions, appcasts and download urls (cocktail.rb)" {

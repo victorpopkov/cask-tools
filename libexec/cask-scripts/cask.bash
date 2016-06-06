@@ -4,9 +4,9 @@
 #
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   04.06.2016
+# Last modified:   07.06.2016
 
-# Get value/values of a cask stanza.
+# Get value(s) of a cask stanza.
 #
 # Arguments:
 #   $1 - Cask name   (required)
@@ -41,32 +41,44 @@ get_cask_stanza_value() {
 #   "<version>" "<appcast>" "<checkpoint>" "<url>"
 get_cask_version_appcast_checkpoint_url() {
   local caskname cask next content appcast checkpoint
-  local -a versions urls appcasts checkpoints line
+  local -a versions urls appcasts checkpoints line temp
+  local -i counter
 
   readonly caskname="$1"
   [[ -z "${caskname}" ]] && return 1
 
   readonly cask="${caskname}.rb"
   readonly versions=($(grep "^\s*.version " < "${cask}" | awk '{ print $2 }' | unquote))
+  readonly urls=($(grep "^\s*.url " < "${cask}" | awk '{ print $2 }' | unquote))
   readonly appcasts=($(grep "^\s*.appcast " < "${cask}" | awk '{ print $2 }' | unquote))
   readonly checkpoints=($(grep "^\s*.checkpoint: " < "${cask}" | awk '{ print $2 }' | unquote))
-  readonly urls=($(grep "^\s*.url " < "${cask}" | awk '{ print $2 }' | unquote))
 
-  for ((i = 0; i < ${#versions[@]}; i++)); do
+  counter="${#versions[@]}"
+  [[ "${#urls[@]}" -gt "${counter}" ]] && counter="${#urls[@]}"
+
+  for ((i = 0; i < counter; i++)); do
     line=()
 
     [[ "$((i+1))" -lt "${#versions[@]}" ]] && next="/version '${versions[$i+1]}'/" || next='0'
     content=$(awk "/version '${versions[i]}'/,${next}" < "${cask}")
 
-    appcast=$(get_cask_stanza_value "${caskname}" 'appcast' "${content}")
-    checkpoint=$(get_cask_stanza_value "${caskname}" 'checkpoint:' "${content}")
-    if [[ "${#versions[@]}" -gt "${#urls[@]}" ]] || [[ "${#versions[@]}" -eq "${#urls[@]}" ]]; then
-      [[ "${#urls[@]}" -gt 1 ]] && url=$(get_cask_stanza_value "${caskname}" 'url' "${content}") || url="${urls[0]}"
-    else
+    temp=($(get_cask_stanza_value "${caskname}" 'appcast' "${content}"))
+    appcast="${temp[0]}"
+    temp=($(get_cask_stanza_value "${caskname}" 'checkpoint:' "${content}"))
+    checkpoint="${temp[0]}"
+
+    if [[ "${#urls[@]}" -gt "${#versions[@]}" ]]; then
+      version="${versions[${#versions[@]}-1]}"
+      url="${urls[i]}"
+    elif [[ "${#urls[@]}" -lt "${#versions[@]}" ]]; then
+      version="${versions[i]}"
       url="${urls[${#urls[@]}-1]}"
+    else
+      version="${versions[i]}"
+      url="${urls[i]}"
     fi
 
-    line+=("\"${versions[i]}\"")
+    line+=("\"${version}\"")
     line+=("\"${appcast}\"")
     line+=("\"${checkpoint}\"")
     line+=("\"${url}\"")
