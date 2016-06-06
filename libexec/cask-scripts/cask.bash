@@ -48,10 +48,10 @@ get_cask_version_appcast_checkpoint_url() {
   [[ -z "${caskname}" ]] && return 1
 
   readonly cask="${caskname}.rb"
-  readonly versions=($(grep "^\s*.version " < "${cask}" | awk '{ print $2 }' | unquote))
-  readonly urls=($(grep "^\s*.url " < "${cask}" | awk '{ print $2 }' | unquote))
-  readonly appcasts=($(grep "^\s*.appcast " < "${cask}" | awk '{ print $2 }' | unquote))
-  readonly checkpoints=($(grep "^\s*.checkpoint: " < "${cask}" | awk '{ print $2 }' | unquote))
+  readonly versions=($(get_cask_stanza_value "${caskname}" 'version'))
+  readonly urls=($(get_cask_stanza_value "${caskname}" 'url'))
+  readonly appcasts=($(get_cask_stanza_value "${caskname}" 'appcast'))
+  readonly checkpoints=($(get_cask_stanza_value "${caskname}" 'checkpoint'))
 
   counter="${#versions[@]}"
   [[ "${#urls[@]}" -gt "${counter}" ]] && counter="${#urls[@]}"
@@ -87,4 +87,74 @@ get_cask_version_appcast_checkpoint_url() {
   done
 
   return 0
+}
+
+
+# Interpolate version into string.
+#
+# Arguments:
+#   $1 - String
+#   $2 - Version
+#
+# Returns string with version.
+interpolate_version() {
+  local version_original version_only major minor patch string string_part version_part replace
+  local -a methods string_parts version_parts
+
+  string="$1"
+  readonly version_original="$2"
+  readonly version_only=$(sed -e 's/[^0-9.]*\([0-9.]*\).*/\1/' <<< "${version_original}")
+  readonly string_parts=($(grep -Eo "#{version}|(#{version\.[^}]*.[^{]*})" <<< "${string}" | sed -e "s/[\'\"]/QUOTE/g" -e "s/ /SPACE/g" | cut -d ' ' -f 1))
+
+  for string_part in "${string_parts[@]}"; do
+    if [[ "${string_part}" == '#{version}' ]]; then
+      string="${string//${string_part}/${version_original}}"
+      continue
+    fi
+
+    methods=(
+      'sub' 'gsub' 'delete' 'to_i' 'to_f'
+      'major' 'minor' 'patch' 'major_minor' 'major_minor_patch'
+      'before_comma' 'after_comma' 'before_colon' 'after_colon'
+      'no_dots' 'dots_to_underscores'
+    )
+    for method in "${methods[@]}"; do
+      if [[ "${string_part}" =~ \."${method}" ]]; then
+        string_part=$(sed -e "s/\.${method}/!${method}/g" -e "s/[\'\"]/QUOTE/g" <<< "${string_part}")
+      fi
+    done
+
+    IFS='!' read -ra version_parts <<< "$(sed -e 's/^#{version//' -e 's/}$//' <<< "${string_part}" | xargs)"
+    string_part=$(sed -e 's/!/\./g' -e "s/QUOTE/'/g" -e "s/SPACE/ /g" <<< "${string_part}")
+
+    replace="${version_original}"
+    for version_part in "${version_parts[@]}"; do
+      major=$(cut -d '.' -f 1 <<< "${version_only}")
+      minor=$(cut -d '.' -f 2 <<< "${version_only}")
+      patch=$(cut -d '.' -f 3 <<< "${version_only}")
+
+      version_part=$(sed -e "s/QUOTE/'/g" -e "s/SPACE/ /g" <<< "${version_part}")
+
+      if [[ ! -z "${version_part}" ]]; then
+        case "${version_part}" in
+          'major')               replace="${major}" ;;
+          'minor')               replace="${minor}" ;;
+          'patch')               replace="${patch}" ;;
+          'major_minor')         replace="${major}.${minor}" ;;
+          'major_minor_patch')   replace="${major}.${minor}.${patch}" ;;
+          'before_comma')        replace="$(cut -d ',' -f 1 <<< "${version_original}")" ;;
+          'after_comma')         replace="$(cut -d ',' -f 2 <<< "${version_original}")" ;;
+          'before_colon')        replace="$(cut -d ':' -f 1 <<< "${version_original}")" ;;
+          'after_colon')         replace="$(cut -d ':' -f 2 <<< "${version_original}")" ;;
+          'no_dots')             replace="${version_original//\.}" ;;
+          'dots_to_underscores') replace="${version_original//\./_}" ;;
+          *)                     replace="$(ruby -e "version='${replace}'; puts version.${version_part}" 2> /dev/null)" ;;
+        esac
+      fi
+    done
+
+    [[ ! -z "${replace}" ]] && string="${string//${string_part}/${replace}}"
+  done
+
+  echo "${string}"
 }

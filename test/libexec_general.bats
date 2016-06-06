@@ -19,29 +19,29 @@ load ../libexec/cask-scripts/cask
 
 # unquote()
 @test "unquote() when single quotes: 'test' => test" {
-  run unquote <<< "$(echo "'test'")"
+  run unquote <<< "'test'"
   [ "${output}" == 'test' ]
 }
 
 @test "unquote() when single quotes and comma at the end: 'test', => test" {
-  run unquote <<< "$(echo "'test',")"
+  run unquote <<< "'test',"
   [ "${output}" == 'test' ]
 }
 
 @test "unquote() when double quotes': \"test\" => test" {
-  run unquote <<< "$(echo '"test"')"
+  run unquote <<< '"test"'
   [ "${output}" == 'test' ]
 }
 
 @test "unquote() when double quotes and comma at the end: \"test\", => test" {
-  run unquote <<< "$(echo '"test",')"
+  run unquote <<< '"test",'
   [ "${output}" == 'test' ]
 }
 
 @test "unquote() when double quotes not normalized: \"test' => \"test', 'test\" => 'test\"" {
-  run unquote <<< "$(echo "\"test'")"
+  run unquote <<< "\"test'"
   [ "${output}" == "\"test'" ]
-  run unquote <<< "$(echo "'test\"")"
+  run unquote <<< "'test\""
   [ "${output}" == "'test\"" ]
 }
 
@@ -262,100 +262,4 @@ load ../libexec/cask-scripts/cask
 @test "compare_versions() when first version is less than second: 6.0.beta.2 < 6.0.beta.3" {
   run compare_versions '6.0.beta.2' '6.0.beta.3'
   [ "${status}" -eq 2 ]
-}
-
-# interpolate_version()
-@test "interpolate_version() when #{version}: 1.2.3,1000 => 1.2.3,1000" {
-  run interpolate_version '#{version}' '1.2.3,1000'
-  [ "${output}" == '1.2.3,1000' ]
-}
-
-@test "interpolate_version() when #{version.major}: 1.2.3,1000 => 1" {
-  run interpolate_version '#{version.major}' '1.2.3,1000'
-  [ "${output}" == '1' ]
-}
-
-@test "interpolate_version() when #{version.minor}: 1.2.3,1000 => 2" {
-  run interpolate_version '#{version.minor}' '1.2.3,1000'
-  [ "${output}" == '2' ]
-}
-
-@test "interpolate_version() when #{version.patch}: 1.2.3,1000 => 3" {
-  run interpolate_version '#{version.patch}' '1.2.3,1000'
-  [ "${output}" == '3' ]
-}
-
-@test "interpolate_version() when #{version.major_minor}: 1.2.3,1000 => 1.2" {
-  run interpolate_version '#{version.major_minor}' '1.2.3,1000'
-  [ "${output}" == '1.2' ]
-}
-
-@test "interpolate_version() when #{version.major_minor_patch}: 1.2.3,1000 => 1.2.3" {
-  run interpolate_version '#{version.major_minor_patch}' '1.2.3,1000'
-  [ "${output}" == '1.2.3' ]
-}
-
-@test "interpolate_version() when #{version.before_comma}: 1.2.3,1000 => 1.2.3" {
-  run interpolate_version '#{version.before_comma}' '1.2.3,1000'
-  [ "${output}" == '1.2.3' ]
-}
-
-@test "interpolate_version() when #{version.after_comma}: 1.2.3,1000 => 1000" {
-  run interpolate_version '#{version.after_comma}' '1.2.3,1000'
-  [ "${output}" == '1000' ]
-}
-
-@test "interpolate_version() when #{version.before_colon: 1.2.3:1000 => 1.2.3" {
-  run interpolate_version '#{version.before_colon}' '1.2.3:1000'
-  [ "${output}" == '1.2.3' ]
-}
-
-@test "interpolate_version() when #{version.after_colon}: 1.2.3:1000 => 1000" {
-  run interpolate_version '#{version.after_colon}' '1.2.3:1000'
-  [ "${output}" == '1000' ]
-}
-
-@test "interpolate_version() when #{version.no_dots}: 1.2.3:1000 => 123:1000" {
-  run interpolate_version '#{version.no_dots}' '1.2.3:1000'
-  [ "${output}" == '123:1000' ]
-}
-
-@test "interpolate_version() when #{version.dots_to_underscores}: 1.2.3:1000 => 1_2_3:1000" {
-  run interpolate_version '#{version.dots_to_underscores}' '1.2.3:1000'
-  [ "${output}" == '1_2_3:1000' ]
-}
-
-@test "interpolate_version() when Ruby #{version.sub(%r{.*-}, '')}: 1.2.3-1000 => 1000" {
-  run interpolate_version "#{version.sub(%r{.*-}, '')}" '1.2.3-1000'
-  [ "${output}" == '1000' ]
-}
-
-@test "interpolate_version() when Ruby #{version.gsub(':', '_')}: 1.2.3:1000 => 1.2.3_1000" {
-  run interpolate_version "#{version.gsub(':', '_')}" '1.2.3:1000'
-  [ "${output}" == '1.2.3_1000' ]
-}
-
-@test "interpolate_version() when Ruby #{version.delete('.')}: 1.2.3:1000 => 123:1000" {
-  run interpolate_version "#{version.delete('.')}" '1.2.3:1000'
-  [ "${output}" == '123:1000' ]
-}
-
-@test "interpolate_version() when Ruby #{version.to_i}: 1.2.3:1000 => 1" {
-  run interpolate_version "#{version.to_i}" '1.2.3:1000'
-  [ "${output}" == '1' ]
-}
-
-@test "interpolate_version() when Ruby #{version.to_f}: 1.2.3:1000 => 1.2" {
-  run interpolate_version "#{version.to_f}" '1.2.3:1000'
-  [ "${output}" == '1.2' ]
-}
-
-@test "interpolate_version() when multiple versions in string: #{version.gsub(',', '_')} #{version.minor} #{version.patch} (1.2.3,1000:200) => 1.2.3_1000:200 2 3" {
-  run interpolate_version "#{version.gsub(',', '_')} #{version.minor} #{version.patch}" '1.2.3,1000:200'
-  [ "${output}" == '1.2.3_1000:200 2 3' ]
-}
-
-@test "interpolate_version() when chained: #{version.before_colon.before_comma.gsub('.', '_')} (1.2.3,1000:200) => 1_2_3" {
-  run interpolate_version "#{version.before_colon.before_comma.gsub('.', '_')}" '1.2.3,1000:200'
-  [ "${output}" == '1_2_3' ]
 }

@@ -4,6 +4,23 @@ load ../libexec/cask-scripts/general
 load ../libexec/cask-scripts/appcast
 load ../libexec/cask-scripts/cask
 
+interpolate_cask_version_to_stanza() {
+  local cask stanza version url
+  local -a values
+
+  readonly cask="$1"
+  readonly stanza="$2"
+
+  run get_cask_version_appcast_checkpoint_url "${cask}"
+  readonly values=(${output})
+
+  for ((i = 0; i < ${#values[@]}; i++)); do
+    version=$(echo "${values[i]}" | awk '{ print $1 }' | unquote)
+    url=$(echo "${values[i]}" | awk '{ print $4 }' | unquote)
+    interpolate_version "${url}" "${version}"
+  done
+}
+
 # get_cask_stanza_value()
 @test "get_cask_stanza_value() when required arguments not passed" {
   run get_cask_stanza_value
@@ -93,4 +110,255 @@ load ../libexec/cask-scripts/cask
   [ "${status}" -eq 0 ]
   [ "${lines[0]}" == '"0.939" "" "" "https://bettertouchtool.net/btt#{version}.zip"' ]
   [ "${lines[1]}" == '"1.69" "http://appcast.boastr.net" "c0db13ea9aec2e83f4a69ce215d652b457898a2fb3f9d71d1fb9f0085a86cf08" "https://boastr.net/releases/btt#{version}.zip"' ]
+}
+
+# interpolate_version()
+@test "interpolate_version() when #{version}: 1.2.3,1000 => 1.2.3,1000" {
+  run interpolate_version '#{version}' '1.2.3,1000'
+  [ "${output}" == '1.2.3,1000' ]
+}
+
+@test "interpolate_version() when #{version.major}: 1.2.3,1000 => 1" {
+  run interpolate_version '#{version.major}' '1.2.3,1000'
+  [ "${output}" == '1' ]
+}
+
+@test "interpolate_version() when #{version.minor}: 1.2.3,1000 => 2" {
+  run interpolate_version '#{version.minor}' '1.2.3,1000'
+  [ "${output}" == '2' ]
+}
+
+@test "interpolate_version() when #{version.patch}: 1.2.3,1000 => 3" {
+  run interpolate_version '#{version.patch}' '1.2.3,1000'
+  [ "${output}" == '3' ]
+}
+
+@test "interpolate_version() when #{version.major_minor}: 1.2.3,1000 => 1.2" {
+  run interpolate_version '#{version.major_minor}' '1.2.3,1000'
+  [ "${output}" == '1.2' ]
+}
+
+@test "interpolate_version() when #{version.major_minor_patch}: 1.2.3,1000 => 1.2.3" {
+  run interpolate_version '#{version.major_minor_patch}' '1.2.3,1000'
+  [ "${output}" == '1.2.3' ]
+}
+
+@test "interpolate_version() when #{version.before_comma}: 1.2.3,1000 => 1.2.3" {
+  run interpolate_version '#{version.before_comma}' '1.2.3,1000'
+  [ "${output}" == '1.2.3' ]
+}
+
+@test "interpolate_version() when #{version.after_comma}: 1.2.3,1000 => 1000" {
+  run interpolate_version '#{version.after_comma}' '1.2.3,1000'
+  [ "${output}" == '1000' ]
+}
+
+@test "interpolate_version() when #{version.before_colon: 1.2.3:1000 => 1.2.3" {
+  run interpolate_version '#{version.before_colon}' '1.2.3:1000'
+  [ "${output}" == '1.2.3' ]
+}
+
+@test "interpolate_version() when #{version.after_colon}: 1.2.3:1000 => 1000" {
+  run interpolate_version '#{version.after_colon}' '1.2.3:1000'
+  [ "${output}" == '1000' ]
+}
+
+@test "interpolate_version() when #{version.no_dots}: 1.2.3:1000 => 123:1000" {
+  run interpolate_version '#{version.no_dots}' '1.2.3:1000'
+  [ "${output}" == '123:1000' ]
+}
+
+@test "interpolate_version() when #{version.dots_to_underscores}: 1.2.3:1000 => 1_2_3:1000" {
+  run interpolate_version '#{version.dots_to_underscores}' '1.2.3:1000'
+  [ "${output}" == '1_2_3:1000' ]
+}
+
+@test "interpolate_version() when Ruby #{version.sub(%r{.*-}, '')}: 1.2.3-1000 => 1000" {
+  run interpolate_version "#{version.sub(%r{.*-}, '')}" '1.2.3-1000'
+  [ "${output}" == '1000' ]
+}
+
+@test "interpolate_version() when Ruby #{version.gsub(':', '_')}: 1.2.3:1000 => 1.2.3_1000" {
+  run interpolate_version "#{version.gsub(':', '_')}" '1.2.3:1000'
+  [ "${output}" == '1.2.3_1000' ]
+}
+
+@test "interpolate_version() when Ruby #{version.delete('.')}: 1.2.3:1000 => 123:1000" {
+  run interpolate_version "#{version.delete('.')}" '1.2.3:1000'
+  [ "${output}" == '123:1000' ]
+}
+
+@test "interpolate_version() when Ruby #{version.to_i}: 1.2.3:1000 => 1" {
+  run interpolate_version "#{version.to_i}" '1.2.3:1000'
+  [ "${output}" == '1' ]
+}
+
+@test "interpolate_version() when Ruby #{version.to_f}: 1.2.3:1000 => 1.2" {
+  run interpolate_version "#{version.to_f}" '1.2.3:1000'
+  [ "${output}" == '1.2' ]
+}
+
+@test "interpolate_version() when multiple versions in string: #{version.gsub(',', '_')} #{version.minor} #{version.patch} (1.2.3,1000:200) => 1.2.3_1000:200 2 3" {
+  run interpolate_version "#{version.gsub(',', '_')} #{version.minor} #{version.patch}" '1.2.3,1000:200'
+  [ "${output}" == '1.2.3_1000:200 2 3' ]
+}
+
+@test "interpolate_version() when chained: #{version.before_colon.before_comma.gsub('.', '_')} (1.2.3,1000:200) => 1_2_3" {
+  run interpolate_version "#{version.before_colon.before_comma.gsub('.', '_')}" '1.2.3,1000:200'
+  [ "${output}" == '1_2_3' ]
+}
+
+@test "interpolate_version() in url stanza(s) for cask (acorn.rb)" {
+  local -a urls
+
+  readonly urls=(
+    https://secure.flyingmeat.com/download/Acorn.zip
+  )
+
+  run interpolate_cask_version_to_stanza 'acorn' 'url'
+  for ((i = 0; i < ${#urls[@]}; i++)); do
+    [ "${lines[i]}" == "${urls[i]}" ]
+  done
+}
+
+@test "interpolate_version() in url stanza(s) for cask (adobe-bloodhound.rb)" {
+  local -a urls
+
+  readonly urls=(
+    https://github.com/Adobe-Marketing-Cloud/mobile-services/releases/download/Bloodhound-v3.1.1-OSX/Bloodhound-3.1.1-OSX.dmg
+  )
+
+  run interpolate_cask_version_to_stanza 'adobe-bloodhound' 'url'
+  for ((i = 0; i < ${#urls[@]}; i++)); do
+    echo -e "${lines[i]}\n${urls[i]}\n"
+    [ "${lines[i]}" == "${urls[i]}" ]
+  done
+}
+
+@test "interpolate_version() in url stanza(s) for cask (amethyst.rb)" {
+  local -a urls
+
+  readonly urls=(
+    https://ianyh.com/amethyst/versions/Amethyst-0.9.10.zip
+    https://ianyh.com/amethyst/versions/Amethyst-0.10.1.zip
+  )
+
+  run interpolate_cask_version_to_stanza 'amethyst' 'url'
+  for ((i = 0; i < ${#urls[@]}; i++)); do
+    [ "${lines[i]}" == "${urls[i]}" ]
+  done
+}
+
+@test "interpolate_version() in url stanza(s) for cask (bettertouchtool.rb)" {
+  local -a urls
+
+  readonly urls=(
+    https://bettertouchtool.net/btt0.939.zip
+    https://boastr.net/releases/btt1.69.zip
+  )
+
+  run interpolate_cask_version_to_stanza 'bettertouchtool' 'url'
+  for ((i = 0; i < ${#urls[@]}; i++)); do
+    [ "${lines[i]}" == "${urls[i]}" ]
+  done
+}
+
+@test "interpolate_version() in url stanza(s) for cask (clamxav.rb)" {
+  local -a urls
+
+  readonly urls=(
+    https://www.clamxav.com/downloads/ClamXav_2.2.1.dmg
+    https://www.clamxav.com/downloads/ClamXav_2.5.1.dmg
+    https://www.clamxav.com/downloads/ClamXav_2.8.9.3.dmg
+  )
+
+  run interpolate_cask_version_to_stanza 'clamxav' 'url'
+  for ((i = 0; i < ${#urls[@]}; i++)); do
+    [ "${lines[i]}" == "${urls[i]}" ]
+  done
+}
+
+@test "interpolate_version() in url stanza(s) for cask (cocktail.rb)" {
+  local -a urls
+
+  readonly urls=(
+    http://www.maintain.se/downloads/sparkle/snowleopard/Cocktail_5.1.zip
+    http://www.maintain.se/downloads/sparkle/lion/Cocktail_5.6.zip
+    http://www.maintain.se/downloads/sparkle/mountainlion/Cocktail_6.9.zip
+    http://www.maintain.se/downloads/sparkle/mavericks/Cocktail_7.9.1.zip
+    http://www.maintain.se/downloads/sparkle/yosemite/Cocktail_8.8.1.zip
+    http://www.maintain.se/downloads/sparkle/elcapitan/Cocktail_9.2.4.zip
+  )
+
+  run interpolate_cask_version_to_stanza 'cocktail' 'url'
+  for ((i = 0; i < ${#urls[@]}; i++)); do
+    [ "${lines[i]}" == "${urls[i]}" ]
+  done
+}
+
+@test "interpolate_version() in url stanza(s) for cask (codekit.rb)" {
+  local -a urls
+
+  readonly urls=(
+    https://incident57.com/codekit/files/codekit-19127.zip
+  )
+
+  run interpolate_cask_version_to_stanza 'codekit' 'url'
+  for ((i = 0; i < ${#urls[@]}; i++)); do
+    [ "${lines[i]}" == "${urls[i]}" ]
+  done
+}
+
+@test "interpolate_version() in url stanza(s) for cask (daemon-tools-lite.rb)" {
+  local -a urls
+
+  readonly urls=(
+    http://web-search-home.com/download/dtLiteMac
+  )
+
+  run interpolate_cask_version_to_stanza 'daemon-tools-lite' 'url'
+  for ((i = 0; i < ${#urls[@]}; i++)); do
+    [ "${lines[i]}" == "${urls[i]}" ]
+  done
+}
+
+@test "interpolate_version() in url stanza(s) for cask (evernote.rb)" {
+  local -a urls
+
+  readonly urls=(
+    https://cdn1.evernote.com/mac/release/Evernote_402634.dmg
+    https://cdn1.evernote.com/mac-smd/public/Evernote_RELEASE_6.6.1_453372.dmg
+  )
+
+  run interpolate_cask_version_to_stanza 'evernote' 'url'
+  for ((i = 0; i < ${#urls[@]}; i++)); do
+    [ "${lines[i]}" == "${urls[i]}" ]
+  done
+}
+
+@test "interpolate_version() in url stanza(s) for cask (framer.rb)" {
+  local -a urls
+
+  readonly urls=(
+    https://dl.devmate.com/com.motif.framer/FramerStudio.zip
+  )
+
+  run interpolate_cask_version_to_stanza 'framer' 'url'
+  for ((i = 0; i < ${#urls[@]}; i++)); do
+    [ "${lines[i]}" == "${urls[i]}" ]
+  done
+}
+
+@test "interpolate_version() in url stanza(s) for cask (praat.rb)" {
+  local -a urls
+
+  readonly urls=(
+    http://www.fon.hum.uva.nl/praat/praat6016_mac32.dmg
+    http://www.fon.hum.uva.nl/praat/praat6016_mac64.dmg
+  )
+
+  run interpolate_cask_version_to_stanza 'praat' 'url'
+  for ((i = 0; i < ${#urls[@]}; i++)); do
+    [ "${lines[i]}" == "${urls[i]}" ]
+  done
 }
