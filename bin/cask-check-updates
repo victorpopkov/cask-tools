@@ -2,7 +2,7 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.4.10
+# Version:         0.4.11
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   06.06.2016
@@ -118,36 +118,27 @@ fi
 usage() {
   echo "usage: ${PROGRAM} [options]
 
-    Find outdated casks and their latest versions.
+    Scan casks with appcasts for outdated ones and get the latest available version(s).
 
     options:
-      -u <user>, --github-user <user>      GitHub username (default: 'git config --get github.user').
-      -t <token>, --github-token <token>   GitHub personal token (default: 'git config --get github.token').
-      -o <filepath>, --output <filepath>   Output the results into file using CSV format.
-      -s <mode>, --stability <mode>        Try to get 'stable' or 'unstable' latest version if possible (default: 'stable').
-      -a, --all                            Show and output also all updated casks.
-      -c, --checkpoints                    Include checkpoints validations.
-      -v, --version                        Show current script version.
-      -h, --help                           Show this help." | sed -E 's/^ {4}//'
+      -g, --github <user>:<token>   GitHub username and personal token.
+      -o, --output <filepath>       Output the results in CSV format into file.
+      -u, --unstable                Try to get unstable releases if possible.
+      -a, --all                     Show and output also all updated casks.
+      -c, --checkpoints             Validate checkpoints.
+      -v, --version                 Show current script version.
+      -h, --help                    Show this help." | sed -E 's/^ {4}//'
 }
 
 # available flags
 while [[ "$1" ]]; do
   case "$1" in
-    -a | --all)
-      SHOW_ALL='true'
-      ;;
-    -c | --checkpoints)
-      readonly SHOW_CHECKPOINTS='true'
-      ;;
-    -u | --github-user)
+    -g | --github)
       # shellcheck disable=SC2034
-      GITHUB_USER="$2"
-      shift
-      ;;
-    -t | --github-token)
+      GITHUB_USER=$(cut -d ':' -f 1 <<< "$2")
       # shellcheck disable=SC2034
-      GITHUB_TOKEN="$2"
+      GITHUB_TOKEN=$(cut -d ':' -f 2 <<< "$2")
+      readonly GITHUB_USER GITHUB_TOKEN
       shift
       ;;
     -o | --output)
@@ -155,18 +146,15 @@ while [[ "$1" ]]; do
       readonly OUTPUT_PATH="$2"
       shift
       ;;
-    -s | --stability)
-      case "$2" in
-        stable)
-          GITHUB_PRERELEASE='false'
-          ;;
-        unstable)
-          # shellcheck disable=SC2034
-          GITHUB_PRERELEASE='true'
-          ;;
-        *) error "The '--stability' should have one of the values: 'stable' or 'unstable'" ;;
-      esac
-      shift
+    -u | --unstable)
+      # shellcheck disable=SC2034
+      GITHUB_PRERELEASE='true'
+      ;;
+    -a | --all)
+      SHOW_ALL='true'
+      ;;
+    -c | --checkpoints)
+      readonly SHOW_CHECKPOINTS='true'
       ;;
     -v | --version)
       version

@@ -2,7 +2,7 @@
 #
 # Get the latest available version from appcast URL.
 #
-# Version:         0.3.9
+# Version:         0.3.10
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   06.06.2016
@@ -72,19 +72,18 @@ fi
 usage() {
   echo "usage: ${PROGRAM} [options] [<appcast_urls>...]
 
-    Get the latest available version from appcast URL. Currently supports only Sparkle and GitHub Atom.
+    Get the latest available version, checkpoint and download URL(s) from appcast.
 
     options:
-      -u <user>, --github-user <user>      GitHub username (default: 'git config --get github.user').
-      -t <token>, --github-token <token>   GitHub personal token (default: 'git config --get github.token').
-      -s <mode>, --stability <mode>        Try to get 'stable' or 'unstable' latest version if possible (default: 'stable').
-      -m <tag>, --match <tag>              Try to filter using matching tag.
-      -c, --checkpoint                     Output checkpoint.
-      -p, --provider                       Output provider (Sparkle or GitHub Atom).
-      -V, --app-version                    Output app version and build (if available).
-      -d, --downloads                      Output downloads.
-      -v, --version                        Show current script version.
-      -h, --help                           Show this help." | sed -E 's/^ {4}//'
+      -g, --github <user>:<token>   GitHub username and personal token.
+      -m, --match <tag>             Try to filter using the matching tag.
+      -u, --unstable                Try to get unstable releases if possible.
+      -c, --checkpoint              Output appcast checkpoint.
+      -p, --provider                Output appcast provider.
+      -V, --app-version             Output app version and build (if available).
+      -d, --downloads               Output download URL(s).
+      -v, --version                 Show current script version.
+      -h, --help                    Show this help." | sed -E 's/^ {4}//'
 }
 
 # exit if no arguments
@@ -96,32 +95,21 @@ fi
 # available flags
 while [[ "$1" ]]; do
   case "$1" in
-    -u | --github-user)
+    -g | --github)
       # shellcheck disable=SC2034
-      GITHUB_USER="$2"
-      shift
-      ;;
-    -t | --github-token)
+      GITHUB_USER=$(cut -d ':' -f 1 <<< "$2")
       # shellcheck disable=SC2034
-      GITHUB_TOKEN="$2"
-      shift
-      ;;
-    -s | --stability)
-      case "$2" in
-        stable)
-          GITHUB_PRERELEASE='false'
-          ;;
-        unstable)
-          # shellcheck disable=SC2034
-          GITHUB_PRERELEASE='true'
-          ;;
-        *) error "The '--stability' should have one of the values: 'stable' or 'unstable'" ;;
-      esac
+      GITHUB_TOKEN=$(cut -d ':' -f 2 <<< "$2")
+      readonly GITHUB_USER GITHUB_TOKEN
       shift
       ;;
     -m | --match)
       readonly MATCHING_TAG="$2"
       shift
+      ;;
+    -u | --unstable)
+      # shellcheck disable=SC2034
+      GITHUB_PRERELEASE='true'
       ;;
     -c | --checkpoint)
       ((OPTIONS_COUNTER++))
@@ -167,7 +155,7 @@ while [[ "$1" ]]; do
   shift
 done
 
-# exit if no URLs provided
+# exit if no URL(s) provided
 [[ "${#URLS[@]}" -eq 0 ]] && error 'The appcast URL not provided'
 
 # Extract version number from URL or content.
@@ -179,7 +167,7 @@ done
 #   $1 - URL     (required)
 #   $2 - Content (not required)
 #
-# Returns version.
+# Returns version and status.
 get_appcast_version() {
   local url content out code values version
 
@@ -218,7 +206,7 @@ get_appcast_version() {
 #   $1 - URL     (required)
 #   $2 - Content (not required)
 #
-# Returns array of dowload URLs.
+# Returns array of dowload URLs and status.
 get_appcast_downloads() {
   local url content out code values download_url
   local -a output
@@ -336,6 +324,8 @@ review_github() {
 #
 # Arguments:
 #   $1 - URL
+#
+# Returns status.
 main() {
   local url out content code result status
 
