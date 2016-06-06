@@ -1,6 +1,6 @@
 # cask-appcast
 
-Gets the latest available version, checkpoint and download URL(s) from appcast.
+Get the latest available version, checkpoint and download URL(s) from appcast.
 
 ## Description
 
@@ -22,7 +22,63 @@ In the near future 3 more will be added:
 - SourceForge
 - JSON
 
-### Options
+### Available options
+
+#### `-g, --github <user>:<token>`
+
+GitHub username and personal token.
+
+Since GitHub have an API limit, it's preferable to set these before making any
+request to GitHub. Otherwise, there is a possibility that you will get the
+`API rate limit exceeded` message. By default the values are retrieved using:
+
+```bash
+git config --get github.user
+git config --get github.token
+```
+
+Please verify if those values are set on your system.
+
+#### `-m, --match <tag>`
+
+Try to filter using the matching tag.
+
+This option is mainly used in cases when multiple applications are released in
+the one appcast. For example [adobe-bloodhound.rb](https://github.com/caskroom/homebrew-cask/blob/master/Casks/adobe-bloodhound.rb).
+
+#### `-u, --unstable`
+
+Try to get unstable releases if possible.
+
+Some appcast providers can also specify the stability for each release. For
+example 'GitHub Atom' have green 'Latest release' label near each stable release
+or 'Pre-release' for unstable. Setting this option forces to use unstable
+releases where possible which are especially useful when dealing with appcasts
+for [Homebrew-Versions](https://github.com/caskroom/homebrew-versions).
+
+#### `-c, --checkpoint`
+
+Output appcast checkpoint.
+
+#### `-p, --provider`
+
+Output appcast provider.
+
+#### `-V, --app-version`
+
+Output app version and build (if available).
+
+#### `-d, --downloads`
+
+Output download URL(s).
+
+#### `-v, --version`
+
+Show current script version.
+
+#### `-h, --help`
+
+Show the usage message with options descriptions.
 
 ## Examples
 

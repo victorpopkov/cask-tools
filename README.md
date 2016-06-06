@@ -11,13 +11,12 @@ To learn more about each script explore [doc](doc/) directory.
 
 ### [cask-appcast](doc/cask-appcast.md)
 
-Gets the latest available version, checkpoint and download URL(s) from appcast.
+Get the latest available version, checkpoint and download URL(s) from appcast.
 
 ### [cask-check-updates](doc/cask-check-updates.md)
 
-Scans casks with appcasts for outdated ones and automatically gets the latest
-version(s). It also normalizes retrieved versions to match the pattern used in
-casks.
+Scan casks with appcasts for outdated ones and get the latest available
+version(s).
 
 ## Installation
 

@@ -1,14 +1,15 @@
 # cask-check-updates
 
-Scans casks with appcasts for outdated ones and automatically gets the latest
-version(s). It also normalizes retrieved versions to match the pattern used in
-casks.
+Scan casks with appcasts for outdated ones and get the latest available
+version(s).
 
 ## Description
 
 The `cask-check-updates` was designed specifically to find outdated casks that
-have appcasts and automatically retrieve latest available versions. It doesn't
-require OS X to run and can generate CSV lists.
+have appcasts and automatically retrieve latest available versions. It also
+normalizes retrieved versions to match the patterns used in casks.
+
+Doesn't require OS X to run and can generate CSV lists.
 
 ### Supported providers
 
@@ -36,6 +37,57 @@ can be found here:
 Please note, that the lists are regenerated **every day at 16:00 (GMT+0)**. So
 double check before submitting a PR, that those haven't been updated by someone
 else yet.
+
+### Available options
+
+#### `-g, --github <user>:<token>`
+
+GitHub username and personal token.
+
+Since GitHub have an API limit, it's preferable to set these before making any
+request to GitHub. Otherwise, there is a possibility that you will get the
+`API rate limit exceeded` message. By default the values are retrieved using:
+
+```bash
+git config --get github.user
+git config --get github.token
+```
+
+Please verify if those values are set on your system.
+
+#### `-u, --unstable`
+
+Try to get unstable releases if possible.
+
+Some appcast providers can also specify the stability for each release. For
+example 'GitHub Atom' have green 'Latest release' label near each stable release
+or 'Pre-release' for unstable. Setting this option forces to use unstable
+releases where possible which are especially useful when dealing with
+[Homebrew-Versions](https://github.com/caskroom/homebrew-versions).
+
+#### `-c, --checkpoint`
+
+Output appcast checkpoint.
+
+#### `-p, --provider`
+
+Output appcast provider.
+
+#### `-V, --app-version`
+
+Output app version and build (if available).
+
+#### `-d, --downloads`
+
+Output download URL(s).
+
+#### `-v, --version`
+
+Show current script version.
+
+#### `-h, --help`
+
+Show the usage message with options descriptions.
 
 ## Examples
 
