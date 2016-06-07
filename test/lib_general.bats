@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
-load ../libexec/cask-scripts/general
-load ../libexec/cask-scripts/appcast
-load ../libexec/cask-scripts/cask
+load ../lib/cask-scripts/general
+load ../lib/cask-scripts/appcast
+load ../lib/cask-scripts/cask
 
 @test "syntax_error() when PROGRAM='example' and argument 'unexpected error'" {
   PROGRAM='example'
@@ -15,6 +15,14 @@ load ../libexec/cask-scripts/cask
   run error 'unexpected error'
   [ "${status}" -eq 1 ]
   [ "${output}" == "$(tput setaf 1)unexpected error$(tput sgr0)" ]
+}
+
+# version()
+@test "version() when VERSION global is set to 1.0.0" {
+  readonly VERSION='1.0.0'
+  run version
+  [ "${status}" -eq 0 ]
+  [ "${output}" == '1.0.0' ]
 }
 
 # unquote()
@@ -45,12 +53,64 @@ load ../libexec/cask-scripts/cask
   [ "${output}" == "'test\"" ]
 }
 
-# version()
-@test "version() when VERSION global is set to 1.0.0" {
-  readonly VERSION='1.0.0'
-  run version
+# get_xml_config_values()
+@test "get_xml_config_values() when no arguments" {
+  run get_xml_config_values
+  [ "${status}" -eq 1 ]
+}
+
+@test "get_xml_config_values() when arguments passed but config path not set" {
+  run get_xml_config_values '//version-delimeter-build' 'cask'
+  [ "${status}" -eq 1 ]
+}
+
+@test "get_xml_config_values() when arguments passed but config path is invalid" {
+  readonly CONFIG_FILE_XML='invalid/path.xml'
+  run get_xml_config_values '//version-delimeter-build' 'cask'
+  [ "${status}" -eq 1 ]
+}
+
+@test "get_xml_config_values() when return single value (version-delimeter-build)" {
+  local -a result
+  readonly CONFIG_FILE_XML="${BATS_TEST_DIRNAME}/config/cask-check-updates.xml"
+  run get_xml_config_values '//version-delimeter-build' 'cask'
+  echo ${output}
+  readonly result=(${output})
   [ "${status}" -eq 0 ]
-  [ "${output}" == '1.0.0' ]
+  [ "${#result[@]}" -eq 2 ]
+  [ "${result[0]}" == 'codekit' ]
+  [ "${result[1]}" == 'evernote' ]
+}
+
+@test "get_xml_config_values() when return single value (version-only)" {
+  local -a result
+  readonly CONFIG_FILE_XML="${BATS_TEST_DIRNAME}/config/cask-check-updates.xml"
+  run get_xml_config_values '//version-only' 'cask'
+  readonly result=(${output})
+  [ "${status}" -eq 0 ]
+  [ "${#result[@]}" -eq 1 ]
+  [ "${result[0]}" == 'framer' ]
+}
+
+@test "get_xml_config_values() when return single value (build-only)" {
+  local -a result
+  readonly CONFIG_FILE_XML="${BATS_TEST_DIRNAME}/config/cask-check-updates.xml"
+  run get_xml_config_values '//build-only' 'cask'
+  readonly result=(${output})
+  [ "${status}" -eq 0 ]
+  [ "${#result[@]}" -eq 1 ]
+  [ "${result[0]}" == 'daemon-tools-lite' ]
+}
+
+@test "get_xml_config_values() when return single value (matching-tag)" {
+  local -a result
+  readonly CONFIG_FILE_XML="${BATS_TEST_DIRNAME}/config/cask-check-updates.xml"
+  run get_xml_config_values '//matching-tag/cask/@tag' '../.' '.'
+  readonly result=(${output})
+  [ "${status}" -eq 0 ]
+  [ "${#result[@]}" -eq 2 ]
+  [ "${result[0]}" == 'adobe-bloodhound' ]
+  [ "${result[1]}" == 'Bloodhound' ]
 }
 
 # add_to_review() and show_review()

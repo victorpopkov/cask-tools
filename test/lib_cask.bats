@@ -1,8 +1,8 @@
 #!/usr/bin/env bats
 load test_helper
-load ../libexec/cask-scripts/general
-load ../libexec/cask-scripts/appcast
-load ../libexec/cask-scripts/cask
+load ../lib/cask-scripts/general
+load ../lib/cask-scripts/appcast
+load ../lib/cask-scripts/cask
 
 interpolate_cask_version_to_stanza() {
   local cask stanza version url
@@ -208,6 +208,17 @@ interpolate_cask_version_to_stanza() {
   [ "${output}" == '1_2_3' ]
 }
 
+@test "interpolate_version() when chained and another name is used: #{build.before_comma.gsub('.', '_')} (1.2.3,1000:200) => 1_2_3" {
+  run interpolate_version "#{build.before_comma.gsub('.', '_')}" '1.2.3,1000:200' 'build'
+  [ "${output}" == '1_2_3' ]
+}
+
+@test "interpolate_version() when chained and another name is used but not passed as argument: #{build.before_comma.gsub('.', '_')} (1.2.3,1000:200) => #{build.before_comma.gsub('.', '_')}" {
+  run interpolate_version "#{build.before_comma.gsub('.', '_')}" '1.2.3,1000:200'
+  echo "${output}"
+  [ "${output}" == "#{build.before_comma.gsub('.', '_')}" ]
+}
+
 @test "interpolate_version() in url stanza(s) for cask (acorn.rb)" {
   local -a urls
 
@@ -361,4 +372,45 @@ interpolate_cask_version_to_stanza() {
   for ((i = 0; i < ${#urls[@]}; i++)); do
     [ "${lines[i]}" == "${urls[i]}" ]
   done
+}
+
+# get_xml_config_custom_rule()
+@test "get_xml_config_custom_rule() when no argument" {
+  run get_xml_config_custom_rule
+  [ "${status}" -eq 1 ]
+}
+
+@test "get_xml_config_custom_rule() when argument passed but config path not set" {
+  run get_xml_config_custom_rule 'example'
+  [ "${status}" -eq 1 ]
+}
+
+@test "get_xml_config_custom_rule() when argument passed but config path is invalid" {
+  readonly CONFIG_FILE_XML='invalid/path.xml'
+  run get_xml_config_custom_rule 'example'
+  [ "${status}" -eq 1 ]
+}
+
+@test "get_xml_config_custom_rule() when non-existing cask name in custom rules" {
+  readonly CONFIG_FILE_XML="${BATS_TEST_DIRNAME}/config/cask-check-updates.xml"
+  run get_xml_config_custom_rule 'invalid'
+  [ "${status}" -eq 1 ]
+}
+
+@test "get_xml_config_custom_rule() example found in custom rules: => v#{version.gsub('-release$', '')}-#{build}" {
+  readonly CONFIG_FILE_XML="${BATS_TEST_DIRNAME}/config/cask-check-updates.xml"
+  run get_xml_config_custom_rule 'example'
+  [ "${status}" -eq 0 ]
+  [ "${output}" == "v#{version.gsub(/-release$/, '')}-#{build}" ]
+}
+
+@test "get_xml_config_custom_rule() with interpolated version (1.2.3-release) and build (1000): v#{version.gsub(/-release$/, '')}-#{build} => v1.2.3-1000" {
+  readonly CONFIG_FILE_XML="${BATS_TEST_DIRNAME}/config/cask-check-updates.xml"
+  run get_xml_config_custom_rule 'example'
+  [ "${status}" -eq 0 ]
+  [ "${output}" == "v#{version.gsub(/-release$/, '')}-#{build}" ]
+  run interpolate_version "${output}" '1.2.3-release'
+  run interpolate_version "${output}" '1000' 'build'
+  echo "${output}"
+  [ "${output}" == 'v1.2.3-1000' ]
 }

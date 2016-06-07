@@ -1,8 +1,8 @@
 #!/usr/bin/env bats
 load test_helper
-load ../libexec/cask-scripts/general
-load ../libexec/cask-scripts/appcast
-load ../libexec/cask-scripts/cask
+load ../lib/cask-scripts/general
+load ../lib/cask-scripts/appcast
+load ../lib/cask-scripts/cask
 
 # generate_appcast_checkpoint()
 @test "generate_appcast_checkpoint() when no arguments passed" {
@@ -61,7 +61,7 @@ load ../libexec/cask-scripts/cask
 @test "generate_appcast_checkpoint(): unknown.xml" {
   cd "${BATS_TEST_DIRNAME}/appcasts"
   run generate_appcast_checkpoint "$(cat 'unknown.xml')"
-  [ "${output}" == 'cfed64a67417a29011b607e6194a2e06e447ceee681d2b5c0daee77a8bdac673' ]
+  [ "${output}" == 'a4161a72df970e6fca434e2b9e256b850f12d2934cdde057985b77ea892f35d8' ]
 }
 
 # get_appcast_provider()

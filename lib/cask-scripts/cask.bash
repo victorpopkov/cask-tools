@@ -4,7 +4,7 @@
 #
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   07.06.2016
+# Last modified:   08.06.2016
 
 # Get value(s) of a cask stanza.
 #
@@ -89,25 +89,30 @@ get_cask_version_appcast_checkpoint_url() {
   return 0
 }
 
-
 # Interpolate version into string.
 #
 # Arguments:
-#   $1 - String
-#   $2 - Version
+#   $1 - String  (required)
+#   $2 - Version (required)
+#   $3 - Name    (optional)
 #
 # Returns string with version.
 interpolate_version() {
-  local version_original version_only major minor patch string string_part version_part replace
-  local -a methods string_parts version_parts
+  local string name version_original version_only major minor patch string_part version_part replace
+  local -a string_parts methods version_parts
 
   string="$1"
   readonly version_original="$2"
+
+  name="$3"
+  [[ -z "${name}" ]] && name='version'
+  readonly name
+
   readonly version_only=$(sed -e 's/[^0-9.]*\([0-9.]*\).*/\1/' <<< "${version_original}")
-  readonly string_parts=($(grep -Eo "#{version}|(#{version\.[^}]*.[^{]*})" <<< "${string}" | sed -e "s/[\'\"]/QUOTE/g" -e "s/ /SPACE/g" | cut -d ' ' -f 1))
+  readonly string_parts=($(grep -Eo "#{${name}}|(#{${name}\.[^}]*.[^{]*})" <<< "${string}" | sed -e "s/['\"]/QUOTE/g" -e 's/ /SPACE/g' | cut -d ' ' -f 1))
 
   for string_part in "${string_parts[@]}"; do
-    if [[ "${string_part}" == '#{version}' ]]; then
+    if [[ "${string_part}" == "#{${name}}" ]]; then
       string="${string//${string_part}/${version_original}}"
       continue
     fi
@@ -120,11 +125,11 @@ interpolate_version() {
     )
     for method in "${methods[@]}"; do
       if [[ "${string_part}" =~ \."${method}" ]]; then
-        string_part=$(sed -e "s/\.${method}/!${method}/g" -e "s/[\'\"]/QUOTE/g" <<< "${string_part}")
+        string_part=$(sed -e "s/\.${method}/!${method}/g" -e "s/['\"]/QUOTE/g" <<< "${string_part}")
       fi
     done
 
-    IFS='!' read -ra version_parts <<< "$(sed -e 's/^#{version//' -e 's/}$//' <<< "${string_part}" | xargs)"
+    IFS='!' read -ra version_parts <<< "$(sed -e "s/^#{${name}//" -e 's/}$//' <<< "${string_part}" | xargs)"
     string_part=$(sed -e 's/!/\./g' -e "s/QUOTE/'/g" -e "s/SPACE/ /g" <<< "${string_part}")
 
     replace="${version_original}"
@@ -148,13 +153,36 @@ interpolate_version() {
           'after_colon')         replace="$(cut -d ':' -f 2 <<< "${version_original}")" ;;
           'no_dots')             replace="${version_original//\.}" ;;
           'dots_to_underscores') replace="${version_original//\./_}" ;;
-          *)                     replace="$(ruby -e "version='${replace}'; puts version.${version_part}" 2> /dev/null)" ;;
+          *)                     replace=$(ruby -e "version='${replace}'; puts version.${version_part}" 2> /dev/null) ;;
         esac
       fi
     done
+
+    string_part=$(printf "%q" "${string_part}")
 
     [[ ! -z "${replace}" ]] && string="${string//${string_part}/${replace}}"
   done
 
   echo "${string}"
+}
+
+# Get custom rule for specific cask from XML configurations file.
+#
+# Globals:
+#   CONFIG_FILE_XML
+#
+# Arguments:
+#   $1 - Cask name
+#
+# Returns rule and status.
+get_xml_config_custom_rule() {
+  local cask
+
+  readonly cask="$1"
+  [[ -z "${cask}" ]] && return 1
+  [[ ! -f "${CONFIG_FILE_XML}" ]] && return 1
+
+  xmlstarlet sel -t -m "//custom/cask[@name='${cask}']" -m '*' -i "name()='text'" -v '.' --else -o '#{' -v 'name()' \
+  -i '@pattern' -o ".gsub(" -v '@pattern' -o ", '" -v '@replacement' -o "')" \
+  -b -o '}' "${CONFIG_FILE_XML}"
 }

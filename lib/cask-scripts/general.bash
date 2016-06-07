@@ -10,6 +10,7 @@
 declare PROGRAM
 declare VERSION
 declare BROWSER_HEADERS
+declare CONFIG_FILE_XML
 declare -a REVIEW_NAMES
 declare -a REVIEW_VALUES
 
@@ -66,6 +67,33 @@ unquote() {
   while read -r data; do
     sed -e 's/,$//' -e "s/^\([\"']\)\(.*\)\1\$/\2/g" <<< "${data}"
   done
+}
+
+# Get values from XML configurations file.
+#
+# Globals:
+#   CONFIG_FILE_XML
+#
+# Arguments:
+#   $1 - Path to match  (required)
+#   $2 - Path for value (required)
+#   $2 - Path for attribute (required)
+#
+# Returns values and status.
+get_xml_config_values() {
+  local path_match path_value path_attribute
+
+  readonly path_match="$1"
+  readonly path_value="$2"
+  readonly path_attribute="$3"
+  [[ -z "${path_match}" ]] || [[ -z "${path_value}" ]] && return 1
+  [[ ! -f "${CONFIG_FILE_XML}" ]] && return 1
+
+  if [[ -z "${path_attribute}" ]]; then
+    xmlstarlet sel -t -m "${path_match}" -v "${path_value}" "${CONFIG_FILE_XML}"
+  else
+    xmlstarlet sel -t -m "${path_match}" -v "${path_value}" -n -v "${path_attribute}" -n "${CONFIG_FILE_XML}"
+  fi
 }
 
 # Add info to review.

@@ -2,10 +2,10 @@
 #
 # Get the latest available version from appcast URL.
 #
-# Version:         0.3.10
+# Version:         0.3.11
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   06.06.2016
+# Last modified:   08.06.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.3.9'
+readonly VERSION='0.3.11'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
@@ -35,11 +35,11 @@ APP_VERSION='false'
 DOWNLOADS='false'
 
 # shellcheck source=/dev/null
-source "${BASE_PATH}/libexec/cask-scripts/general.bash"
+source "${BASE_PATH}/lib/cask-scripts/general.bash"
 # shellcheck source=/dev/null
-source "${BASE_PATH}/libexec/cask-scripts/appcast.bash"
+source "${BASE_PATH}/lib/cask-scripts/appcast.bash"
 # shellcheck source=/dev/null
-source "${BASE_PATH}/libexec/cask-scripts/cask.bash"
+source "${BASE_PATH}/lib/cask-scripts/cask.bash"
 
 # check if 'xmlstarlet' and 'jq' are installed and configured
 if [[ ! $(which 'xmlstarlet') ]] || [[ ! $(which 'jq') ]]; then

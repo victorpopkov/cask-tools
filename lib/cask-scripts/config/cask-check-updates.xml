@@ -1,0 +1,192 @@
+<?xml version="1.0"?>
+<cask-check-updates>
+  <rules>
+    <version-delimeter-build>
+      <cask>aliwangwang</cask>
+      <cask>alternote</cask>
+      <cask>appfresh</cask>
+      <cask>automatic</cask>
+      <cask>beatport-pro</cask>
+      <cask>boxcryptor</cask>
+      <cask>cartographica</cask>
+      <cask>codekit</cask>
+      <cask>cyberduck</cask>
+      <cask>dradio</cask>
+      <cask>dterm</cask>
+      <cask>evernote</cask>
+      <cask>findings</cask>
+      <cask>flexiglass</cask>
+      <cask>gog-downloader</cask>
+      <cask>graphicconverter</cask>
+      <cask>hipchat</cask>
+      <cask>hype</cask>
+      <cask>intensify-pro</cask>
+      <cask>invisionsync</cask>
+      <cask>jollysfastvnc</cask>
+      <cask>kaleidoscope</cask>
+      <cask>kamakiri</cask>
+      <cask>kiwi</cask>
+      <cask>lytro-desktop</cask>
+      <cask>mountain-duck</cask>
+      <cask>mplayerx</cask>
+      <cask>netnewswire</cask>
+      <cask>otomatic</cask>
+      <cask>papers</cask>
+      <cask>phoneexpander</cask>
+      <cask>pixlr</cask>
+      <cask>simple-hub</cask>
+      <cask>sketch-beta</cask>
+      <cask>snapheal-pro</cask>
+      <cask>soulver</cask>
+      <cask>splice</cask>
+      <cask>stand</cask>
+      <cask>stretchlink</cask>
+      <cask>the-hit-list</cask>
+      <cask>tripmode</cask>
+      <cask>tvshows</cask>
+      <cask>versions</cask>
+    </version-delimeter-build>
+    <version-only>
+      <cask>framer</cask>
+    </version-only>
+    <build-only>
+      <cask>daemon-tools-lite</cask>
+      <cask>master-key</cask>
+    </build-only>
+    <matching-tag>
+      <cask tag="Bloodhound">adobe-bloodhound</cask>
+    </matching-tag>
+    <custom>
+      <cask name="airmail-beta">
+        <version />
+        <text>.</text>
+        <build />
+        <text>,</text>
+        <hockeyapp-part />
+      </cask>
+      <cask name="disablemonitor">
+        <version pattern="/^G/" />
+      </cask>
+      <cask name="festify">
+        <version pattern="/Beta$/" />
+      </cask>
+      <cask name="flixster-video">
+        <version pattern="/-v.*$/" />
+      </cask>
+      <cask name="goldencheetah">
+        <version pattern="/^V/" />
+      </cask>
+      <cask name="iterm2-nightly">
+        <version pattern="/-nightly$/" />
+      </cask>
+      <cask name="macvim">
+        <text>7.4.</text>
+        <version pattern="/^snapshot-/" />
+      </cask>
+      <cask name="marked">
+        <version />
+        <build />
+      </cask>
+      <cask name="monodraw">
+        <text>b</text>
+        <build />
+      </cask>
+      <cask name="nvalt">
+        <version />
+        <build />
+      </cask>
+      <cask name="openra">
+        <version pattern="/^release-/" />
+      </cask>
+      <cask name="pdfpen">
+        <build />
+        <delimeter />
+        <devmate-part />
+      </cask>
+      <cask name="pomotodo">
+        <version />
+        <delimeter />
+        <hackplan-part />
+      </cask>
+      <cask name="propresenter">
+        <version />
+        <text>_b</text>
+        <build />
+      </cask>
+      <cask name="qblocker">
+        <build />
+        <delimeter />
+        <devmate-part />
+      </cask>
+      <cask name="qlcolorcode">
+        <version pattern="/^release-/" />
+      </cask>
+      <cask name="qldds">
+        <version pattern="/rel-(.)/" replacement="\1." />
+      </cask>
+      <cask name="qlvideo">
+        <version pattern="/rel-(.)/" replacement="\1." />
+      </cask>
+      <cask name="querious">
+        <version pattern="/b/" replacement="_beta" />
+      </cask>
+      <cask name="quickradar">
+        <version pattern="/beta/" replacement="b" />
+      </cask>
+      <cask name="osxfuse-beta">
+        <version pattern="/^osxfuse-/" />
+      </cask>
+      <cask name="pdfpenpro">
+        <build />
+        <delimeter />
+        <devmate-part />
+      </cask>
+      <cask name="sequel-pro">
+        <version pattern="/^release-/" />
+      </cask>
+      <cask name="shiftit">
+        <version pattern="/^version-/" />
+      </cask>
+      <cask name="spillo">
+        <build />
+        <delimeter />
+        <version />
+      </cask>
+      <cask name="sshfs">
+        <version pattern="/^osxfuse-sshfs-/" />
+      </cask>
+      <cask name="sublime-text-dev">
+        <build pattern="/^Build/" />
+      </cask>
+      <cask name="sublime-text3">
+        <build pattern="/^Build/" />
+      </cask>
+      <cask name="subtitle-master">
+        <version pattern="/-SNAPSHOT$/" />
+      </cask>
+      <cask name="supercollider">
+        <version pattern="/^Version-/" />
+      </cask>
+      <cask name="textexpander">
+        <build />
+        <delimeter />
+        <devmate-part />
+      </cask>
+      <cask name="time-tracker">
+        <version pattern="/-binary$/" />
+      </cask>
+      <cask name="tower-beta">
+        <version />
+        <text>-</text>
+        <build />
+        <delimeter />
+        <amazonaws-part />
+      </cask>
+      <cask name="vox">
+        <build />
+        <delimeter />
+        <devmate-part />
+      </cask>
+    </custom>
+  </rules>
+</cask-check-updates>

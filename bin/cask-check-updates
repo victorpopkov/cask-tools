@@ -2,10 +2,10 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.4.13
+# Version:         0.5.0
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   07.06.2016
+# Last modified:   08.06.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,10 +18,11 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.4.13'
+readonly VERSION='0.5.0'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
+readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-check-updates.xml"
 declare -a CASKS
 GITHUB_USER=$(git config --get github.user)
 GITHUB_TOKEN=$(git config --get github.token)
@@ -32,60 +33,11 @@ SHOW_ALL='false'
 SHOW_CHECKPOINTS='false'
 
 # shellcheck source=/dev/null
-source "${BASE_PATH}/libexec/cask-scripts/general.bash"
+source "${BASE_PATH}/lib/cask-scripts/general.bash"
 # shellcheck source=/dev/null
-source "${BASE_PATH}/libexec/cask-scripts/appcast.bash"
+source "${BASE_PATH}/lib/cask-scripts/appcast.bash"
 # shellcheck source=/dev/null
-source "${BASE_PATH}/libexec/cask-scripts/cask.bash"
-
-# Casks which versions should have format: "<version><delimeter><build>"
-declare -a -r CASKS_VERSION_DELIMETER_BUILD=(
-  'airmail-beta'
-  'aliwangwang'
-  'alternote'
-  'appfresh'
-  'appfresh'
-  'beatport-pro'
-  'cartographica'
-  'codekit'
-  'dradio'
-  'dterm'
-  'evernote'
-  'findings'
-  'flexiglass'
-  'gog-downloader'
-  'graphicconverter'
-  'hipchat'
-  'hype'
-  'intensify-pro'
-  'invisionsync'
-  'jollysfastvnc'
-  'kaleidoscope'
-  'kamakiri'
-  'kiwi'
-  'lytro-desktop'
-  'mplayerx'
-  'netnewswire'
-  'otomatic'
-  'papers'
-  'phoneexpander'
-  'pixlr'
-  'simple-hub'
-  'sketch-beta'
-  'soulver'
-  'splice'
-  'stand'
-  'stretchlink'
-  'the-hit-list'
-  'tripmode'
-  'tvshows'
-  'versions'
-)
-
-# Casks which appcasts contain multiple apps/tags
-declare -a -r CASKS_MATCHING_TAG=(
-  'adobe-bloodhound' 'Bloodhound'
-)
+source "${BASE_PATH}/lib/cask-scripts/cask.bash"
 
 # check if 'xmlstarlet' and 'jq' are installed and configured
 if [[ ! $(which 'xmlstarlet') ]] || [[ ! $(which 'jq') ]]; then
@@ -187,9 +139,6 @@ fi
 
 # Extract version number with download URL/URLs from appcast content.
 #
-# Globals:
-#   CASKS_MATCHING_TAG
-#
 # Arguments:
 #   $1 - Cask name (required)
 #   $2 - URL       (required)
@@ -197,7 +146,8 @@ fi
 #
 # Returns version.
 get_appcast_version_with_downloads() {
-  local cask url content out code values version download_url tag
+  local cask url content out code values version download_url tag rule
+  local -a casks_matching_tag
 
   readonly cask="$1"
   readonly url="$2"
@@ -224,10 +174,11 @@ get_appcast_version_with_downloads() {
     ;;
     'GitHub Atom')
       tag=''
-      for i in "${!CASKS_MATCHING_TAG[@]}"; do
+      readonly casks_matching_tag=($(get_xml_config_values '//matching-tag/cask/@tag' '../.' '.'))
+      for i in "${!casks_matching_tag[@]}"; do
         if [[ $((i%2)) -ne 0 ]]; then
-          key="${CASKS_MATCHING_TAG[$i-1]}"
-          value="${CASKS_MATCHING_TAG[$i]}"
+          key="${casks_matching_tag[$i-1]}"
+          value="${casks_matching_tag[$i]}"
 
           [[ "${key}" == "${cask}" ]] && tag="${value}"
         fi
@@ -243,18 +194,18 @@ get_appcast_version_with_downloads() {
 
 # Suggest version to use in casks download URL.
 #
-# Globals:
-#   CASKS_VERSION_DELIMETER_BUILD
-#
 # Arguments:
 #   $1 - Cask name
 #   $2 - Current version
-#   $4 - Latest version
-#   $5 - Latest download URL
+#   $3 - Latest version
+#   $4 - Latest download URL
 #
 # Returns suggested version.
 suggest_cask_version() {
-  local cask version latest_version latest_build latest_download_url result devmate_version devmate_part amazonaws_part hackplan_part delimeter
+  local cask version latest_version latest_build latest_download_url
+  local delimeter result devmate_version rule
+  local devmate_part amazonaws_part hackplan_part hockeyapp_part
+  local -a cask_rules
 
   cask="$1"
   version="$2"
@@ -285,6 +236,15 @@ suggest_cask_version() {
     fi
   fi
 
+  # hockeyapp.net
+  if [[ "${latest_download_url}" =~ hockeyapp.net ]]; then
+    hockeyapp_part="$(cut -d '/' -f 9 <<< "${latest_download_url}" | cut -d '?' -f 1)"
+
+    if [[ "${#hockeyapp_part}" -eq 3 ]]; then
+      result="${latest_version},${latest_build}:${hockeyapp_part}"
+    fi
+  fi
+
   # amazonaws.com
   if [[ "${latest_download_url}" =~ amazonaws.com ]]; then
     amazonaws_part="$(cut -d '/' -f 6 <<< "${latest_download_url}")"
@@ -295,59 +255,35 @@ suggest_cask_version() {
     hackplan_part="$(cut -d '/' -f 5 <<< "${latest_download_url}")"
   fi
 
-  # cask specific
-  case "${cask}" in
-    'automatic')            result="${latest_version}.${latest_build}" ;;
-    'boxcryptor')           result="${latest_version}.${latest_build}" ;;
-    'cockatrice')           result="${latest_version%%-Release}" ;;
-    'cyberduck')            result="${latest_version}.${latest_build}" ;;
-    'daemon-tools-lite')    result="${latest_build}" ;;
-    'darktable')            result="${latest_version//release-}" ;;
-    'disablemonitor')       result="${latest_version//G}" ;;
-    'favs')                 result="${latest_version//.}" ;;
-    'festify')              result="${latest_version%%beta}" ;;
-    'flixster-video')       result="${latest_version//-v*}" ;;
-    'framer')               result="${latest_version}" ;;
-    'goldencheetah')        result="${latest_version//V}" ;;
-    'iterm2-nightly')       result="${latest_version%%-nightly}" ;;
-    'macvim')               result="7.4.${latest_version//snapshot-}" ;;
-    'marked')               result="${latest_version}${latest_build}" ;;
-    'master-key')           result="${latest_build}" ;;
-    'monodraw')             result="b${latest_build}" ;;
-    'mountain-duck')        result="${latest_version}.${latest_build}" ;;
-    'nvalt')                result="${latest_version}${latest_build}" ;;
-    'openra')               result="${latest_version//release-}" ;;
-    'osxfuse-beta')         result="${latest_version//osxfuse-}" ;;
-    'pdfpen')               result="${latest_build}${delimeter}${devmate_part}" ;;
-    'pdfpenpro')            result="${latest_build}${delimeter}${devmate_part}" ;;
-    'pomotodo')             result="${latest_version}${delimeter}${hackplan_part}" ;;
-    'propresenter')         result="${latest_version}${delimeter}b${latest_build}" ;;
-    'qblocker')             result="${latest_build}${delimeter}${devmate_part}" ;;
-    'qlcolorcode')          result="${latest_version//release-}" ;;
-    'qldds')                result=$(sed -e "s/.\{1\}/&./" <<< "${latest_version//rel-}") ;;
-    'qlvideo')              result=$(sed -e "s/.\{1\}/&./" <<< "${latest_version//rel-}") ;;
-    'querious')             result="${latest_version//b/_beta}" ;;
-    'quickradar')           result="${latest_version//beta/b}" ;;
-    'sequel-pro')           result="${latest_version//release-}" ;;
-    'shiftit')              result="${latest_version//version-}" ;;
-    'snapheal-pro')         result="${latest_version}.${latest_build}" ;;
-    'soundflowerbed')       result="${latest_version%%-release}" ;;
-    'spillo')               result="${latest_build}${delimeter}${latest_version}" ;;
-    'sshfs')                result="${latest_version//osxfuse-sshfs-}" ;;
-    'subtitle-master')      result="${latest_version%%-SNAPSHOT}" ;;
-    'supercollider')        result="${latest_version//Version-}" ;;
-    'textexpander')         result="${latest_build}${delimeter}${devmate_part}" ;;
-    'time-tracker')         result="${latest_version%%-binary}" ;;
-    'tower-beta')           result="${latest_version}-${latest_build}${delimeter}${amazonaws_part}" ;;
-    'vox')                  result="${latest_build}${delimeter}${devmate_part}" ;;
-    'vox-preferences-pane') result="${latest_build}${delimeter}${devmate_part}" ;;
-    'xld')                  result=$(sed -e "s/.\{4\}/&./" -e "s/.\{7\}/&./" <<< "${latest_version}") ;;
-  esac
-
   # "<version><delimeter><build>"
-  for cask_vb in "${CASKS_VERSION_DELIMETER_BUILD[@]}"; do
-    [[ "${cask}" == "${cask_vb}" ]] && result="${latest_version}${delimeter}${latest_build}"
+  cask_rules=($(get_xml_config_values '//version-delimeter-build' 'cask'))
+  for rule in "${cask_rules[@]}"; do
+    [[ "${cask}" == "${rule}" ]] && result="${latest_version}${delimeter}${latest_build}"
   done
+
+  # "<version>"
+  cask_rules=($(get_xml_config_values '//version-only' 'cask'))
+  for rule in "${cask_rules[@]}"; do
+    [[ "${cask}" == "${rule}" ]] && result="${latest_version}"
+  done
+
+  # "<build>"
+  cask_rules=($(get_xml_config_values '//build-only' 'cask'))
+  for rule in "${cask_rules[@]}"; do
+    [[ "${cask}" == "${rule}" ]] && result="${latest_build}"
+  done
+
+  # custom rules
+  rule=$(get_xml_config_custom_rule "${cask}")
+  if [[ ! -z "${rule}" ]]; then
+    result=$(interpolate_version "${rule}" "${latest_version}" 'version')
+    result=$(interpolate_version "${result}" "${latest_build}" 'build')
+    result=$(interpolate_version "${result}" "${delimeter}" 'delimeter')
+    result=$(interpolate_version "${result}" "${devmate_part}" 'devmate-part')
+    result=$(interpolate_version "${result}" "${hockeyapp_part}" 'hockeyapp-part')
+    result=$(interpolate_version "${result}" "${amazonaws_part}" 'amazonaws-part')
+    result=$(interpolate_version "${result}" "${hackplan_part}" 'hackplan-part')
+  fi
 
   echo "${result}"
 }

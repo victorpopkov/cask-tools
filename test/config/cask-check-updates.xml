@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<cask-check-updates>
+  <rules>
+    <version-delimeter-build>
+      <cask>codekit</cask>
+      <cask>evernote</cask>
+    </version-delimeter-build>
+    <version-only>
+      <cask>framer</cask>
+    </version-only>
+    <build-only>
+      <cask>daemon-tools-lite</cask>
+    </build-only>
+    <matching-tag>
+      <cask tag="Bloodhound">adobe-bloodhound</cask>
+    </matching-tag>
+    <custom>
+      <cask name="example">
+        <text>v</text>
+        <version pattern="/-release$/" />
+        <text>-</text>
+        <build />
+      </cask>
+    </custom>
+  </rules>
+</cask-check-updates>
