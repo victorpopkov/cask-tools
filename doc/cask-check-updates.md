@@ -117,11 +117,11 @@ Since [Homebrew-Versions](https://github.com/caskroom/homebrew-versions) uses
 unstable releases some appcast providers like 'GitHub Atom' have the stability
 specified. For example 'GitHub Atom' have stability labels like 'Latest release'
 or 'Pre-release'. In order to retrieve the latest versions of pre-releases the
-`-s` option with `unstable` argument needs to be added:
+`-u` option needs to be added:
 
 ```bash
 $ cd ~/path/to/homebrew-versions/Casks
-$ cask-check-updates -s unstable
+$ cask-check-updates -u
 Checking updates for 22 casks...
 ---------------------------------------------------------------------------------------------------------------------------------------------
 Cask name:      airmail-beta
@@ -148,5 +148,5 @@ with `-o` option and `~/path/to/output.csv` argument. For example:
 
 ```bash
 cd ~/path/to/homebrew-versions/Casks
-cask-check-updates -s unstable -o '~/path/to/output.csv'
+cask-check-updates -u -o '~/path/to/output.csv'
 ```

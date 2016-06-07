@@ -51,7 +51,9 @@
     </version-only>
     <build-only>
       <cask>daemon-tools-lite</cask>
+      <cask>lacona</cask>
       <cask>master-key</cask>
+      <cask>porting-kit</cask>
     </build-only>
     <matching-tag>
       <cask tag="Bloodhound">adobe-bloodhound</cask>
@@ -140,6 +142,9 @@
         <build />
         <delimeter />
         <devmate-part />
+      </cask>
+      <cask name="proxpn">
+        <version pattern="/.build.*$/" />
       </cask>
       <cask name="sequel-pro">
         <version pattern="/^release-/" />

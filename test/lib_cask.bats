@@ -60,6 +60,12 @@ interpolate_cask_version_to_stanza() {
   [ "${output}" == '95ffe5b581434db6284ed8dfe0cddead69a5d3f7269ca488baba3bd1218e43f7' ]
 }
 
+@test "get_cask_stanza_value() when retrieving version and its name can be found in comments (world-of-tanks.rb)" {
+  run get_cask_stanza_value 'world-of-tanks' 'version'
+  [ "${status}" -eq 0 ]
+  [ "${output}" == '1.0.30' ]
+}
+
 # get_cask_version_appcast_checkpoint_url()
 @test "get_cask_version_appcast_checkpoint_url() when no arguments passed" {
   run get_cask_version_appcast_checkpoint_url
@@ -110,6 +116,12 @@ interpolate_cask_version_to_stanza() {
   [ "${status}" -eq 0 ]
   [ "${lines[0]}" == '"0.939" "" "" "https://bettertouchtool.net/btt#{version}.zip"' ]
   [ "${lines[1]}" == '"1.69" "http://appcast.boastr.net" "c0db13ea9aec2e83f4a69ce215d652b457898a2fb3f9d71d1fb9f0085a86cf08" "https://boastr.net/releases/btt#{version}.zip"' ]
+}
+
+@test "get_cask_version_appcast_checkpoint_url() when the stanza name can be found in comments (world-of-tanks.rb)" {
+  run get_cask_version_appcast_checkpoint_url 'world-of-tanks'
+  [ "${status}" -eq 0 ]
+  [ "${lines[0]}" == '"1.0.30" "https://wot.gcdn.co/us/files/osx/WoT_OSX_update_na.xml" "84e19ba0bf8fa534ad34ce6b844bc5682f809a935cd4f08bae376997d81f2a1f" "http://redirect.wargaming.net/WoT/latest_mac_install_na"' ]
 }
 
 # interpolate_version()
@@ -369,6 +381,19 @@ interpolate_cask_version_to_stanza() {
   )
 
   run interpolate_cask_version_to_stanza 'praat' 'url'
+  for ((i = 0; i < ${#urls[@]}; i++)); do
+    [ "${lines[i]}" == "${urls[i]}" ]
+  done
+}
+
+@test "interpolate_version() in url stanza(s) for cask (world-of-tanks.rb)" {
+  local -a urls
+
+  readonly urls=(
+    http://redirect.wargaming.net/WoT/latest_mac_install_na
+  )
+
+  run interpolate_cask_version_to_stanza 'world-of-tanks' 'url'
   for ((i = 0; i < ${#urls[@]}; i++)); do
     [ "${lines[i]}" == "${urls[i]}" ]
   done

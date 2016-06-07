@@ -28,7 +28,7 @@ get_cask_stanza_value() {
   [[ -z "$3" ]] && content=$(cat "${cask}.rb")
   readonly content
 
-  grep "${stanza} " <<< "${content}" | sed -e "s/${stanza} //g" -e 's/ //g' | awk '{ print $1 }' | unquote
+  grep -E "\s{2,}${stanza} " <<< "${content}" | sed -e "s/${stanza} //g" -e 's/ //g' | awk '{ print $1 }' | unquote
   return 0
 }
 

@@ -96,10 +96,10 @@ Latest download URL:  https://adiumx.cachefly.net/Adium_1.5.10.2.dmg
 For 'GitHub Atom' provider only stable versions (releases that have green
 'Latest release' label) are used. However, you can allow pre-releases (useful
 for [homebrew-versions](https://github.com/caskroom/homebrew-versions)) by
-adding the `-s` option with `unstable` argument:
+adding the `-u` option argument:
 
 ```bash
-$ cask-appcast -s unstable https://github.com/atom/atom/releases.atom
+$ cask-appcast -u https://github.com/atom/atom/releases.atom
 Appcast:              https://github.com/atom/atom/releases.atom (200)
 Checkpoint:           bfbd1cf510a520741c612060390a9af78cc6c3c0a2ee58a91ce8995b2f5fcbed
 Provider:             GitHub Atom
