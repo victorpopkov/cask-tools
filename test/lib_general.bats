@@ -60,20 +60,20 @@ load ../lib/cask-scripts/cask
 }
 
 @test "get_xml_config_values() when arguments passed but config path not set" {
-  run get_xml_config_values '//version-delimeter-build' 'cask'
+  run get_xml_config_values '//version-delimiter-build' 'cask'
   [ "${status}" -eq 1 ]
 }
 
 @test "get_xml_config_values() when arguments passed but config path is invalid" {
   readonly CONFIG_FILE_XML='invalid/path.xml'
-  run get_xml_config_values '//version-delimeter-build' 'cask'
+  run get_xml_config_values '//version-delimiter-build' 'cask'
   [ "${status}" -eq 1 ]
 }
 
-@test "get_xml_config_values() when return single value (version-delimeter-build)" {
+@test "get_xml_config_values() when return single value (version-delimiter-build)" {
   local -a result
   readonly CONFIG_FILE_XML="${BATS_TEST_DIRNAME}/config/cask-check-updates.xml"
-  run get_xml_config_values '//version-delimeter-build' 'cask'
+  run get_xml_config_values '//version-delimiter-build' 'cask'
   echo ${output}
   readonly result=(${output})
   [ "${status}" -eq 0 ]

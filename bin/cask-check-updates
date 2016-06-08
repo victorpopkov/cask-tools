@@ -212,7 +212,7 @@ get_appcast_version_with_downloads() {
 # Returns suggested version.
 suggest_cask_version() {
   local cask version latest_version latest_build latest_download_url
-  local delimeter result devmate_version rule
+  local delimiter result devmate_version rule
   local devmate_part amazonaws_part hackplan_part hockeyapp_part
   local -a cask_rules
 
@@ -224,12 +224,12 @@ suggest_cask_version() {
 
   [[ "${latest_version}" == "${latest_build}" ]] && latest_build=''
 
-  delimeter=$(sed -e 's/[A-Za-z0-9.]//g' <<< "${version}") # try guessing the delimeter from old version
-  [[ -z "${delimeter}" ]] && delimeter='.'
-  [[ "${#delimeter}" -ne 1 ]] && delimeter=','
+  delimiter=$(sed -e 's/[A-Za-z0-9.]//g' <<< "${version}") # try guessing the delimiter from old version
+  [[ -z "${delimiter}" ]] && delimiter='.'
+  [[ "${#delimiter}" -ne 1 ]] && delimiter=','
 
   result="${latest_version}"
-  # [[ ! -z "${latest_build}" ]] && result="${latest_version}${delimeter}${latest_build}" || result="${latest_version}"
+  # [[ ! -z "${latest_build}" ]] && result="${latest_version}${delimiter}${latest_build}" || result="${latest_version}"
 
   # dl.devmate.com
   if [[ "${latest_download_url}" =~ dl.devmate.com ]] || [[ "${latest_download_url}" =~ dl.smilesoftware.com ]]; then
@@ -240,7 +240,7 @@ suggest_cask_version() {
       if [[ ! -z "${latest_build}" ]] && [[ "${devmate_version}" == "${latest_build}" ]]; then
         result="${latest_version},${latest_build}:${devmate_part}"
       else
-        result="${latest_version}${delimeter}${devmate_part}"
+        result="${latest_version}${delimiter}${devmate_part}"
       fi
     fi
   fi
@@ -264,10 +264,10 @@ suggest_cask_version() {
     hackplan_part="$(cut -d '/' -f 5 <<< "${latest_download_url}")"
   fi
 
-  # "<version><delimeter><build>"
-  cask_rules=($(get_xml_config_values '//version-delimeter-build' 'cask'))
+  # "<version><delimiter><build>"
+  cask_rules=($(get_xml_config_values '//version-delimiter-build' 'cask'))
   for rule in "${cask_rules[@]}"; do
-    [[ "${cask}" == "${rule}" ]] && result="${latest_version}${delimeter}${latest_build}"
+    [[ "${cask}" == "${rule}" ]] && result="${latest_version}${delimiter}${latest_build}"
   done
 
   # "<version>"
@@ -287,7 +287,7 @@ suggest_cask_version() {
   if [[ ! -z "${rule}" ]]; then
     result=$(interpolate_version "${rule}" "${latest_version}" 'version')
     result=$(interpolate_version "${result}" "${latest_build}" 'build')
-    result=$(interpolate_version "${result}" "${delimeter}" 'delimeter')
+    result=$(interpolate_version "${result}" "${delimiter}" 'delimiter')
     result=$(interpolate_version "${result}" "${devmate_part}" 'devmate-part')
     result=$(interpolate_version "${result}" "${hockeyapp_part}" 'hockeyapp-part')
     result=$(interpolate_version "${result}" "${amazonaws_part}" 'amazonaws-part')

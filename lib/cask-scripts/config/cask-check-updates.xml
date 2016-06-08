@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <cask-check-updates>
   <rules>
-    <version-delimeter-build>
+    <version-delimiter-build>
       <cask>aliwangwang</cask>
       <cask>alternote</cask>
       <cask>appfresh</cask>
@@ -45,7 +45,7 @@
       <cask>tripmode</cask>
       <cask>tvshows</cask>
       <cask>versions</cask>
-    </version-delimeter-build>
+    </version-delimiter-build>
     <version-only>
       <cask>framer</cask>
     </version-only>
@@ -57,6 +57,7 @@
     </build-only>
     <matching-tag>
       <cask tag="Bloodhound">adobe-bloodhound</cask>
+      <cask tag="XQuartz">xquartz</cask>
       <cask tag="XQuartz">xquartz-beta</cask>
     </matching-tag>
     <custom>
@@ -75,6 +76,9 @@
       </cask>
       <cask name="flixster-video">
         <version pattern="/-v.*$/" />
+      </cask>
+      <cask name="framer">
+        <version pattern="/^v/" />
       </cask>
       <cask name="goldencheetah">
         <version pattern="/^V/" />
@@ -103,12 +107,12 @@
       </cask>
       <cask name="pdfpen">
         <build />
-        <delimeter />
+        <delimiter />
         <devmate-part />
       </cask>
       <cask name="pomotodo">
         <version />
-        <delimeter />
+        <delimiter />
         <hackplan-part />
       </cask>
       <cask name="propresenter">
@@ -118,7 +122,7 @@
       </cask>
       <cask name="qblocker">
         <build />
-        <delimeter />
+        <delimiter />
         <devmate-part />
       </cask>
       <cask name="qlcolorcode">
@@ -141,7 +145,7 @@
       </cask>
       <cask name="pdfpenpro">
         <build />
-        <delimeter />
+        <delimiter />
         <devmate-part />
       </cask>
       <cask name="proxpn">
@@ -155,7 +159,7 @@
       </cask>
       <cask name="spillo">
         <build />
-        <delimeter />
+        <delimiter />
         <version />
       </cask>
       <cask name="sshfs">
@@ -175,7 +179,7 @@
       </cask>
       <cask name="textexpander">
         <build />
-        <delimeter />
+        <delimiter />
         <devmate-part />
       </cask>
       <cask name="time-tracker">
@@ -185,12 +189,12 @@
         <version />
         <text>-</text>
         <build />
-        <delimeter />
+        <delimiter />
         <amazonaws-part />
       </cask>
       <cask name="vox">
         <build />
-        <delimeter />
+        <delimiter />
         <devmate-part />
       </cask>
       <cask name="xquartz-beta">
