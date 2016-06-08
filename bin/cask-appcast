@@ -2,7 +2,7 @@
 #
 # Get the latest available version from appcast URL.
 #
-# Version:         0.3.11
+# Version:         0.3.12
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   08.06.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.3.11'
+readonly VERSION='0.3.12'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
@@ -183,13 +183,13 @@ get_appcast_version() {
 
   case "$(get_appcast_provider "${content}")" in
     'Sparkle')
-      readonly values=($(get_sparkle_latest "${content}"))
+      readonly values=($(get_sparkle_latest "${content}" "${MATCHING_TAG}"))
       version="${values[0]}"
       [[ "${#values[@]}" -eq 3 ]] && [[ "${values[0]}" != "${values[1]}" ]] && version="${values[0]},${values[1]}"
       [[ ! -z "${version}" ]] && echo "${version}" && return 0
     ;;
     'GitHub Atom')
-      readonly values=($(get_sparkle_latest "${url}" "${MATCHING_TAG}"))
+      readonly values=($(get_github_atom_latest "${url}" "${MATCHING_TAG}"))
       [[ ! -z "${values[1]}" ]] && echo "${values[1]}" && return 0
     ;;
   esac
@@ -223,13 +223,13 @@ get_appcast_downloads() {
 
   case "$(get_appcast_provider "${content}")" in
     'Sparkle')
-      readonly values=($(get_sparkle_latest "${content}"))
+      readonly values=($(get_sparkle_latest "${content}" "${MATCHING_TAG}"))
       download_url="${values[1]}"
       [[ "${#values[@]}" -eq 3 ]] && download_url="${values[2]}"
       [[ ! -z "${download_url}" ]] && echo "${download_url}" && return 0
     ;;
     'GitHub Atom')
-      readonly values=($(get_sparkle_latest "${url}" "${MATCHING_TAG}"))
+      readonly values=($(get_github_atom_latest "${url}" "${MATCHING_TAG}"))
       if [[ "${#values[@]}" -gt 1 ]]; then
         for ((i = 2; i < ${#values[@]}; i++)); do
           output+=(${values[i]})
@@ -244,13 +244,16 @@ get_appcast_downloads() {
 
 # Create review for Sparkle appcast.
 #
+# Globals:
+#   MATCHING_TAG
+#
 # Arguments:
 #   $1 - Content
 review_sparkle() {
   local values version build download_url
 
   add_to_review 'Provider' 'Sparkle'
-  readonly values=($(get_sparkle_latest "$1"))
+  readonly values=($(get_sparkle_latest "$1" "${MATCHING_TAG}"))
   if [[ "$?" -gt 0 ]]; then
     add_to_review '' "$(tput setaf 3)no results available$(tput sgr0)"
   else

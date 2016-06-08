@@ -57,6 +57,7 @@
     </build-only>
     <matching-tag>
       <cask tag="Bloodhound">adobe-bloodhound</cask>
+      <cask tag="XQuartz">xquartz-beta</cask>
     </matching-tag>
     <custom>
       <cask name="airmail-beta">
@@ -191,6 +192,9 @@
         <build />
         <delimeter />
         <devmate-part />
+      </cask>
+      <cask name="xquartz-beta">
+        <version pattern="/^XQuartz-/" />
       </cask>
     </custom>
   </rules>

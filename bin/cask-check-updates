@@ -2,7 +2,7 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.5.1
+# Version:         0.5.2
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   08.06.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.5.1'
+readonly VERSION='0.5.2'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
@@ -162,7 +162,17 @@ get_appcast_version_with_downloads() {
 
   case "$(get_appcast_provider "${content}")" in
     'Sparkle')
-      readonly values=($(get_sparkle_latest "${content}"))
+      tag=''
+      readonly casks_matching_tag=($(get_xml_config_values '//matching-tag/cask/@tag' '../.' '.'))
+      for i in "${!casks_matching_tag[@]}"; do
+        if [[ $((i%2)) -ne 0 ]]; then
+          key="${casks_matching_tag[$i-1]}"
+          value="${casks_matching_tag[$i]}"
+          [[ "${key}" == "${cask}" ]] && tag="${value}"
+        fi
+      done
+
+      readonly values=($(get_sparkle_latest "${content}" "${tag}"))
       version="${values[0]}"
       if [[ "${#values[@]}" -eq 3 ]]; then
         [[ "${values[0]}" != "${values[1]}" ]] && version="${values[0]},${values[1]}"
@@ -179,7 +189,6 @@ get_appcast_version_with_downloads() {
         if [[ $((i%2)) -ne 0 ]]; then
           key="${casks_matching_tag[$i-1]}"
           value="${casks_matching_tag[$i]}"
-
           [[ "${key}" == "${cask}" ]] && tag="${value}"
         fi
       done

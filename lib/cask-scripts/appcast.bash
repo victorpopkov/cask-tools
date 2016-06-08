@@ -139,24 +139,28 @@ get_sparkle_version_build_url() {
 #
 # Arguments:
 #   $1 - Content
+#   $2 - Match tag
 #
 # Returns status and array of values of latest version:
 #   <version>
 #   <build>
 #   <url>
 get_sparkle_latest() {
-  local IFS content transform
+  local IFS content transform match
   local -a lines first last values result
 
   content=$(fix_sparkle_xmlns "$1")
   content=$(format_xml "${content}")
   readonly content
+  readonly match="$2"
 
-  readonly transform=$(xmlstarlet sel -t -m '//channel/item' \
+  transform=$(xmlstarlet sel -t -m '//channel/item' \
 -o '"' -i 'sparkle:shortVersionString' -v 'sparkle:shortVersionString[1]' --else -v 'enclosure[1]/@sparkle:shortVersionString' -b -o '";' \
 -o '"' -i 'sparkle:version' -v 'sparkle:version[1]' --else -v 'enclosure[1]/@sparkle:version' -b -o '";' \
 -o '"' -i 'link' -v 'link[1]' --else -v 'enclosure[1]/@url' -b -o '";' \
 -o '"' -v 'title' -o '"' -n <<< "${content}" 2> /dev/null)
+  [[ ! -z "${match}" ]] && transform=$(grep "${match}" <<< "${transform}")
+  readonly transform
 
   IFS=$'\n' read -rd '' -a lines <<< "${transform}"
   [[ "${#lines[@]}" -eq 0 ]] && return 1
