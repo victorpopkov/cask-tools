@@ -89,6 +89,66 @@ Show current script version.
 
 Show the usage message with options descriptions.
 
+## Configuration
+
+Since versions used in casks doesn't always use the only version which is used
+by default (`2.3.5,308 → 2.3.5`) in this script, some of them need to have a
+build instead (`2.3.5,308 → 308`) or even have a combination of those
+(`2.3.5,308`). Even the order of them can be different (`308,2.3.5`). In
+addition, some casks even need to include some parts of the download URL since
+those can also change in each new release:
+
+```
+https://dl.devmate.com/com.macpaw.CleanMyMac3/3.3.6/1463736430/CleanMyMac3-3.3.6.zip
+3.3.6 → 3.3.6,1463736430
+```
+
+Another problem is that some appcasts provide versions with excessive text that
+should be deleted (`3.0.20160607-nightly → 3.0.20160607`) or even normalized
+using different patterns (`rel-184 → 1.84`).
+
+To solve this inconsistency, XML [configuration](../lib/cask-scripts/config/cask-check-updates.xml)
+file is used that include different rules.
+
+### Rules
+
+In total 5 different rules are available:
+
+- **version-delimiter-build** `2.3.5,308 → 2.3.5,308`
+- **version-only** `2.3.5,308 → 2.3.5`
+- **build-only** `2.3.5,308 → 308`
+- **matching-tag** (filter using the matching tag)
+- **custom** (use different patterns)
+
+The first three rules should be self-explanatory. The most confusing ones are
+**matching-tag** and **custom**.
+
+#### matching-tag
+
+In some rare cases, some appcasts can have multiple applications released in
+one. For example [adobe-bloodhound.rb](https://github.com/caskroom/homebrew-cask/blob/master/Casks/adobe-bloodhound.rb)
+or [xquartz.rb](https://github.com/caskroom/homebrew-cask/blob/master/Casks/xquartz.rb).
+This rule helps to omit the unnecessary releases by grepping them with specified
+tag.
+
+#### custom
+
+When all the above rules don't solve the problem, the last resort is to use
+the **custom**. This is the most flexible one and has different tags available
+that can help to achieve the desired result:
+
+- **version**
+- **build**
+- **delimiter**
+- **text**
+- **devmate-part**
+- **hockeyapp-part**
+- **amazonaws-part**
+- **hackplan-part**
+
+Each of those can have a _pattern_ and _replacement_ attributes that exploit the
+Ruby `gsub(pattern, replacement)`.
+
 ## Examples
 
 ### Default

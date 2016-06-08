@@ -44,7 +44,9 @@ Please verify if those values are set on your system.
 Try to filter using the matching tag.
 
 This option is mainly used in cases when multiple applications are released in
-the one appcast. For example [adobe-bloodhound.rb](https://github.com/caskroom/homebrew-cask/blob/master/Casks/adobe-bloodhound.rb).
+the one appcast. For example [adobe-bloodhound.rb](https://github.com/caskroom/homebrew-cask/blob/master/Casks/adobe-bloodhound.rb)
+or [xquartz.rb](https://github.com/caskroom/homebrew-cask/blob/master/Casks/xquartz.rb).
+This will help omit the unnecessary releases.
 
 #### `-u, --unstable`
 
