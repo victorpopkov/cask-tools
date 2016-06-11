@@ -68,6 +68,9 @@
         <text>,</text>
         <hockeyapp-part />
       </cask>
+        <cask name="brackets">
+          <version pattern="/^release-/" />
+        </cask>
       <cask name="disablemonitor">
         <version pattern="/^G/" />
       </cask>
@@ -191,6 +194,13 @@
         <build />
         <delimiter />
         <amazonaws-part />
+      </cask>
+      <cask name="virtualhostx">
+        <version />
+        <text>,</text>
+        <version pattern="/.[0-9].*$/" />
+        <text>_</text>
+        <build />
       </cask>
       <cask name="vox">
         <build />
