@@ -57,6 +57,7 @@
     </build-only>
     <matching-tag>
       <cask tag="Bloodhound">adobe-bloodhound</cask>
+      <cask tag="phoneexpander.com/downloads">phoneexpander</cask>
       <cask tag="XQuartz">xquartz</cask>
       <cask tag="XQuartz">xquartz-beta</cask>
     </matching-tag>
@@ -68,11 +69,14 @@
         <text>,</text>
         <hockeyapp-part />
       </cask>
-        <cask name="brackets">
-          <version pattern="/^release-/" />
-        </cask>
+      <cask name="brackets">
+        <version pattern="/^release-/" />
+      </cask>
       <cask name="disablemonitor">
         <version pattern="/^G/" />
+      </cask>
+      <cask name="dropshare">
+        <version pattern="/(^.)(.*)/" replacement="\\1-\\1\\2" />
       </cask>
       <cask name="festify">
         <version pattern="/Beta$/" />
@@ -86,6 +90,11 @@
       <cask name="goldencheetah">
         <version pattern="/^V/" />
       </cask>
+      <cask name="iconjar">
+        <version />
+        <delimiter />
+        <hockeyapp-part />
+      </cask>
       <cask name="iterm2-nightly">
         <version pattern="/-nightly$/" />
       </cask>
@@ -93,6 +102,11 @@
         <text>7.4.</text>
         <version pattern="/^snapshot-/" />
       </cask>
+      <!-- <cask name="metanota">
+        <title>
+          <version />
+        </title>
+      </cask> -->
       <cask name="marked">
         <version />
         <build />
@@ -132,10 +146,10 @@
         <version pattern="/^release-/" />
       </cask>
       <cask name="qldds">
-        <version pattern="/rel-(.)/" replacement="\1." />
+        <version pattern="/rel-(.)(.*)/" replacement="\\1.\\2" />
       </cask>
       <cask name="qlvideo">
-        <version pattern="/rel-(.)/" replacement="\1." />
+        <version pattern="/rel-(.)(.*)/" replacement="\\1.\\2" />
       </cask>
       <cask name="querious">
         <version pattern="/b/" replacement="_beta" />
