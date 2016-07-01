@@ -2,10 +2,10 @@
 #
 # Get the latest available version from appcast URL.
 #
-# Version:         0.3.12
+# Version:         0.3.13
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   08.06.2016
+# Last modified:   01.07.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,12 +18,12 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.3.12'
+readonly VERSION='0.3.13'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
-readonly BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
 declare -a URLS
 declare -i OPTIONS_COUNTER=0
+BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
 GITHUB_USER=$(git config --get github.user)
 GITHUB_TOKEN=$(git config --get github.token)
 GITHUB_PRERELEASE='false'
@@ -76,6 +76,7 @@ usage() {
 
     options:
       -g, --github <user>:<token>   GitHub username and personal token.
+      -H, --header <header>         Set browser header.
       -m, --match <tag>             Try to filter using the matching tag.
       -u, --unstable                Try to get unstable releases if possible.
       -c, --checkpoint              Output appcast checkpoint.
@@ -101,6 +102,10 @@ while [[ "$1" ]]; do
       # shellcheck disable=SC2034
       GITHUB_TOKEN=$(cut -d ':' -f 2 <<< "$2")
       readonly GITHUB_USER GITHUB_TOKEN
+      shift
+      ;;
+    -H | --header)
+      readonly BROWSER_HEADERS="$2"
       shift
       ;;
     -m | --match)
