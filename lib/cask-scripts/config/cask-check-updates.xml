@@ -54,6 +54,7 @@
       <cask>lacona</cask>
       <cask>master-key</cask>
       <cask>porting-kit</cask>
+      <cask>royal-tsx-beta</cask>
     </build-only>
     <matching-tag>
       <cask tag="Bloodhound">adobe-bloodhound</cask>
@@ -86,6 +87,9 @@
       </cask>
       <cask name="framer">
         <version pattern="/^v/" />
+      </cask>
+      <cask name="godot">
+        <version pattern="/-stable$/" />
       </cask>
       <cask name="goldencheetah">
         <version pattern="/^V/" />
