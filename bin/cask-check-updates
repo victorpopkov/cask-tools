@@ -2,10 +2,10 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.5.3
+# Version:         0.5.4
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   01.07.2016
+# Last modified:   01.09.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -292,6 +292,7 @@ suggest_cask_version() {
   if [[ ! -z "${rule}" ]]; then
     result=$(interpolate_version "${rule}" "${latest_version}" 'version')
     result=$(interpolate_version "${result}" "${latest_build}" 'build')
+    result=$(interpolate_version "${result}" "${latest_download_url}" 'url')
     result=$(interpolate_version "${result}" "${delimiter}" 'delimiter')
     result=$(interpolate_version "${result}" "${devmate_part}" 'devmate-part')
     result=$(interpolate_version "${result}" "${hockeyapp_part}" 'hockeyapp-part')
