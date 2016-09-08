@@ -14,7 +14,6 @@
       <cask>dradio</cask>
       <cask>dterm</cask>
       <cask>evernote</cask>
-      <cask>findings</cask>
       <cask>flexiglass</cask>
       <cask>gog-downloader</cask>
       <cask>graphicconverter</cask>
@@ -76,11 +75,21 @@
       <cask name="disablemonitor">
         <version pattern="/^G/" />
       </cask>
+      <cask name="downie">
+        <version />
+        <text>,</text>
+        <url pattern="/(.*)_([0-9].*)\.zip$/" replacement="\\2" />
+      </cask>
       <cask name="dropshare">
         <version pattern="/(^.)(.*)/" replacement="\\1-\\1\\2" />
       </cask>
       <cask name="festify">
         <version pattern="/Beta$/" />
+      </cask>
+      <cask name="findings">
+        <version pattern="/\\(.*\\)/" />
+        <text>,</text>
+        <build />
       </cask>
       <cask name="flixster-video">
         <version pattern="/-v.*$/" />
