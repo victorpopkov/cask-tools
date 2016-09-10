@@ -30,7 +30,6 @@
       <cask>mplayerx</cask>
       <cask>netnewswire</cask>
       <cask>otomatic</cask>
-      <cask>papers</cask>
       <cask>phoneexpander</cask>
       <cask>pixlr</cask>
       <cask>simple-hub</cask>
@@ -134,6 +133,11 @@
       </cask>
       <cask name="openra">
         <version pattern="/^release-/" />
+      </cask>
+      <cask name="papers">
+        <version pattern="/\\(.*\\)/" />
+        <text>,</text>
+        <build />
       </cask>
       <cask name="pdfpen">
         <build />
