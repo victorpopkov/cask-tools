@@ -165,6 +165,9 @@
         <text>_b</text>
         <build />
       </cask>
+      <cask name="sente">
+        <url pattern="/(.*-)([0-9].*).zip$/" replacement="\\2" />
+      </cask>
       <cask name="qblocker">
         <build />
         <delimiter />
