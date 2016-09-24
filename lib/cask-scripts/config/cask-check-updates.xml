@@ -18,6 +18,7 @@
       <cask>gog-downloader</cask>
       <cask>graphicconverter</cask>
       <cask>hipchat</cask>
+      <cask>hockey</cask>
       <cask>hype</cask>
       <cask>intensify-pro</cask>
       <cask>invisionsync</cask>
@@ -70,6 +71,9 @@
       </cask>
       <cask name="brackets">
         <version pattern="/^release-/" />
+      </cask>
+      <cask name="commander-one">
+        <version pattern="/\\(.*\\)/" />
       </cask>
       <cask name="disablemonitor">
         <version pattern="/^G/" />
