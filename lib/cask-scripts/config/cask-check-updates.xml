@@ -75,6 +75,9 @@
       <cask name="commander-one">
         <version pattern="/\\(.*\\)/" />
       </cask>
+      <cask name="delicious-library">
+        <version pattern="/^v/" />
+      </cask>
       <cask name="disablemonitor">
         <version pattern="/^G/" />
       </cask>
@@ -131,6 +134,11 @@
           <version />
         </title>
       </cask> -->
+      <cask name="manico">
+        <version />
+        <text>-</text>
+        <build />
+      </cask>
       <cask name="marked">
         <version />
         <build />
