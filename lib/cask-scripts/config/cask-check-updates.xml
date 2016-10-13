@@ -9,6 +9,7 @@
       <cask>beatport-pro</cask>
       <cask>boxcryptor</cask>
       <cask>cartographica</cask>
+      <cask>clamxav</cask>
       <cask>codekit</cask>
       <cask>cyberduck</cask>
       <cask>dradio</cask>
@@ -216,6 +217,11 @@
       </cask>
       <cask name="shiftit">
         <version pattern="/^version-/" />
+      </cask>
+      <cask name="spacemonkey">
+        <build />
+        <delimiter />
+        <hockeyapp-part />
       </cask>
       <cask name="spillo">
         <build />
