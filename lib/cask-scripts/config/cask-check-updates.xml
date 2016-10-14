@@ -30,7 +30,6 @@
       <cask>lytro-desktop</cask>
       <cask>mountain-duck</cask>
       <cask>mplayerx</cask>
-      <cask>netnewswire</cask>
       <cask>otomatic</cask>
       <cask>phoneexpander</cask>
       <cask>pixlr</cask>
@@ -82,6 +81,11 @@
       <cask name="disablemonitor">
         <version pattern="/^G/" />
       </cask>
+      <cask name="docker-beta">
+        <version pattern="/-.*$/" />
+        <delimiter />
+        <build />
+      </cask>
       <cask name="downie">
         <version />
         <text>,</text>
@@ -123,6 +127,9 @@
         <text>-</text>
         <build />
       </cask>
+      <cask name="ipvanish-vpn">
+        <url pattern="/.*_v([0-9].*)\.zip$/" replacement="\\1" />
+      </cask>
       <cask name="iterm2-nightly">
         <version pattern="/-nightly$/" />
       </cask>
@@ -146,6 +153,11 @@
       </cask>
       <cask name="monodraw">
         <text>b</text>
+        <build />
+      </cask>
+      <cask name="netnewswire">
+        <version pattern="/Build.*$/" />
+        <delimiter />
         <build />
       </cask>
       <cask name="nvalt">
