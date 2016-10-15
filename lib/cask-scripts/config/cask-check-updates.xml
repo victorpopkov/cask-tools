@@ -47,6 +47,7 @@
     </version-delimiter-build>
     <version-only>
       <cask>framer</cask>
+      <cask>trailrunner</cask>
     </version-only>
     <build-only>
       <cask>daemon-tools-lite</cask>
