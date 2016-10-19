@@ -2,7 +2,7 @@
 #
 # Get the latest available version from appcast URL.
 #
-# Version:         0.3.13
+# Version:         0.3.14
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   01.07.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.3.13'
+readonly VERSION='0.3.14'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 declare -a URLS

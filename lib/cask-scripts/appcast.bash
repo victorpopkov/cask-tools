@@ -4,7 +4,7 @@
 #
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   05.06.2016
+# Last modified:   20.10.2016
 
 # Constants and globals
 declare BROWSER_HEADERS
@@ -207,10 +207,8 @@ get_sparkle_latest() {
 #     1 - No releases found
 #     2 - API forbidden
 get_github_atom_latest() {
-  local auth user repo match url out code content latest_tag prerelease_tag version prerelease download_urls
+  local user repo match url out code content latest_tag prerelease_tag version prerelease download_urls
   local -a result
-
-  [[ ! -z "${GITHUB_USER}" ]] && [[ ! -z "${GITHUB_TOKEN}" ]] && auth=(--user "${GITHUB_USER}:${GITHUB_TOKEN}")
 
   IFS='/' read -ra parts <<< "$1"
   readonly parts
@@ -219,7 +217,12 @@ get_github_atom_latest() {
   readonly match="$2"
 
   readonly url="https://api.github.com/repos/${user}/${repo}/releases"
-  readonly out=$(curl --silent --compressed --location "${url}" "${auth[@]}" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}' 2>/dev/null)
+  if [[ ! -z "${GITHUB_USER}" ]] && [[ ! -z "${GITHUB_TOKEN}" ]]; then
+    out=$(curl --silent --compressed --location "${url}" --user "${GITHUB_USER}:${GITHUB_TOKEN}" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}')
+  else
+    out=$(curl --silent --compressed --location "${url}" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}')
+  fi
+  readonly out
   readonly code=$(echo "${out}" | tail -n1)
   readonly content=$(echo "${out}" | sed \$d)
 
