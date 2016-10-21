@@ -2,7 +2,7 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.5.7
+# Version:         0.5.8
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   21.10.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.5.7'
+readonly VERSION='0.5.8'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-check-updates.xml"
@@ -467,19 +467,19 @@ review_cask_appcasts() {
     [[ "${i}" -eq 0 ]] && review_name='Cask appcast' || review_name=''
     [[ "${i}" -eq 0 ]] && [[ "${#appcasts[@]}" -gt 1 ]] && review_name+='s'
 
-    review_value=$(printf "%-$((appcasts_max_length+6))s" "${appcast} (${code})")
-
     if [[ "${code}" -eq 200 ]]; then
+      review_value=$(printf "%-$((appcasts_max_length))s" "${appcast}")
       if [[ "${latest_checkpoint}" == "${checkpoint}" ]]; then
-        msg="$(tput setaf 2)valid$(tput sgr0) (${checkpoint:0:6}...)"
-        review_value+=$(printf " %s" "| ${msg}")
+        msg="$(tput setaf 2)valid$(tput sgr0)"
       else
-        msg="$(tput setaf 3)outdated checkpoint$(tput sgr0) (${checkpoint:0:6}... => $(tput setaf 7)${latest_checkpoint:0:6}$(tput sgr0)...)"
-        review_value+=$(printf " %s" "| ${msg}")
+        msg="$(tput setaf 3)outdated$(tput sgr0)"
       fi
+      review_value+=$(printf " | checkpoint: %s" "${msg}")
+    elif [[ "${status}" -eq 0 ]]; then
+      review_value=$(printf "%-$((appcasts_max_length+6))s" "${appcast} [$(tput setaf 3)${code}$(tput sgr0)]")
     else
-      msg="$(tput setaf 1)error ${code}$(tput sgr0)"
-      review_value+=$(printf " %s" "| ${msg}")
+      review_value=$(printf "%-$((appcasts_max_length))s" "${appcast}")
+      review_value+=$(printf " | $(tput setaf 1)curl returned status %s$(tput sgr0)" "${status}")
     fi
 
     add_to_review "${review_name}" "${review_value}"
