@@ -4,7 +4,7 @@
 #
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   07.06.2016
+# Last modified:   21.10.2016
 
 # Constants and globals
 declare PROGRAM
@@ -163,9 +163,10 @@ show_review() {
 # Arguments:
 #   $1 - URL
 #
-# Returns content and status code (last line).
+# Returns content, response code and status code.
 get_url_content() {
   curl --silent --compressed --location "$1" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}' 2>/dev/null
+  printf "\n%i" "$?"
 }
 
 # Extract version from string.

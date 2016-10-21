@@ -2,10 +2,10 @@
 #
 # Get the latest available version from appcast URL.
 #
-# Version:         0.3.14
+# Version:         0.3.15
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   01.07.2016
+# Last modified:   21.10.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -174,15 +174,17 @@ done
 #
 # Returns version and status.
 get_appcast_version() {
-  local url content out code values version
+  local -i code status
+  local url content out values version
 
   readonly url="$1"
 
   content="$2"
   if [[ -z "$2" ]]; then
     readonly out=$(get_url_content "${url}")
-    readonly code=$(echo "${out}" | tail -n1)
-    content=$(echo "${out}" | sed \$d)
+    content=$(echo "${out}" | sed -e :a -e '$d;N;2,2ba' -e 'P;D') # delete last 2 lines
+    readonly code=$(echo "${out}" | tail -n 2 | head -n 1)
+    readonly status=$(echo "${out}" | tail -n 1)
   fi
   readonly content
 
@@ -202,7 +204,7 @@ get_appcast_version() {
   return 1
 }
 
-# Extract download URLs from appcast URL or content.
+# Extract download URL(s) from appcast URL or content.
 #
 # Globals:
 #   MATCHING_TAG
@@ -211,18 +213,20 @@ get_appcast_version() {
 #   $1 - URL     (required)
 #   $2 - Content (not required)
 #
-# Returns array of dowload URLs and status.
+# Returns array of dowload URL(s) and status.
 get_appcast_downloads() {
-  local url content out code values download_url
   local -a output
+  local -i code status
+  local url content out values download_url
 
   readonly url="$1"
 
   content="$2"
   if [[ -z "$2" ]]; then
     readonly out=$(get_url_content "${url}")
-    readonly code=$(echo "${out}" | tail -n1)
-    content=$(echo "${out}" | sed \$d)
+    content=$(echo "${out}" | sed -e :a -e '$d;N;2,2ba' -e 'P;D') # delete last 2 lines
+    readonly code=$(echo "${out}" | tail -n 2 | head -n 1)
+    readonly status=$(echo "${out}" | tail -n 1)
   fi
   readonly content
 
@@ -288,8 +292,8 @@ review_sparkle() {
 # Arguments:
 #   $1 - URL
 review_github() {
-  local url stat_name_downloads values version
   local -i status
+  local url stat_name_downloads values version
 
   add_to_review 'Provider' 'GitHub Atom'
 
@@ -335,44 +339,56 @@ review_github() {
 #
 # Returns status.
 main() {
-  local url out content code result status
+  local url out content code status result status msg
 
   readonly url="$1"
   readonly out=$(get_url_content "${url}")
-  readonly content=$(echo "${out}" | sed \$d)
-  readonly code=$(echo "${out}" | tail -n1)
+  readonly content=$(echo "${out}" | sed -e :a -e '$d;N;2,2ba' -e 'P;D') # delete last 2 lines
+  readonly code=$(echo "${out}" | tail -n 2 | head -n 1)
+  readonly status=$(echo "${out}" | tail -n 1)
 
-  if [[ "${CHECKPOINT}" == 'true' ]]; then
-    result=$(generate_appcast_checkpoint "${content}")
-    [[ "$?" -eq 0 ]] && printf "%s" "${result}" || printf '-'
-    [[ "${OPTIONS_COUNTER}" -gt 1 ]] && printf ';'
+  if [[ ! -z "${content}" ]]; then
+    if [[ "${CHECKPOINT}" == 'true' ]]; then
+      result=$(generate_appcast_checkpoint "${content}")
+      [[ "$?" -eq 0 ]] && printf "%s" "${result}" || printf '-'
+      [[ "${OPTIONS_COUNTER}" -gt 1 ]] && printf ';'
+    fi
+
+    if [[ "${PROVIDER}" == 'true' ]]; then
+      result=$(get_appcast_provider "${content}")
+      [[ "$?" -eq 0 ]] && printf "%s" "${result}" || printf '-'
+      [[ "${OPTIONS_COUNTER}" -gt 1 ]] && printf ';'
+    fi
+
+    if [[ "${APP_VERSION}" == 'true' ]]; then
+      result=$(get_appcast_version "${url}" "${content}")
+      [[ "$?" -eq 0 ]] && printf "%s" "${result}" || printf '-'
+      [[ "${OPTIONS_COUNTER}" -gt 1 ]] && printf ';'
+    fi
+
+    if [[ "${DOWNLOADS}" == 'true' ]]; then
+      result=$(get_appcast_downloads "${url}" "${content}")
+      [[ "$?" -eq 0 ]] && printf "%s" "${result}" || printf '-'
+      [[ "${OPTIONS_COUNTER}" -gt 1 ]] && printf ';'
+    fi
   fi
-
-  if [[ "${PROVIDER}" == 'true' ]]; then
-    result=$(get_appcast_provider "${content}")
-    [[ "$?" -eq 0 ]] && printf "%s" "${result}" || printf '-'
-    [[ "${OPTIONS_COUNTER}" -gt 1 ]] && printf ';'
-  fi
-
-  if [[ "${APP_VERSION}" == 'true' ]]; then
-    result=$(get_appcast_version "${url}" "${content}")
-    [[ "$?" -eq 0 ]] && printf "%s" "${result}" || printf '-'
-    [[ "${OPTIONS_COUNTER}" -gt 1 ]] && printf ';'
-  fi
-
-  if [[ "${DOWNLOADS}" == 'true' ]]; then
-    result=$(get_appcast_downloads "${url}" "${content}")
-    [[ "$?" -eq 0 ]] && printf "%s" "${result}" || printf '-'
-    [[ "${OPTIONS_COUNTER}" -gt 1 ]] && printf ';'
-  fi
-
-  [[ "${code}" -eq 200 ]] && status="$(tput setaf 2)${code}$(tput sgr0)" || status="$(tput setaf 1)${code}$(tput sgr0)"
 
   if [[ "${DETAILED}" == 'true' ]]; then
-    add_to_review 'Appcast' "$(tput setaf 7)${url}$(tput sgr0) (${status})"
+    if [[ "${status}" -eq 0 ]]; then
+      msg="$(tput setaf 1)${code}$(tput sgr0)"
+      [[ "${code}" -eq 200 ]] && msg="$(tput setaf 2)${code}$(tput sgr0)" # success
+      add_to_review 'Appcast' "$(tput setaf 7)${url}$(tput sgr0) [${msg}]"
+    else
+      add_to_review 'Appcast' "$(tput setaf 7)${url}$(tput sgr0)"
+    fi
 
-    if [[ "${code}" -ne 200 ]]; then
-      add_to_review 'Status' "$(tput setaf 1)HTTP Error ${code}$(tput sgr0)"
+    if [[ "${status}" -ne 0 ]]; then
+      msg="curl returned status ${status}"
+      [[ "${status}" -eq 28 ]] && msg="request timed out" # timed out
+      add_to_review 'Status' "$(tput setaf 1)Error: ${msg}$(tput sgr0)"
+    elif [[ "${code}" -ne 200 ]]; then
+      msg="response ${code}"
+      add_to_review 'Status' "$(tput setaf 1)Error: ${msg}$(tput sgr0)"
     else
       add_to_review 'Checkpoint' "$(generate_appcast_checkpoint "${content}")"
 

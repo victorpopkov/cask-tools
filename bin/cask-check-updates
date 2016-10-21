@@ -2,10 +2,10 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.5.6
+# Version:         0.5.7
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   20.10.2016
+# Last modified:   21.10.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.5.6'
+readonly VERSION='0.5.7'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-check-updates.xml"
@@ -142,7 +142,7 @@ if ! pwd | grep -q 'homebrew-.*/Casks'; then
   error "You need to be inside a '/homebrew-*/Casks' directory"
 fi
 
-# Extract version number with download URL/URLs from appcast content.
+# Extract version number with download URL(s) from appcast content.
 #
 # Arguments:
 #   $1 - Cask name (required)
@@ -151,7 +151,7 @@ fi
 #
 # Returns version.
 get_appcast_version_with_downloads() {
-  local cask url content out code values version download_url tag rule
+  local cask url content out code status values version download_url tag rule
   local -a casks_matching_tag
 
   readonly cask="$1"
@@ -160,8 +160,9 @@ get_appcast_version_with_downloads() {
   content="$3"
   if [[ -z "$3" ]]; then
     readonly out=$(get_url_content "${url}")
-    readonly code=$(echo "${out}" | tail -n1)
-    content=$(echo "${out}" | sed \$d)
+    content=$(echo "${out}" | sed -e :a -e '$d;N;2,2ba' -e 'P;D') # delete last 2 lines
+    readonly code=$(echo "${out}" | tail -n 2 | head -n 1)
+    readonly status=$(echo "${out}" | tail -n 1)
   fi
   readonly content
 
@@ -313,7 +314,7 @@ suggest_cask_version() {
 review_cask_versions() {
   local -a versions appcasts checkpoints urls latest
   local -i versions_max_length appcasts_counter i status
-  local cask values line version appcast checkpoint url out code content latest_checkpoint latest_version suggested_version suggested_latest_version latest_url review_name review_value
+  local cask values line version appcast checkpoint url out code status content latest_checkpoint latest_version suggested_version suggested_latest_version latest_url review_name review_value
 
   readonly cask="$1"
   readonly values=$(get_cask_version_appcast_checkpoint_url "${cask}")
@@ -358,8 +359,9 @@ review_cask_versions() {
     if [[ ! -z "${appcast}" ]] && [[ ! -z "${checkpoint}" ]]; then
       # when we have an appcast and a checkpoint
       out=$(get_url_content "${appcast}")
-      code=$(echo "${out}" | tail -n1)
-      content=$(echo "${out}" | sed \$d)
+      content=$(echo "${out}" | sed -e :a -e '$d;N;2,2ba' -e 'P;D') # delete last 2 lines
+      code=$(echo "${out}" | tail -n 2 | head -n 1)
+      status=$(echo "${out}" | tail -n 1)
 
       latest=($(get_appcast_version_with_downloads "${cask}" "${appcast}"))
       status="$?"
@@ -417,8 +419,8 @@ review_cask_versions() {
 #   $4 - Latest version
 review_cask_appcasts() {
   local -a appcasts checkpoints
-  local -i appcasts_max_length i
-  local cask values version appcast checkpoint out code content latest_checkpoint latest_version review_name review_value status
+  local -i appcasts_max_length i code status
+  local cask values version appcast checkpoint out content latest_checkpoint latest_version review_name review_value msg
 
   readonly cask="$1"
   readonly values=$(get_cask_version_appcast_checkpoint_url "${cask}")
@@ -444,15 +446,18 @@ review_cask_appcasts() {
     checkpoint="${checkpoints[i]}"
 
     out=$(get_url_content "${appcast}")
-    code=$(echo "${out}" | tail -n1)
-    content=$(echo "${out}" | sed \$d)
+    content=$(echo "${out}" | sed -e :a -e '$d;N;2,2ba' -e 'P;D') # delete last 2 lines
+    code=$(echo "${out}" | tail -n 2 | head -n 1)
+    status=$(echo "${out}" | tail -n 1)
 
-    if [[ "${code}" -eq 000 ]] && [[ "${appcast}" =~ 'https' ]]; then
+    if [[ "${status}" -eq 60 ]] && [[ "${appcast}" =~ 'https' ]]; then
+      # invalid certificate chain, try HTTP instead
       appcast="${appcast/https/http}"
 
       out=$(get_url_content "${appcast}")
-      code=$(echo "${out}" | tail -n1)
-      content=$(echo "${out}" | sed \$d)
+      content=$(echo "${out}" | sed -e :a -e '$d;N;2,2ba' -e 'P;D') # delete last 2 lines
+      code=$(echo "${out}" | tail -n 2 | head -n 1)
+      status=$(echo "${out}" | tail -n 1)
 
       [[ "${appcasts_max_length}" -eq "$((${#appcast}+1))" ]] && ((appcasts_max_length--))
     fi
@@ -466,15 +471,15 @@ review_cask_appcasts() {
 
     if [[ "${code}" -eq 200 ]]; then
       if [[ "${latest_checkpoint}" == "${checkpoint}" ]]; then
-        status="$(tput setaf 2)valid$(tput sgr0) (${checkpoint:0:6}...)"
-        review_value+=$(printf " %s" "| ${status}")
+        msg="$(tput setaf 2)valid$(tput sgr0) (${checkpoint:0:6}...)"
+        review_value+=$(printf " %s" "| ${msg}")
       else
-        status="$(tput setaf 3)outdated checkpoint$(tput sgr0) (${checkpoint:0:6}... => $(tput setaf 7)${latest_checkpoint:0:6}$(tput sgr0)...)"
-        review_value+=$(printf " %s" "| ${status}")
+        msg="$(tput setaf 3)outdated checkpoint$(tput sgr0) (${checkpoint:0:6}... => $(tput setaf 7)${latest_checkpoint:0:6}$(tput sgr0)...)"
+        review_value+=$(printf " %s" "| ${msg}")
       fi
     else
-      status="$(tput setaf 1)error ${code}$(tput sgr0)"
-      review_value+=$(printf " %s" "| ${status}")
+      msg="$(tput setaf 1)error ${code}$(tput sgr0)"
+      review_value+=$(printf " %s" "| ${msg}")
     fi
 
     add_to_review "${review_name}" "${review_value}"
