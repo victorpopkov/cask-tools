@@ -172,8 +172,9 @@ load ../lib/cask-scripts/cask
   if ping -q -c 1 example.com; then
     run get_url_content 'example.com'
     [ "${status}" -eq 0 ]
-    readonly code=$(echo "${output}" | tail -n1)
-    readonly content=$(echo "${output}" | sed \$d)
+    readonly content=$(echo "${output}" | sed -e :a -e '$d;N;2,2ba' -e 'P;D') # delete last 2 lines
+    readonly code=$(echo "${output}" | tail -n 2 | head -n 1)
+    readonly status=$(echo "${output}" | tail -n 1)
     [ "${code}" -eq 200 ]
     [ "$(echo "${content}" | sed -n 2p)" == '<html>' ]
     [ "$(echo "${content}" | sed -n 3p)" == '<head>' ]
