@@ -4,7 +4,7 @@
 #
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   08.06.2016
+# Last modified:   23.10.2016
 
 # Get value(s) of a cask stanza.
 #
@@ -98,8 +98,8 @@ get_cask_version_appcast_checkpoint_url() {
 #
 # Returns string with version.
 interpolate_version() {
-  local string name version_original version_only major minor patch string_part version_part replace
   local -a string_parts methods version_parts
+  local string name version_original version_only major minor patch string_part version_part replace
 
   string="$1"
   readonly version_original="$2"

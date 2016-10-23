@@ -4,7 +4,7 @@
 #
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   20.10.2016
+# Last modified:   23.10.2016
 
 # Constants and globals
 declare BROWSER_HEADERS
@@ -110,8 +110,8 @@ format_xml() {
 #   <build>
 #   <url>
 get_sparkle_version_build_url() {
-  local line version version_before build url title
   local -a vars result
+  local line version version_before build url title
 
   readonly line="$1"
   [[ -z "${line}" ]] && return 1
@@ -146,8 +146,8 @@ get_sparkle_version_build_url() {
 #   <build>
 #   <url>
 get_sparkle_latest() {
-  local IFS content transform match
   local -a lines first last values result
+  local IFS content transform match
 
   content=$(fix_sparkle_xmlns "$1")
   content=$(format_xml "${content}")
@@ -207,8 +207,9 @@ get_sparkle_latest() {
 #     1 - No releases found
 #     2 - API forbidden
 get_github_atom_latest() {
-  local user repo match url out code content latest_tag prerelease_tag version prerelease download_urls
   local -a result
+  local -i code status
+  local user repo match url out content latest_tag prerelease_tag version prerelease download_urls
 
   IFS='/' read -ra parts <<< "$1"
   readonly parts
@@ -223,8 +224,9 @@ get_github_atom_latest() {
     out=$(curl --silent --compressed --location "${url}" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}')
   fi
   readonly out
-  readonly code=$(echo "${out}" | tail -n1)
-  readonly content=$(echo "${out}" | sed \$d)
+  readonly content=$(echo "${out}" | sed -e :a -e '$d;N;2,2ba' -e 'P;D') # delete last 2 lines
+  readonly code=$(echo "${out}" | tail -n 2 | head -n 1)
+  readonly status=$(echo "${out}" | tail -n 1)
 
   [[ "${code}" -eq 403 ]] && return 2
 

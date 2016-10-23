@@ -4,7 +4,7 @@
 #
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   21.10.2016
+# Last modified:   23.10.2016
 
 # Constants and globals
 declare PROGRAM
@@ -126,8 +126,8 @@ add_to_review() {
 #
 # Returns status.
 show_review() {
-  local name
   local -i name_max_length
+  local name
 
   if [[ -z "$1" ]]; then
     # get the longest length of the name string
