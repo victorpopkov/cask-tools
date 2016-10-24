@@ -372,37 +372,40 @@ review_cask_versions() {
       suggested_version=$(suggest_cask_version "${cask}" "${version}" "${version}" "${url}")
       suggested_latest_version=$(suggest_cask_version "${cask}" "${version}" "${latest_version}" "${latest_url}")
 
-      if [[ "${latest_checkpoint}" == "${checkpoint}" ]] && [[ "${status}" -eq 0 ]]; then
-        # checkpoints match
-        review_value+=" | ${latest_version}"
-        if [[ "${latest_version}" != "${suggested_latest_version}" ]]; then
-          review_value+=" → $(tput setaf 7)${suggested_latest_version}$(tput sgr0)"
-        fi
-        [[ "${SHOW_ALL}" == 'true' ]] && output_csv "${cask}" "${appcast}" "${version}" "${latest_version}" "${suggested_latest_version}"
-      elif [[ "${latest_checkpoint}" != "${checkpoint}" ]] && [[ "${status}" -eq 0 ]]; then
-        # checkpoints doesn't match but we know the latest version
-        if [[ "${latest_version}" =~ ${version} ]] || [[ "${version}" =~ ${latest_version} ]]; then
-          # old and new versions are the same
+      if [[ "${status}" -eq 0 ]]; then
+        # appcast response was successfull
+        if [[ "${latest_checkpoint}" == "${checkpoint}" ]]; then
+          # checkpoints match
           review_value+=" | ${latest_version}"
-          if [[ "${latest_version}" != "${suggested_version}" ]]; then
-            review_value+=" → $(tput setaf 7)${suggested_version}$(tput sgr0)"
-          fi
-          [[ "${SHOW_ALL}" == 'true' ]] && output_csv "${cask}" "${appcast}" "${version}" "${latest_version}" "${suggested_version}"
-        else
-          # new version available
-          show='true' # show in a review on screen
-          review_value+=" | $(tput setaf 2)${latest_version}$(tput sgr0)"
           if [[ "${latest_version}" != "${suggested_latest_version}" ]]; then
-            review_value+=" → $(tput setaf 2)${suggested_latest_version}$(tput sgr0)"
+            review_value+=" → $(tput setaf 7)${suggested_latest_version}$(tput sgr0)"
           fi
-          review_value+=" (latest)"
-          output_csv "${cask}" "${appcast}" "${version}" "${latest_version}" "${suggested_latest_version}"
+          [[ "${SHOW_ALL}" == 'true' ]] && output_csv "${cask}" "${appcast}" "${version}" "${latest_version}" "${suggested_latest_version}"
+        elif [[ "${latest_checkpoint}" != "${checkpoint}" ]] && [[ ! -z "${latest_version}" ]]; then
+          # checkpoints doesn't match but we know the latest version
+          if [[ "${latest_version}" =~ ${version} ]] || [[ "${version}" =~ ${latest_version} ]]; then
+            # old and new versions are the same
+            review_value+=" | ${latest_version}"
+            if [[ "${latest_version}" != "${suggested_version}" ]]; then
+              review_value+=" → $(tput setaf 7)${suggested_version}$(tput sgr0)"
+            fi
+            [[ "${SHOW_ALL}" == 'true' ]] && output_csv "${cask}" "${appcast}" "${version}" "${latest_version}" "${suggested_version}"
+          else
+            # new version available
+            show='true' # show in a review on screen
+            review_value+=" | $(tput setaf 2)${latest_version}$(tput sgr0)"
+            if [[ "${latest_version}" != "${suggested_latest_version}" ]]; then
+              review_value+=" → $(tput setaf 2)${suggested_latest_version}$(tput sgr0)"
+            fi
+            review_value+=" (latest)"
+            output_csv "${cask}" "${appcast}" "${version}" "${latest_version}" "${suggested_latest_version}"
+          fi
+        elif [[ "${latest_checkpoint}" != "${checkpoint}" ]] && [[ -z "${latest_version}" ]]; then
+          # checkpoints doesn't match and latest version is unknown
+          show='true' # show in a review on screen
+          review_value+=" | -"
+          output_csv "${cask}" "${appcast}" "${version}" "-" "-"
         fi
-      elif [[ "${latest_checkpoint}" != "${checkpoint}" ]] && [[ "${status}" -gt 0 ]]; then
-        # checkpoints doesn't match but latest version is unknown
-        show='true' # show in a review on screen
-        review_value+=" | -"
-        output_csv "${cask}" "${appcast}" "${version}" "-" "-"
       fi
     fi
 
