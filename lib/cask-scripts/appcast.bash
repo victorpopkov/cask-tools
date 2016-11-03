@@ -242,9 +242,13 @@ get_github_atom_latest() {
 
   readonly latest_tag prerelease_tag
 
-  version="${latest_tag}"
-  compare_versions "${latest_tag}" "${prerelease_tag}"
-  [[ "$?" -eq 2 ]] && [[ "${GITHUB_PRERELEASE}" == 'true' ]] && version="${prerelease_tag}" # if latest_tag < prerelease_tag
+  if [[ ! -z "${latest_tag}" ]]; then
+    version="${latest_tag}"
+    compare_versions "${latest_tag}" "${prerelease_tag}"
+    [[ "$?" -eq 2 ]] && [[ "${GITHUB_PRERELEASE}" == 'true' ]] && version="${prerelease_tag}" # if latest_tag < prerelease_tag
+  else
+    version="${prerelease_tag}"
+  fi
 
   [[ -z "${version}" ]] && return 1
 
