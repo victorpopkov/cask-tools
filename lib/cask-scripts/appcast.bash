@@ -146,7 +146,7 @@ get_sparkle_version_build_url() {
 #   <build>
 #   <url>
 get_sparkle_latest() {
-  local -a lines first last values result
+  local -a lines first last first_version last_version values result
   local IFS content transform match
 
   content=$(fix_sparkle_xmlns "$1")
@@ -170,7 +170,25 @@ get_sparkle_latest() {
   if [[ "${#lines[@]}" -gt 1 ]]; then
     readonly last=($(get_sparkle_version_build_url "${lines[${#lines[@]}-1]}"))
 
-    compare_versions "${first[0]}" "${last[0]}"
+    if [[ "${#first[@]}" -eq 3 ]]; then
+      first_version="${first[0]}"
+      if [[ "${first[1]}" =~ ^[0-9]+$ ]] ; then
+        first_version="${first[1]}"
+      fi
+    else
+      first_version="${first[0]}"
+    fi
+
+    if [[ "${#last[@]}" -eq 3 ]]; then
+      last_version="${last[0]}"
+      if [[ "${last[1]}" =~ ^[0-9]+$ ]] ; then
+        last_version="${last[1]}"
+      fi
+    else
+      last_version="${last[0]}"
+    fi
+
+    compare_versions "${first_version}" "${last_version}"
     case $? in
       0) values=("${first[@]}") ;; # =
       1) values=("${first[@]}") ;; # >
