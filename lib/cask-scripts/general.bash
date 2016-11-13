@@ -13,6 +13,7 @@ declare BROWSER_HEADERS
 declare CONFIG_FILE_XML
 declare -a REVIEW_NAMES
 declare -a REVIEW_VALUES
+declare -a REVIEW_WARNINGS
 
 # Display syntax error.
 #
@@ -115,6 +116,36 @@ add_to_review() {
   REVIEW_VALUES+=("${value}")
 }
 
+# Add warning to the review.
+#
+# Globals:
+#   REVIEW_WARNINGS
+#
+# Arguments:
+#   $1 - Value
+add_warning_to_review() {
+  REVIEW_WARNINGS+=("$1")
+}
+
+# Add info to review.
+#
+# Globals:
+#   REVIEW_NAMES
+#   REVIEW_VALUES
+#
+# Arguments:
+#   $1 - Name
+#   $2 - Value
+add_to_review() {
+  local name value
+
+  readonly name="$1"
+  readonly value="$2"
+
+  REVIEW_NAMES+=("${name}")
+  REVIEW_VALUES+=("${value}")
+}
+
 # Show review.
 #
 # Globals:
@@ -126,7 +157,7 @@ add_to_review() {
 #
 # Returns status.
 show_review() {
-  local -i name_max_length
+  local -i name_max_length i
   local name
 
   if [[ -z "$1" ]]; then
@@ -149,8 +180,19 @@ show_review() {
     [[ "${name_max_length}" -gt 0 ]] && printf "%-$((name_max_length+3))s %s\n" "${name}" "${REVIEW_VALUES[i]}" || printf "%s\n" "${REVIEW_VALUES[i]}"
   done
 
+  # desplay warnings if available
+  if [[ "${#REVIEW_WARNINGS[@]}" -gt 0 ]]; then
+    printf "\n"
+    for ((i = 0; i < ${#REVIEW_WARNINGS[@]}; i++)); do
+      name=''
+      # [[ "${i}" -eq 0 ]] && name='Warnings'
+      [[ "${name_max_length}" -gt 0 ]] && printf "%-$((name_max_length+3))s %s\n" "${name}" "$((i+1)). ${REVIEW_WARNINGS[i]}" || printf "%s\n" "$((i+1)). ${REVIEW_WARNINGS[i]}"
+    done
+  fi
+
   REVIEW_NAMES=()
   REVIEW_VALUES=()
+  REVIEW_WARNINGS=()
 
   return 0
 }
@@ -163,10 +205,59 @@ show_review() {
 # Arguments:
 #   $1 - URL
 #
-# Returns content, response code and status code.
+# Returns content, response code and execution status code.
 get_url_content() {
-  curl --silent --compressed --location "$1" --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}' 2>/dev/null
+  curl --silent --compressed --location --header "${BROWSER_HEADERS}" --max-time 10 --write-out '\n%{http_code}' "$1" 2>/dev/null
   printf "\n%i" "$?"
+}
+
+# Get response code from URL.
+#
+# Globals:
+#   BROWSER_HEADERS
+#
+# Arguments:
+#   $1 - URL
+#
+# Returns response code and execution status code.
+get_url_status() {
+  curl --silent --compressed --head --header "${BROWSER_HEADERS}" --max-time 10 --output /dev/null --write-out '%{http_code}' "$1" 2>/dev/null
+  printf "\n%i" "$?"
+}
+
+# Get host from URL.
+#
+# Arguments:
+#   $1 - URL
+#
+# Returns host.
+get_url_host() {
+  ruby -ruri -e "
+  host = URI.parse('$1').host.downcase
+  p host.start_with?('www.') ? host[4..-1] : host" | unquote
+}
+
+# Get redirect URL from original one.
+#
+# Arguments:
+#   $1 - URL
+#
+# Returns redirect URL.
+get_url_redirect() {
+  curl --silent --location --head --header "${BROWSER_HEADERS}" --max-time 10 --output /dev/null --write-out "%{url_effective}" "$1" 2>/dev/null
+}
+
+# Implode an array using specified separator.
+#
+# Arguments:
+#   $1 - Separator
+#
+# Returns joined string.
+join_by() {
+  local IFS="$1"
+
+  shift
+  echo "$*"
 }
 
 # Extract version from string.
