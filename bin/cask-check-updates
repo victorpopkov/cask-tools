@@ -2,7 +2,7 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.5.8
+# Version:         0.5.9
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   21.10.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.5.8'
+readonly VERSION='0.5.9'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-check-updates.xml"
@@ -68,7 +68,7 @@ fi
 # Globals:
 #   PROGRAM
 usage() {
-  echo "usage: ${PROGRAM} [options]
+  echo "usage: ${PROGRAM} [options] [<casks>...]
 
     Scan casks with appcasts for outdated ones and get the latest available version(s).
 
@@ -77,7 +77,7 @@ usage() {
       -H, --header <header>         Set browser header.
       -o, --output <filepath>       Output the results in CSV format into file.
       -u, --unstable                Try to get unstable releases if possible.
-      -a, --all                     Show and output also all updated casks.
+      -a, --all                     Show and output all casks even updated ones.
       -c, --checkpoints             Validate checkpoints.
       -v, --version                 Show current script version.
       -h, --help                    Show this help." | sed -E 's/^ {4}//'
@@ -507,6 +507,11 @@ output_csv() {
 
 # Globals:
 #   SHOW_CHECKPOINTS
+#   SHOW_ALL
+#   REVIEW_NAMES
+#   REVIEW_VALUES
+#   CASKS
+#   OUTPUT
 #
 # Arguments:
 #   $1 - Cask
@@ -534,7 +539,7 @@ main() {
 
 # process
 [[ "${#CASKS[@]}" -eq 0 ]] && CASKS=($(egrep -lir --include '*.rb' "(appcast ')" . | xargs -n1 basename | sed 's|\.rb$||' | sort))
-[[ "${#CASKS[@]}" -gt 1 ]] && printf "Checking updates for %s casks...\n" "${#CASKS[@]}" && divide
+[[ "${#CASKS[@]}" -gt 1 ]] && printf "Checking updates for %i casks...\n" "${#CASKS[@]}" && divide
 [[ "${OUTPUT}" == 'true' ]] && printf "\"%s\";\"%s\";\"%s\";\"%s\";\"%s\"\n" 'Name' 'Appcast' 'Current version' 'Latest version' 'Suggested latest version' > "${OUTPUT_PATH}"
 for cask in "${CASKS[@]}"; do main "${cask}"; done
 
