@@ -2,10 +2,10 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.1.0
+# Version:         0.1.2
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   13.11.2016
+# Last modified:   15.11.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.1.0'
+readonly VERSION='0.1.2'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 declare -a CASKS
@@ -54,8 +54,8 @@ usage() {
     options:
       -l, --pull <remote>        Use to specify a remote to pull from (defaults to 'upstream').
       -p, --push <remote>        Use to specify a remote to push to (defaults to 'origin').
-      -i, --ignore <warnings>    Ignore specified warnings separated by a comma: redirect https and slush.
-                                 Example: '${PROGRAM} -i redirect,https,slush [<casks>...]'
+      -i, --ignore <warnings>    Ignore specified warnings separated by a comma: redirect https and slash.
+                                 Example: '${PROGRAM} -i redirect,https,slash [<casks>...]'
       -H, --header <header>      Set browser header.
       -o, --output <filepath>    Output the results in CSV format into a file.
       -f, --fix (<total>)        Try to fix warnings automatically (optional: total number of casks to fix).
@@ -80,7 +80,7 @@ while [[ "$1" ]]; do
       IFS=$',' read -rd '' -a IGNORE <<< "$2"
       shift
       ;;
-    -h | --header)
+    -H | --header)
       readonly BROWSER_HEADERS="$2"
       shift
       ;;

@@ -38,14 +38,14 @@ cask hasn't been updated by someone else yet.
 
 #### `-i, --ignore <warnings>`
 
-Ignore specified warnings separated by a comma: redirect https and slush.
+Ignore specified warnings separated by a comma: redirect https and slash.
 
 It's useful when you would like to disable some warnings during the check. For
 example to disable all warnings and display only casks that have homepage
 errors:
 
 ```bash
-cask-homepage -i redirect,https,slush
+cask-homepage -i redirect,https,slash
 ```
 
 #### `-H, --header <header>`
