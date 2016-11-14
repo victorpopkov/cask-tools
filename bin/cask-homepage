@@ -241,7 +241,7 @@ review_homepage() {
   if [[ "${FIX}" == 'true' ]] && [[ ! -z "${fixed}" ]]; then
     FIXED_TOTAL+=1
     modify_stanza "${cask}" 'homepage' "'${fixed}'"
-    git commit "${cask}.rb" --message "Update ${cask} homepage (${warnings_str}}" --quiet
+    git commit "${cask}.rb" --message "Update ${cask} homepage (${warnings_str})" --quiet
   fi
 }
 
