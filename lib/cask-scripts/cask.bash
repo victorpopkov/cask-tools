@@ -186,3 +186,27 @@ get_xml_config_custom_rule() {
   -i '@pattern' -o ".gsub(" -v '@pattern' -o ", '" -v '@replacement' -o "')" \
   -b -o '}' "${CONFIG_FILE_XML}"
 }
+
+# Modify cask stanza.
+#
+# Stolen from https://github.com/vitorgalvao/tiny-scripts/blob/master/cask-repair.
+#
+# Arguments:
+#   $1 - Cask name
+#   $2 - Stanza name
+#   $3 - New stanza value
+#
+# Returns rule and status.
+modify_stanza() {
+  local cask stanza value
+
+  cask="${1/.rb}"
+  stanza="$2"
+  value="$3"
+
+  perl -0777 -i -e'
+    $stanza_to_modify = shift(@ARGV);
+    $new_stanza_value = shift(@ARGV);
+    print <> =~ s|\A.*^\s*\Q$stanza_to_modify\E\s\K[^\n]*|$new_stanza_value|smr;
+  ' "${stanza}" "${value}" "${cask}.rb"
+}
