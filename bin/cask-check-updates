@@ -2,10 +2,10 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.5.9
+# Version:         0.5.10
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   21.10.2016
+# Last modified:   14.11.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.5.9'
+readonly VERSION='0.5.10'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-check-updates.xml"
@@ -75,7 +75,7 @@ usage() {
     options:
       -g, --github <user>:<token>   GitHub username and personal token.
       -H, --header <header>         Set browser header.
-      -o, --output <filepath>       Output the results in CSV format into file.
+      -o, --output <filepath>       Output the results in CSV format into a file.
       -u, --unstable                Try to get unstable releases if possible.
       -a, --all                     Show and output all casks even updated ones.
       -c, --checkpoints             Validate checkpoints.
