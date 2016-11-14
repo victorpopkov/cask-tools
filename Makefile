@@ -16,6 +16,7 @@ uninstall:
 	@rm -fR ${DESTDIR}${PREFIX}/lib/cask-scripts
 	@rm -f ${DESTDIR}${PREFIX}/bin/cask-appcast
 	@rm -f ${DESTDIR}${PREFIX}/bin/cask-check-updates
+	@rm -f ${DESTDIR}${PREFIX}/bin/cask-homepage
 
 # Bats is used for testing: https://github.com/sstephenson/bats
 test:
