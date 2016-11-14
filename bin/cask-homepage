@@ -1,0 +1,363 @@
+#!/usr/bin/env bash
+#
+# Check homepages of the casks and try to fix them.
+#
+# Version:         0.1.0
+# License:         MIT License
+# Author:          Victor Popkov <victor@popkov.me>
+# Last modified:   13.11.2016
+
+# Getting this script's absoute path even when dealing with multi-level symlinks
+SOURCE="${BASH_SOURCE[0]}"
+DIR=$(dirname "${SOURCE}")
+while [ -h "${SOURCE}" ]; do
+  SOURCE=$(readlink "${SOURCE}")
+  [[ ${SOURCE} != /* ]] && SOURCE="${DIR}/${SOURCE}"
+  DIR="$(cd -P "$(dirname "${SOURCE}")" && pwd)"
+done
+readonly SOURCE DIR
+
+# Constants and globals
+readonly VERSION='0.1.0'
+readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
+readonly PROGRAM=$(basename "$0")
+declare -a CASKS
+declare -a IGNORE
+declare -i FIX_TOTAL
+declare -i FIXED_TOTAL
+BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
+REMOTE_PULL='upstream'
+REMOTE_PUSH='origin'
+BRANCH_NAME="${PROGRAM}_fix"
+DELETE_CREATED_BRANCHES='false'
+OUTPUT='false'
+OUTPUT_PATH=''
+FIX='false'
+FIX_TOTAL=0
+FIXED_TOTAL=0
+SHOW_ALL='false'
+
+# shellcheck source=/dev/null
+source "${BASE_PATH}/lib/cask-scripts/general.bash"
+# shellcheck source=/dev/null
+source "${BASE_PATH}/lib/cask-scripts/cask.bash"
+
+# Display help.
+#
+# Globals:
+#   PROGRAM
+usage() {
+  echo "usage: ${PROGRAM} [options] [<casks>...]
+
+    Check homepages of the casks and try to fix them.
+
+    options:
+      -l, --pull <remote>        Use to specify a remote to pull from (defaults to 'upstream').
+      -p, --push <remote>        Use to specify a remote to push to (defaults to 'origin').
+      -i, --ignore <warnings>    Ignore specified warnings separated by a comma: redirect https and slush.
+                                 Example: '${PROGRAM} -i redirect,https,slush [<casks>...]'
+      -H, --header <header>      Set browser header.
+      -o, --output <filepath>    Output the results in CSV format into a file.
+      -f, --fix (<total>)        Try to fix warnings automatically (optional: total number of casks to fix).
+      -a, --all                  Show and output all casks even if homepages are good.
+      -d, --delete-branch        Deletes local and remote branch named '${BRANCH_NAME}'.
+      -v, --version              Show current script version.
+      -h, --help                 Show this help." | sed -E 's/^ {4}//'
+}
+
+# available flags
+while [[ "$1" ]]; do
+  case "$1" in
+    -l | --pull)
+      REMOTE_PULL="$2"
+      shift
+      ;;
+    -p | --push)
+      REMOTE_PUSH="$2"
+      shift
+      ;;
+    -i | --ignore)
+      IFS=$',' read -rd '' -a IGNORE <<< "$2"
+      shift
+      ;;
+    -h | --header)
+      readonly BROWSER_HEADERS="$2"
+      shift
+      ;;
+    -o | --output)
+      readonly OUTPUT='true'
+      readonly OUTPUT_PATH="$2"
+      shift
+      ;;
+    -f | --fix)
+      FIX='true'
+      FIX_TOTAL="$2"
+      if [[ "${FIX_TOTAL}" != 0 ]]; then
+        shift
+      fi
+      ;;
+    -a | --all)
+      SHOW_ALL='true'
+      ;;
+    -d | --delete-branches)
+      DELETE_CREATED_BRANCHES='true'
+      ;;
+    -v | --version)
+      version
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    -*)
+      syntax_error "unrecognized option: $1"
+      ;;
+    *)
+      for arg in "$@"; do
+        cask="${arg/.rb}"
+        [[ -f "${cask}.rb" ]] && CASKS+=("${cask}") || printf "Cask '%s' not found\n" "${cask}"
+      done
+      [[ "$#" != "${#CASKS[@]}" ]] && [[ "${#CASKS[@]}" -eq 0 ]] && exit 1
+
+      readonly SHOW_ALL='true'
+      break
+      ;;
+  esac
+  shift
+done
+
+# check if in correct directory
+if ! pwd | grep -q 'homebrew-.*/Casks'; then
+  error "You need to be inside a '/homebrew-*/Casks' directory"
+fi
+
+# Append new line to CSV file.
+#
+# Globals:
+#   OUTPUT
+#   OUTPUT_PATH
+#   SHOW_ALL
+#
+# Arguments:
+#   $1 - Cask name
+#   $2 - Homepage
+#   $3 - Response code
+#   $4 - Status
+#   $5 - Warnings
+#   $5 - Fixed
+output_csv() {
+  [[ "${OUTPUT}" == 'true' ]] && printf "\"%s\";\"%s\";\"%s\";\"%s\";\"%s\";\"%s\"\n" "$1" "$2" "$3" "$4" "$5" "$6" >> "${OUTPUT_PATH}"
+}
+
+# Create homepage review for specified cask.
+#
+# Globals:
+#   IGNORE
+#   REVIEW_WARNINGS
+#   SHOW_ALL
+#   FIX
+#   FIXED_TOTAL
+#
+# Arguments:
+#   $1 - Cask name
+review_homepage() {
+  local -a warnings
+  local -i code status https_code https_status status_color
+  local cask homepage host out https_out homepage_redirect status_msg fixed warnings_str
+
+  readonly cask="$1"
+  readonly homepage=$(get_cask_stanza_value "${cask}" 'homepage')
+  readonly host=$(get_url_host "${homepage}")
+  readonly out=$(get_url_status "${homepage}")
+  readonly code=$(echo "${out}" | head -n 1)
+  readonly status=$(echo "${out}" | tail -n 1)
+
+  if [[ "${status}" -eq 0 ]]; then
+    # ok
+    if [[ "${code}" -eq 200 ]]; then
+      add_to_review 'Cask homepage' "${homepage} [$(tput setaf 2)${code}$(tput sgr0)]"
+    else
+      add_to_review 'Cask homepage' "${homepage} [$(tput setaf 3)${code}$(tput sgr0)]"
+
+      # redirect found
+      if [[ ! "${IGNORE[@]}" =~ redirect ]]; then
+        if [[ "${code}" -eq 301 ]] || [[ "${code}" -eq 302 ]]; then
+          homepage_redirect=$(get_url_redirect "${homepage}")
+          add_warning_to_review "Redirect found → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
+          warnings+=('redirect')
+          fixed="${homepage_redirect}"
+        fi
+      fi
+    fi
+    status_color=2
+    status_msg='good'
+  else
+    # curl returned non 0 status (warning or error)
+    add_to_review 'Cask homepage' "${homepage}"
+    status_color=1
+    status_msg='error'
+    [[ "${status}" -eq 28 ]] && status_msg='error (request timed out)'
+  fi
+
+  # check if HTTPS is available
+  if [[ ! "${IGNORE[@]}" =~ https ]] && [[ "${homepage}" =~ ^http\: ]]; then
+    readonly https_out=$(get_url_status "${homepage/http:/https:}")
+    readonly https_code=$(echo "${https_out}" | head -n 1)
+    readonly https_status=$(echo "${https_out}" | tail -n 1)
+
+    if [[ "${https_status}" -eq 0 ]] && [[ "${https_code}" -eq 200 ]]; then
+      # available
+      if [[ -z "${homepage_redirect}" ]] && [[ "${homepage}" =~ ^http\: ]]; then
+        # no redirect and homepage is usual HTTP
+        add_warning_to_review "HTTPS is available → $(tput setaf 7)https:$(tput sgr0)${homepage/http:}"
+        warnings+=('https')
+        fixed="https:${homepage/http:}"
+      fi
+    fi
+  fi
+
+  # check slash at the end
+  if [[ ! "${IGNORE[@]}" =~ slash ]] && [[ ! "${homepage}" =~ ${host}\/ ]]; then
+    add_warning_to_review "Missing a trailing slash at the end → ${homepage}$(tput setaf 7)/$(tput sgr0)"
+    warnings+=('slash')
+    [[ -z "${fixed}" ]] && fixed="${homepage%/}/" || fixed="${fixed%/}/"
+  fi
+
+  if [[ "${#REVIEW_WARNINGS[@]}" -gt 0 ]]; then
+    status_color=3
+    status_msg='warning'
+  fi
+
+  warnings_str=$(join_by ', ' "${warnings[@]}")
+
+  # output to CSV
+  if [[ "${#warnings[@]}" -gt 0 ]] || [[ "${SHOW_ALL}" == 'true' ]]; then
+    show='true'
+    output_csv "${cask}" "${homepage}" "${code}" "${status_msg}" "$([[ "${#warnings[@]}" -gt 0 ]] && echo "${warnings_str}" || echo '-')" "$([[ ! -z "${fixed}" ]] && echo "${fixed}" || echo '-')"
+  fi
+
+  add_to_review 'Status' "$(tput setaf ${status_color})${status_msg}$(tput sgr0)"
+
+  if [[ "${FIX}" == 'true' ]] && [[ ! -z "${fixed}" ]]; then
+    FIXED_TOTAL+=1
+    modify_stanza "${cask}" 'homepage' "'${fixed}'"
+    git commit "${cask}.rb" --message "Update ${cask} homepage (${warnings_str}}" --quiet
+  fi
+}
+
+# Finish the script.
+#
+# Stolen from https://github.com/vitorgalvao/tiny-scripts/blob/master/cask-repair.
+#
+# Globals:
+#   BRANCH_NAME
+#   REMOTE_PUSH
+#
+# Arguments:
+#   $1 - Status: 'abort' or 'success'
+#   $2 - Message
+delete_created_branches() {
+  local local_branches remote_branches
+
+  # delete local branches
+  local_branches=$(git branch --all | grep --extended-regexp "^ *${BRANCH_NAME}$" | perl -pe 's|^ *||;s|\n| |')
+  [[ -n "${local_branches}" ]] && git branch -D ${local_branches}
+
+  # delete remote branches
+  git fetch --prune "${REMOTE_PUSH}"
+  remote_branches=$(git branch --all | grep --extended-regexp "remotes/${REMOTE_PUSH}/${BRANCH_NAME}$" | perl -pe 's|.*/||;s|\n| |')
+  [[ -n "${remote_branches}" ]] && git push "${REMOTE_PUSH}" --delete ${remote_branches}
+}
+
+# Finish the script.
+#
+# Stolen from https://github.com/vitorgalvao/tiny-scripts/blob/master/cask-repair.
+#
+# Globals:
+#   BRANCH_NAME
+#
+# Arguments:
+#   $1 - Status: 'abort' or 'success'
+#   $2 - Message
+finish() {
+  git reset HEAD --hard --quiet
+  git checkout master --quiet
+  git branch -D "${BRANCH_NAME}" --quiet
+
+  # show message
+  if [[ "$1" == 'abort' ]]; then
+    echo -e "\n$(tput setaf 1)$2$(tput sgr0)"
+    exit 1
+  elif [[ "$1" == 'success' ]]; then
+    echo -e "$(tput setaf 2)$2$(tput sgr0)"
+    exit 0
+  fi
+}
+
+# cleanup if aborted with ⌃C
+trap 'finish abort "You aborted"' SIGINT
+
+# Globals:
+#   SHOW_ALL
+#   REVIEW_NAMES
+#   REVIEW_VALUES
+#   CASKS
+#   FIX
+#   FIX_TOTAL
+#
+# Arguments:
+#   $1 - Cask
+main() {
+  local cask show
+
+  readonly cask="$1"
+  show='false'
+
+  add_to_review 'Cask name' "$(tput setaf 7)${cask}$(tput sgr0)"
+  review_homepage "${cask}"
+  [[ "${SHOW_ALL}" == 'true' ]] && show='true'
+  [[ "${show}" == 'true' ]] && show_review 17
+
+  # shellcheck disable=SC2034
+  REVIEW_NAMES=()
+  # shellcheck disable=SC2034
+  REVIEW_VALUES=()
+
+  [[ "${show}" == 'true' ]] && [[ "${#CASKS[@]}" -gt 1 ]] && divide
+}
+
+# delete branches
+if [[ "${DELETE_CREATED_BRANCHES}" == 'true' ]]; then
+  delete_created_branches
+  exit 0
+fi
+
+# preparations
+if [[ "${FIX}" == 'true' ]]; then
+  git checkout master --quiet
+  git pull --rebase "${REMOTE_PULL}" master --quiet
+  git checkout -b "${BRANCH_NAME}" --quiet
+fi
+
+# process
+[[ "${#CASKS[@]}" -eq 0 ]] && CASKS=($(egrep -lir --include '*.rb' "(homepage ')" . | xargs -n1 basename | sed 's|\.rb$||' | sort))
+if [[ "${#CASKS[@]}" -gt 1 ]]; then
+  printf "Checking homepages of %i casks...\n" "${#CASKS[@]}"
+  if [[ "${FIX}" == 'true' ]]; then
+    [[ "${FIX_TOTAL}" -gt 0 ]] && printf "Fixing first %i casks...\n" "${FIX_TOTAL}" || printf 'Fixing all casks...\n'
+  fi
+  divide
+fi
+[[ "${OUTPUT}" == 'true' ]] && printf "\"%s\";\"%s\";\"%s\";\"%s\";\"%s\";\"%s\"\n" 'Name' 'Homepage' 'Response code' 'Status' 'Warnings' 'Fixed' > "${OUTPUT_PATH}"
+for cask in "${CASKS[@]}"; do
+  [[ "${FIX_TOTAL}" -gt 0 ]] && [[ "${FIXED_TOTAL}" -eq "${FIX_TOTAL}" ]] && break
+  main "${cask}"
+done
+
+# push
+if [[ "${FIX}" == 'true' ]]; then
+  git push --force "${REMOTE_PUSH}" "${BRANCH_NAME}" --quiet
+  finish success "Pushed ${FIXED_TOTAL} casks in branch 'remotes/${REMOTE_PUSH}/${BRANCH_NAME}'..."
+fi
+
+exit 0
