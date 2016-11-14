@@ -254,10 +254,11 @@ get_url_redirect() {
 #
 # Returns joined string.
 join_by() {
-  local IFS="$1"
+  local IFS
 
+  IFS="$1"
   shift
-  echo "$*"
+  sed "s/${IFS/ }/${IFS}/g" <<< "$*"
 }
 
 # Extract version from string.
