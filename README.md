@@ -19,6 +19,10 @@ Get the latest available version, checkpoint and download URL(s) from appcast.
 Scan casks with appcasts for outdated ones and get the latest available
 version(s).
 
+### [cask-homepage](doc/cask-homepage.md)
+
+Check homepages of the casks and try to fix them. Suggested by [**@miccal**](https://github.com/miccal).
+
 ## Installation
 
 ### Linux
