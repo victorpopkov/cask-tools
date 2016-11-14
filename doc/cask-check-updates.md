@@ -55,6 +55,24 @@ git config --get github.token
 
 Please verify if those values are set on your system.
 
+#### `-H, --header <header>`
+
+Set browser header.
+
+By default `User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2)
+AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36` is
+used.
+
+#### `-o, --output <filepath>`
+
+Output the results in CSV format into a file.
+
+For example, to output a CSV list in your home directory:
+
+```bash
+cask-check-updates -o ~/outdated.csv
+```
+
 #### `-u, --unstable`
 
 Try to get unstable releases if possible.
@@ -65,21 +83,20 @@ or 'Pre-release' for unstable. Setting this option forces to use unstable
 releases where possible which are especially useful when dealing with
 [Homebrew-Versions](https://github.com/caskroom/homebrew-versions).
 
-#### `-c, --checkpoint`
+#### `-a, --all`
 
-Output appcast checkpoint.
+Show and output all casks even updated ones.
 
-#### `-p, --provider`
+By default, only the casks that need to be updated are shown on screen and added
+to the CSV file. This parameter forces to show all the casks even if they are
+having the latest version but checkpoints don't match.
 
-Output appcast provider.
+#### `-c, --checkpoints`
 
-#### `-V, --app-version`
+Validate checkpoints.
 
-Output app version and build (if available).
-
-#### `-d, --downloads`
-
-Output download URL(s).
+By default, the checkpoints validation is not shown on screen. Use this parameter
+to enable it.
 
 #### `-v, --version`
 
