@@ -2,12 +2,20 @@
 
 Check homepages of the casks and try to fix them.
 
+- [Description](#description)
+  - [Lists of homepages](#lists-of-homepages)
+  - [Available options](#available-options)
+  - [Available warnings (rules)](#available-warnings)
+- [Examples](#examples)
+  - [Default](#default)
+  - [CSV lists](#csv-lists)
+
 ## Description
 
 The `cask-homepage` script is designed to check homepages of the casks for
 availability by checking their response statuses. It's useful in finding casks
 that are no longer maintained or available. It also checks the URL for these
-rules below (in brackets) and gives appropriate warnings if violated:
+rules (in brackets) below and gives appropriate warnings if violated:
 
 - [HTTPS is available](#https-is-available-https) _(https)_
 - [Only HTTP is available](#only-http-is-available-http) _(http)_
@@ -93,7 +101,17 @@ Show current script version.
 
 Show the usage message with options descriptions.
 
-### Available warnings
+### Available warnings (rules)
+
+These are the warnings that are currently supported (rule itself is in
+brackets):
+
+- [HTTPS is available](#https-is-available-https) _(https)_
+- [Only HTTP is available](#only-http-is-available-http) _(http)_
+- [Redirect found](#redirect-found-redirect) _(redirect)_
+- [Domain has changed](#domain-has-changed-domain) _(domain)_
+- [Missing a trailing slash at the end](#missing-a-trailing-slash-at-the-end-slash)
+  _(slash)_
 
 #### HTTPS is available _(https)_
 
@@ -181,6 +199,8 @@ Status:          warning
 ```
 
 ## Examples
+
+### Default
 
 By default you just have to `cd` into the Casks directory and run the script:
 

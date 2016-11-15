@@ -3,6 +3,17 @@
 Scan casks with appcasts for outdated ones and get the latest available
 version(s).
 
+- [Description](#description)
+  - [Supported providers](#supported-providers)
+  - [Lists of outdated casks](#lists-of-outdated-casks)
+  - [Available options](#available-options)
+- [Configuration](#configuration)
+  - [Rules](#rules)
+- [Examples](#examples)
+  - [Default](#default)
+  - [Unstable releases](#unstable-releases)
+  - [CSV lists](#csv-lists)
+
 ## Description
 
 The `cask-check-updates` was designed specifically to find outdated casks that

@@ -2,6 +2,11 @@
 
 Get the latest available version, checkpoint and download URL(s) from appcast.
 
+- [Description](#description)
+  - [Supported providers](#supported-providers)
+  - [Available options](#available-options)
+- [Examples](#examples)
+
 ## Description
 
 The purpose of `cask-appcast` is to get the latest available version, checkpoint
