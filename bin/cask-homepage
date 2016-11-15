@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.1.2
+# Version:         0.1.3
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   15.11.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.1.2'
+readonly VERSION='0.1.3'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 declare -a CASKS
@@ -54,11 +54,11 @@ usage() {
     options:
       -l, --pull <remote>        Use to specify a remote to pull from (defaults to 'upstream').
       -p, --push <remote>        Use to specify a remote to push to (defaults to 'origin').
-      -i, --ignore <warnings>    Ignore specified warnings separated by a comma: redirect https and slash.
-                                 Example: '${PROGRAM} -i redirect,https,slash [<casks>...]'
+      -i, --ignore <warnings>    Ignore specified warnings separated by a comma: https, http, redirect, domain and slash.
+                                 Example: '${PROGRAM} -i https,http,redirect,domain,slash [<casks>...]'
       -H, --header <header>      Set browser header.
       -o, --output <filepath>    Output the results in CSV format into a file.
-      -f, --fix (<total>)        Try to fix warnings automatically (optional: total number of casks to fix).
+      -f, --fix (<total>)        Try to fix warnings automatically (optional: a total number of casks to fix).
       -a, --all                  Show and output all casks even if homepages are good.
       -d, --delete-branch        Deletes local and remote branch named '${BRANCH_NAME}'.
       -v, --version              Show current script version.
@@ -163,7 +163,7 @@ output_csv() {
 review_homepage() {
   local -a warnings
   local -i code status https_code https_status status_color
-  local cask homepage host out https_out homepage_redirect status_msg fixed warnings_str
+  local cask homepage host redirect_host out https_out homepage_redirect status_msg fixed warnings_str
 
   readonly cask="$1"
   readonly homepage=$(get_cask_stanza_value "${cask}" 'homepage')
@@ -179,12 +179,27 @@ review_homepage() {
     else
       add_to_review 'Cask homepage' "${homepage} [$(tput setaf 3)${code}$(tput sgr0)]"
 
-      # redirect found
-      if [[ ! "${IGNORE[@]}" =~ redirect ]]; then
-        if [[ "${code}" -eq 301 ]] || [[ "${code}" -eq 302 ]]; then
-          homepage_redirect=$(get_url_redirect "${homepage}")
-          add_warning_to_review "Redirect found → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
-          warnings+=('redirect')
+      if [[ "${code}" -eq 301 ]] || [[ "${code}" -eq 302 ]]; then
+        # redirect found
+        homepage_redirect=$(get_url_redirect "${homepage}")
+        redirect_host=$(get_url_host "${homepage_redirect}")
+
+        if [[ "${host}" == "${redirect_host}" ]]; then
+          # both hosts are the same
+          if [[ ! "${IGNORE[@]}" =~ http ]] && [[ "${homepage}" =~ ^https\: ]] && [[ "${homepage_redirect}" =~ ^http\: ]]; then
+            # redirects from HTTPS to HTTP
+            add_warning_to_review "Only HTTP is available → $(tput setaf 7)http:$(tput sgr0)${homepage/https:}"
+            warnings+=('http')
+            fixed="http:${homepage/https:}"
+          elif [[ ! "${IGNORE[@]}" =~ redirect ]]; then
+            add_warning_to_review "Redirect found → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
+            warnings+=('redirect')
+            fixed="${homepage_redirect}"
+          fi
+        elif [[ ! "${IGNORE[@]}" =~ domain ]]; then
+          # domain is ignored
+          add_warning_to_review "Domain has changed → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
+          warnings+=('domain')
           fixed="${homepage_redirect}"
         fi
       fi
