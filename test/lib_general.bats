@@ -53,6 +53,30 @@ load ../lib/cask-scripts/cask
   [ "${output}" == "'test\"" ]
 }
 
+# check_array_contains()
+@test "check_array_contains() when no arguments" {
+  run check_array_contains
+  [ "${status}" -eq 1 ]
+}
+
+@test "check_array_contains() when element doesn't exists in array" {
+  local -a array
+  readonly array=('one' 'two' 'three')
+  run check_array_contains 'array[@]' 'four'
+  [ "${status}" -eq 1 ]
+}
+
+@test "check_array_contains() when element exists in array" {
+  local -a array
+  readonly array=('one' 'two' 'three')
+  run check_array_contains 'array[@]' 'one'
+  [ "${status}" -eq 0 ]
+  run check_array_contains 'array[@]' 'two'
+  [ "${status}" -eq 0 ]
+  run check_array_contains 'array[@]' 'three'
+  [ "${status}" -eq 0 ]
+}
+
 # get_xml_config_values()
 @test "get_xml_config_values() when no arguments" {
   run get_xml_config_values
