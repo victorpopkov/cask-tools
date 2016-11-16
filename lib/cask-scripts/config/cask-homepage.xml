@@ -1,6 +1,11 @@
 <?xml version="1.0"?>
 <cask-homepage>
   <rules>
-    <skip></skip>
+    <skip>
+      <cask>airmail-beta</cask>
+      <cask>microsoft-office-2011</cask>
+      <cask>thunderbird-ja</cask>
+      <cask>unifi-controller-beta</cask>
+    </skip>
   </rules>
 </cask-homepage>
