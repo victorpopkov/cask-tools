@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.2.1
+# Version:         0.2.2
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   16.11.2016
@@ -18,12 +18,14 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.2.1'
+readonly VERSION='0.2.2'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
 declare -a CASKS
-declare -a IGNORE
+declare -a RULES
+declare -a RULES_ENABLED
+declare -a RULES_DISABLED
 declare -i FIX_TOTAL
 declare -i FIXED_TOTAL
 BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
@@ -33,6 +35,7 @@ BRANCH_NAME=''
 DELETE_CREATED_BRANCHES='false'
 OUTPUT='false'
 OUTPUT_PATH=''
+RULES=('domain' 'http' 'https' 'redirect' 'slash')
 FIX='false'
 FIX_TOTAL=0
 FIXED_TOTAL=0
@@ -52,10 +55,18 @@ usage() {
 
     Check homepages of the casks and try to fix them.
 
+    Available rules:
+
+      domain     Domain has changed
+      http       Only HTTP is available
+      https      HTTPS (for new domain) is available
+      redirect   Redirect found
+      slash      Missing a trailing slash at the end
+
     options:
       -l, --pull <remote>        Use to specify a remote to pull from (defaults to 'upstream').
       -p, --push <remote>        Use to specify a remote to push to (defaults to 'origin').
-      -i, --ignore <warnings>    Ignore specified warnings separated by a comma: https, http, redirect, domain and slash.
+      -i, --ignore <rules>       Ignore specified warnings separated by a comma: https, http, redirect, domain and slash.
                                  Example: '${PROGRAM} -i https,http,redirect,domain,slash [<casks>...]'
       -H, --header <header>      Set browser header.
       -o, --output <filepath>    Output the results in CSV format into a file.
@@ -78,7 +89,11 @@ while [[ "$1" ]]; do
       shift
       ;;
     -i | --ignore)
-      IFS=$',' read -rd '' -a IGNORE <<< "$2"
+      IFS=$',' read -rd '' -a RULES_DISABLED <<< "$2"
+      for rule in "${RULES_DISABLED[@]}"; do
+        rule=$(echo -n "${rule}" | xargs)
+        check_array_contains 'RULES[@]' "${rule}" || syntax_error "Rule '${rule}' doesn't exist"
+      done
       shift
       ;;
     -H | --header)
@@ -132,6 +147,21 @@ if ! pwd | grep -q 'homebrew-.*/Casks'; then
   error "You need to be inside a '/homebrew-*/Casks' directory"
 fi
 
+# Check if specified rule is enabled.
+#
+# Globals:
+#   RULES_ENABLED
+#
+# Arguments:
+#   $1 - Rule
+#
+# Returns:
+#   0 – Enabled
+#   1 – Disabled
+check_rule_enabled() {
+  check_array_contains 'RULES_ENABLED[@]' "$1"
+}
+
 # Append new line to CSV file.
 #
 # Globals:
@@ -153,7 +183,7 @@ output_csv() {
 # Create homepage review for specified cask.
 #
 # Globals:
-#   IGNORE
+#   RULES_DISABLED
 #   REVIEW_WARNINGS
 #   SHOW_ALL
 #   FIX
@@ -163,8 +193,8 @@ output_csv() {
 #   $1 - Cask name
 review_homepage() {
   local -a warnings cask_rules
-  local -i code status https_code https_status status_color
-  local cask homepage host redirect_host out rule skip https_out homepage_redirect status_msg fixed warnings_str
+  local -i code status status_color
+  local cask homepage host redirect_host out rule skip homepage_redirect status_msg fixed warnings_str
 
   skip='false'
   readonly cask="$1"
@@ -192,17 +222,17 @@ review_homepage() {
 
       if [[ "${host}" == "${redirect_host}" ]]; then
         # domain not changed
-        if [[ ! "${IGNORE[@]}" =~ http ]] && [[ "${homepage}" =~ ^https\: ]] && [[ "${homepage_redirect}" =~ ^http\: ]]; then
+        if [[ ! "${RULES_DISABLED[@]}" =~ http ]] && [[ "${homepage}" =~ ^https\: ]] && [[ "${homepage_redirect}" =~ ^http\: ]]; then
           # redirects from HTTPS to HTTP
           add_warning_to_review "Only HTTP is available → $(tput setaf 7)http:$(tput sgr0)${homepage/https:}"
           warnings+=('http')
           fixed="http:${homepage/https:}"
-        elif [[ ! "${IGNORE[@]}" =~ redirect ]]; then
+        elif [[ ! "${RULES_DISABLED[@]}" =~ redirect ]]; then
           add_warning_to_review "Redirect found → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
           warnings+=('redirect')
           fixed="${homepage_redirect}"
         fi
-      elif [[ ! "${IGNORE[@]}" =~ domain ]]; then
+      elif [[ ! "${RULES_DISABLED[@]}" =~ domain ]]; then
         # domain changed
         add_warning_to_review "Domain has changed → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
         warnings+=('domain')
@@ -226,7 +256,7 @@ review_homepage() {
     [[ "${status}" -eq 28 ]] && status_msg='error (request timed out)'
   fi
 
-  if [[ ! "${IGNORE[@]}" =~ https ]]; then
+  if [[ ! "${RULES_DISABLED[@]}" =~ https ]]; then
     # https checking is enabled
     if [[ ! "${warnings[@]}" =~ domain ]] && [[ "${homepage}" =~ ^http\: ]]; then
       # domain not changed and homepage is using HTTP
@@ -247,7 +277,7 @@ review_homepage() {
     fi
   fi
 
-  if [[ ! "${IGNORE[@]}" =~ slash ]]; then
+  if [[ ! "${RULES_DISABLED[@]}" =~ slash ]]; then
     # slash checking is enabled
     if [[ ! "${homepage}" =~ ${host}\/ ]]; then
       add_warning_to_review "Missing a trailing slash at the end → ${homepage}$(tput setaf 7)/$(tput sgr0)"
@@ -303,6 +333,22 @@ delete_created_branches() {
   git fetch --prune "${REMOTE_PUSH}"
   remote_branches=$(git branch --all | grep --extended-regexp "remotes/${REMOTE_PUSH}/${PROGRAM}_.*$" | perl -pe 's|.*/||;s|\n| |')
   [[ -n "${remote_branches}" ]] && git push "${REMOTE_PUSH}" --delete ${remote_branches}
+}
+
+# Prints rule with status.
+#
+# Arguments:
+#   $1 - Rule
+#   $2 - Description
+print_rule() {
+  local rule description enabled disabled
+
+  readonly rule="$1"
+  readonly description="$2"
+  readonly enabled="$(tput setaf 2)enabled$(tput sgr0)"
+  readonly disabled="$(tput setaf 1)disabled$(tput sgr0)"
+
+  printf '%-10s %-21s %s\n' "${rule}" "$(check_rule_enabled "${rule}" && echo "${enabled}" || echo "${disabled}")" "${description}"
 }
 
 # Finish the script.
@@ -378,14 +424,26 @@ fi
 
 # process
 [[ "${#CASKS[@]}" -eq 0 ]] && CASKS=($(egrep -lir --include '*.rb' "(homepage ')" . | xargs -n1 basename | sed 's|\.rb$||' | sort))
-if [[ "${#CASKS[@]}" -gt 1 ]]; then
-  printf "Checking homepages of %i casks...\n" "${#CASKS[@]}"
-  if [[ "${FIX}" == 'true' ]]; then
-    [[ "${FIX_TOTAL}" -gt 0 ]] && printf "Fixing first %i casks...\n" "${FIX_TOTAL}" || printf 'Fixing all casks...\n'
-  fi
-  divide
-fi
+[[ "${#CASKS[@]}" -gt 1 ]] && printf "Checking homepages of %i casks...\n\n" "${#CASKS[@]}"
 [[ "${OUTPUT}" == 'true' ]] && printf "\"%s\";\"%s\";\"%s\";\"%s\";\"%s\";\"%s\"\n" 'Name' 'Homepage' 'Response code' 'Status' 'Warnings' 'Fixed' > "${OUTPUT_PATH}"
+
+for rule in "${RULES[@]}"; do
+  rule=$(echo -n "${rule}" | xargs)
+  check_array_contains 'RULES_DISABLED[@]' "${rule}" || RULES_ENABLED+=("${rule}")
+done
+
+print_rule 'domain' 'Domain has changed'
+print_rule 'http' 'Only HTTP is available'
+print_rule 'https' 'HTTPS (for new domain) is available'
+print_rule 'redirect' 'Redirect found'
+print_rule 'slash' 'Missing a trailing slash at the end'
+
+if [[ "${#CASKS[@]}" -gt 1 ]] && [[ "${FIX}" == 'true' ]]; then
+  [[ "${FIX_TOTAL}" -gt 0 ]] && printf "\nFixing first %i casks...\n" "${FIX_TOTAL}" || printf '\nFixing all casks...\n'
+fi
+
+divide
+
 for cask in "${CASKS[@]}"; do
   [[ "${FIX_TOTAL}" -gt 0 ]] && [[ "${FIXED_TOTAL}" -eq "${FIX_TOTAL}" ]] && break
   main "${cask}"
