@@ -5,7 +5,7 @@ Check homepages of the casks and try to fix them.
 - [Description](#description)
   - [Lists of homepages](#lists-of-homepages)
   - [Available options](#available-options)
-  - [Available warnings (rules)](#available-warnings)
+  - [Available warnings (rules)](#available-warnings-rules)
 - [Examples](#examples)
   - [Default](#default)
   - [CSV lists](#csv-lists)
