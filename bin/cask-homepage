@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.1.4
+# Version:         0.2.0
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   16.11.2016
@@ -18,9 +18,10 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.1.4'
+readonly VERSION='0.2.0'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
+readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
 declare -a CASKS
 declare -a IGNORE
 declare -i FIX_TOTAL
@@ -161,10 +162,11 @@ output_csv() {
 # Arguments:
 #   $1 - Cask name
 review_homepage() {
-  local -a warnings
+  local -a warnings cask_rules
   local -i code status https_code https_status status_color
-  local cask homepage host redirect_host out https_out homepage_redirect status_msg fixed warnings_str
+  local cask homepage host redirect_host out rule skip https_out homepage_redirect status_msg fixed warnings_str
 
+  skip='false'
   readonly cask="$1"
   readonly homepage=$(get_cask_stanza_value "${cask}" 'homepage')
   readonly host=$(get_url_host "${homepage}")
@@ -172,43 +174,53 @@ review_homepage() {
   readonly code=$(echo "${out}" | head -n 1)
   readonly status=$(echo "${out}" | tail -n 1)
 
-  if [[ "${status}" -eq 0 ]]; then
-    # ok
-    if [[ "${code}" -eq 200 ]]; then
-      add_to_review 'Cask homepage' "${homepage} [$(tput setaf 2)${code}$(tput sgr0)]"
-    else
-      add_to_review 'Cask homepage' "${homepage} [$(tput setaf 3)${code}$(tput sgr0)]"
+  # skip cask if defined in config
+  cask_rules=($(get_xml_config_values '//skip' 'cask'))
+  for rule in "${cask_rules[@]}"; do
+    [[ "${cask}" == "${rule}" ]] && skip='true'
+  done
 
-      if [[ "${code}" -eq 301 ]] || [[ "${code}" -eq 302 ]]; then
-        # redirect found
-        homepage_redirect=$(get_url_redirect "${homepage}")
-        redirect_host=$(get_url_host "${homepage_redirect}")
+  if [[ "${status}" -eq 0 ]] && [[ "${skip}" == 'false' ]]; then
+    # correct status and not skipped
+    [[ "${code}" -eq 200 ]] && status_color=2 || status_color=3
+    add_to_review 'Cask homepage' "${homepage} [$(tput setaf "${status_color}")${code}$(tput sgr0)]"
 
-        if [[ "${host}" == "${redirect_host}" ]]; then
-          # both hosts are the same
-          if [[ ! "${IGNORE[@]}" =~ http ]] && [[ "${homepage}" =~ ^https\: ]] && [[ "${homepage_redirect}" =~ ^http\: ]]; then
-            # redirects from HTTPS to HTTP
-            add_warning_to_review "Only HTTP is available → $(tput setaf 7)http:$(tput sgr0)${homepage/https:}"
-            warnings+=('http')
-            fixed="http:${homepage/https:}"
-          elif [[ ! "${IGNORE[@]}" =~ redirect ]]; then
-            add_warning_to_review "Redirect found → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
-            warnings+=('redirect')
-            fixed="${homepage_redirect}"
-          fi
-        elif [[ ! "${IGNORE[@]}" =~ domain ]]; then
-          # domain is ignored
-          add_warning_to_review "Domain has changed → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
-          warnings+=('domain')
+    if [[ "${code}" -eq 301 ]] || [[ "${code}" -eq 302 ]]; then
+      # redirect found
+      homepage_redirect=$(get_url_redirect "${homepage}")
+      redirect_host=$(get_url_host "${homepage_redirect}")
+
+      if [[ "${host}" == "${redirect_host}" ]]; then
+        # both hosts are the same
+        if [[ ! "${IGNORE[@]}" =~ http ]] && [[ "${homepage}" =~ ^https\: ]] && [[ "${homepage_redirect}" =~ ^http\: ]]; then
+          # redirects from HTTPS to HTTP
+          add_warning_to_review "Only HTTP is available → $(tput setaf 7)http:$(tput sgr0)${homepage/https:}"
+          warnings+=('http')
+          fixed="http:${homepage/https:}"
+        elif [[ ! "${IGNORE[@]}" =~ redirect ]]; then
+          add_warning_to_review "Redirect found → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
+          warnings+=('redirect')
           fixed="${homepage_redirect}"
         fi
+      elif [[ ! "${IGNORE[@]}" =~ domain ]]; then
+        # domain change is not ignored
+        add_warning_to_review "Domain has changed → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
+        warnings+=('domain')
+        fixed="${homepage_redirect}"
       fi
     fi
+
     status_color=2
     status_msg='good'
+  elif [[ "${skip}" == 'true' ]]; then
+    # skipped
+    [[ "${code}" -eq 200 ]] && status_color=2 || status_color=3
+    add_to_review 'Cask homepage' "${homepage} [$(tput setaf "${status_color}")${code}$(tput sgr0)]"
+    status_color=7
+    status_msg='skipped'
   else
-    # curl returned non 0 status (warning or error)
-    add_to_review 'Cask homepage' "${homepage}"
+    # curl returned non 0 status (error)
+    add_to_review 'Cask homepage' "${homepage} [$(tput setaf "${status_color}")${code}$(tput sgr0)]"
     status_color=1
     status_msg='error'
     [[ "${status}" -eq 28 ]] && status_msg='error (request timed out)'
@@ -245,15 +257,18 @@ review_homepage() {
 
   warnings_str=$(join_by ', ' "${warnings[@]}")
 
-  # output to CSV
+  # check if output to CSV is needed
   if [[ "${#warnings[@]}" -gt 0 ]] || [[ "${SHOW_ALL}" == 'true' ]]; then
+    # output to CSV
     show='true'
     output_csv "${cask}" "${homepage}" "${code}" "${status_msg}" "$([[ "${#warnings[@]}" -gt 0 ]] && echo "${warnings_str}" || echo '-')" "$([[ ! -z "${fixed}" ]] && echo "${fixed}" || echo '-')"
   fi
 
-  add_to_review 'Status' "$(tput setaf ${status_color})${status_msg}$(tput sgr0)"
+  add_to_review 'Status' "$(tput setaf "${status_color}")${status_msg}$(tput sgr0)"
 
+  # check if fixing is enabled and available
   if [[ "${FIX}" == 'true' ]] && [[ ! -z "${fixed}" ]]; then
+    # fix
     FIXED_TOTAL+=1
     modify_stanza "${cask}" 'homepage' "'${fixed}'"
     git commit "${cask}.rb" --message "Update ${cask} homepage (${warnings_str})" --quiet
