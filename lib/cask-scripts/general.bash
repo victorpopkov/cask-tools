@@ -70,6 +70,20 @@ unquote() {
   done
 }
 
+# Check if value exists in array.
+#
+# Arguments:
+#   $1 - Array
+#   $2 - Element
+#
+# Returns:
+#   0 – Contains
+#   1 – Doesn't contain
+check_array_contains() {
+  [[ -z "$1" ]] && return 1
+  echo "${!1}" | fgrep --word-regexp -q "$2" && return 0 || return 1
+}
+
 # Get values from XML configurations file.
 #
 # Globals:
