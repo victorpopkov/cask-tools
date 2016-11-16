@@ -2,10 +2,10 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.1.3
+# Version:         0.1.4
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   15.11.2016
+# Last modified:   16.11.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.1.3'
+readonly VERSION='0.1.4'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 declare -a CASKS
@@ -28,7 +28,7 @@ declare -i FIXED_TOTAL
 BROWSER_HEADERS='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
 REMOTE_PULL='upstream'
 REMOTE_PUSH='origin'
-BRANCH_NAME="${PROGRAM}_fix"
+BRANCH_NAME=''
 DELETE_CREATED_BRANCHES='false'
 OUTPUT='false'
 OUTPUT_PATH=''
@@ -275,12 +275,12 @@ delete_created_branches() {
   local local_branches remote_branches
 
   # delete local branches
-  local_branches=$(git branch --all | grep --extended-regexp "^ *${BRANCH_NAME}$" | perl -pe 's|^ *||;s|\n| |')
+  local_branches=$(git branch --all | grep --extended-regexp "^ *${PROGRAM}_.*$" | perl -pe 's|^ *||;s|\n| |')
   [[ -n "${local_branches}" ]] && git branch -D ${local_branches}
 
   # delete remote branches
   git fetch --prune "${REMOTE_PUSH}"
-  remote_branches=$(git branch --all | grep --extended-regexp "remotes/${REMOTE_PUSH}/${BRANCH_NAME}$" | perl -pe 's|.*/||;s|\n| |')
+  remote_branches=$(git branch --all | grep --extended-regexp "remotes/${REMOTE_PUSH}/${PROGRAM}_.*$" | perl -pe 's|.*/||;s|\n| |')
   [[ -n "${remote_branches}" ]] && git push "${REMOTE_PUSH}" --delete ${remote_branches}
 }
 
@@ -349,6 +349,7 @@ fi
 
 # preparations
 if [[ "${FIX}" == 'true' ]]; then
+  [[ -z "${BRANCH_NAME}" ]] && BRANCH_NAME="${PROGRAM}_$(random 12)"
   git checkout master --quiet
   git pull --rebase "${REMOTE_PULL}" master --quiet
   git checkout -b "${BRANCH_NAME}" --quiet

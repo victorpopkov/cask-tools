@@ -244,7 +244,17 @@ get_url_host() {
 #
 # Returns redirect URL.
 get_url_redirect() {
-  curl --silent --location --head --header "${BROWSER_HEADERS}" --max-time 10 --output /dev/null --write-out "%{url_effective}" "$1" 2>/dev/null
+  curl --silent --location --head --header "${BROWSER_HEADERS}" --max-time 10 --output /dev/null --write-out "%{url_effective}" "$1" 2>/dev/null | tr '[:upper:]' '[:lower:]'
+}
+
+# Generate random string with given length.
+#
+# Arguments:
+#   $1 - Length
+#
+# Returns reandom string.
+random() {
+  date +%s | shasum -a 256 | base64 | head -c "$1" ; echo
 }
 
 # Implode an array using specified separator.
