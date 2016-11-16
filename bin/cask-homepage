@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.2.0
+# Version:         0.2.1
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   16.11.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.2.0'
+readonly VERSION='0.2.1'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -191,7 +191,7 @@ review_homepage() {
       redirect_host=$(get_url_host "${homepage_redirect}")
 
       if [[ "${host}" == "${redirect_host}" ]]; then
-        # both hosts are the same
+        # domain not changed
         if [[ ! "${IGNORE[@]}" =~ http ]] && [[ "${homepage}" =~ ^https\: ]] && [[ "${homepage_redirect}" =~ ^http\: ]]; then
           # redirects from HTTPS to HTTP
           add_warning_to_review "Only HTTP is available → $(tput setaf 7)http:$(tput sgr0)${homepage/https:}"
@@ -203,7 +203,7 @@ review_homepage() {
           fixed="${homepage_redirect}"
         fi
       elif [[ ! "${IGNORE[@]}" =~ domain ]]; then
-        # domain change is not ignored
+        # domain changed
         add_warning_to_review "Domain has changed → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
         warnings+=('domain')
         fixed="${homepage_redirect}"
@@ -226,28 +226,34 @@ review_homepage() {
     [[ "${status}" -eq 28 ]] && status_msg='error (request timed out)'
   fi
 
-  # check if HTTPS is available
-  if [[ ! "${IGNORE[@]}" =~ https ]] && [[ "${homepage}" =~ ^http\: ]]; then
-    readonly https_out=$(get_url_status "${homepage/http:/https:}")
-    readonly https_code=$(echo "${https_out}" | head -n 1)
-    readonly https_status=$(echo "${https_out}" | tail -n 1)
-
-    if [[ "${https_status}" -eq 0 ]] && [[ "${https_code}" -eq 200 ]]; then
-      # available
-      if [[ -z "${homepage_redirect}" ]] && [[ "${homepage}" =~ ^http\: ]]; then
-        # no redirect and homepage is usual HTTP
+  if [[ ! "${IGNORE[@]}" =~ https ]]; then
+    # https checking is enabled
+    if [[ ! "${warnings[@]}" =~ domain ]] && [[ "${homepage}" =~ ^http\: ]]; then
+      # domain not changed and homepage is using HTTP
+      check_url_https_availability "${homepage}"
+      if [[ "$?" -eq 0 ]]; then
         add_warning_to_review "HTTPS is available → $(tput setaf 7)https:$(tput sgr0)${homepage/http:}"
         warnings+=('https')
         fixed="https:${homepage/http:}"
       fi
+    elif [[ "${warnings[@]}" =~ domain ]] && [[ "${homepage_redirect}" =~ ^http\: ]]; then
+      # domain changed and homepage redirect is using HTTP
+      check_url_https_availability "${homepage_redirect}"
+      if [[ "$?" -eq 0 ]]; then
+        add_warning_to_review "HTTPS for new domain is available → $(tput setaf 7)https:$(tput sgr0)${homepage_redirect/http:}"
+        warnings+=('https')
+        fixed="https:${homepage_redirect/http:}"
+      fi
     fi
   fi
 
-  # check slash at the end
-  if [[ ! "${IGNORE[@]}" =~ slash ]] && [[ ! "${homepage}" =~ ${host}\/ ]]; then
-    add_warning_to_review "Missing a trailing slash at the end → ${homepage}$(tput setaf 7)/$(tput sgr0)"
-    warnings+=('slash')
-    [[ -z "${fixed}" ]] && fixed="${homepage%/}/" || fixed="${fixed%/}/"
+  if [[ ! "${IGNORE[@]}" =~ slash ]]; then
+    # slash checking is enabled
+    if [[ ! "${homepage}" =~ ${host}\/ ]]; then
+      add_warning_to_review "Missing a trailing slash at the end → ${homepage}$(tput setaf 7)/$(tput sgr0)"
+      warnings+=('slash')
+      [[ -z "${fixed}" ]] && fixed="${homepage%/}/" || fixed="${fixed%/}/"
+    fi
   fi
 
   if [[ "${#REVIEW_WARNINGS[@]}" -gt 0 ]]; then

@@ -247,6 +247,30 @@ get_url_redirect() {
   curl --silent --location --head --header "${BROWSER_HEADERS}" --max-time 10 --output /dev/null --write-out "%{url_effective}" "$1" 2>/dev/null | tr '[:upper:]' '[:lower:]'
 }
 
+# Check if HTTPS is available for URL.
+#
+# Arguments:
+#   $1 - URL
+#
+# Returns:
+#   0 - Available
+#   1 - Not available
+check_url_https_availability() {
+  local -i code status
+  local out url
+
+  readonly url="$1"
+  readonly out=$(get_url_status "${url/http:/https:}")
+  readonly code=$(echo "${out}" | head -n 1)
+  readonly status=$(echo "${out}" | tail -n 1)
+
+  if [[ "${status}" -eq 0 ]] && [[ "${code}" -eq 200 ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
 # Generate random string with given length.
 #
 # Arguments:

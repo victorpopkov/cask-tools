@@ -17,7 +17,7 @@ availability by checking their response statuses. It's useful in finding casks
 that are no longer maintained or available. It also checks the URL for these
 rules (in brackets) below and gives appropriate warnings if violated:
 
-- [HTTPS is available](#https-is-available-https) _(https)_
+- [HTTPS (for new domain) is available](#https-for-new-domain-is-available-https) _(https)_
 - [Only HTTP is available](#only-http-is-available-http) _(http)_
 - [Redirect found](#redirect-found-redirect) _(redirect)_
 - [Domain has changed](#domain-has-changed-domain) _(domain)_
@@ -106,17 +106,18 @@ Show the usage message with options descriptions.
 These are the warnings that are currently supported (rule itself is in
 brackets):
 
-- [HTTPS is available](#https-is-available-https) _(https)_
+- [HTTPS (for new domain) is available](#https-for-new-domain-is-available-https) _(https)_
 - [Only HTTP is available](#only-http-is-available-http) _(http)_
 - [Redirect found](#redirect-found-redirect) _(redirect)_
 - [Domain has changed](#domain-has-changed-domain) _(domain)_
 - [Missing a trailing slash at the end](#missing-a-trailing-slash-at-the-end-slash)
   _(slash)_
 
-#### HTTPS is available _(https)_
+#### HTTPS (for new domain) is available _(https)_
 
 Since the HTTPS is more preferred over the usual HTTP the script checks if it's
-available and gives an appropriate warning message.
+available and gives an appropriate warning message if found. If a domain has
+changed this rule also applies to the new domain.
 
 Example:
 
