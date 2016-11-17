@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.2.6
+# Version:         0.2.7
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   17.11.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.2.6'
+readonly VERSION='0.2.7'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -35,7 +35,7 @@ BRANCH_NAME=''
 DELETE_CREATED_BRANCHES='false'
 OUTPUT='false'
 OUTPUT_PATH=''
-RULES=('bare_slash' 'domain' 'http' 'https' 'redirect' 'www' 'no_www')
+RULES=('bare_slash' 'domain' 'http' 'https' 'redirect' 'slash' 'no_slash' 'www' 'no_www')
 FIX='false'
 FIX_TOTAL=0
 FIXED_TOTAL=0
@@ -62,6 +62,8 @@ usage() {
       http         Only HTTP is available
       https        HTTPS (for new domain) is available
       redirect     Redirect found
+      slash        Server prefers to include a trailing slash
+      no_slash     Server prefers to exclude a trailing slash
       www          Server prefers to include www
       no_www       Server prefers to exclude www
 
@@ -238,6 +240,16 @@ review_homepage() {
           # homepage has www but redirect doesn't
           add_warning_to_review "Server prefers to exclude www → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
           warnings+=('no_www')
+          fixed="${homepage_redirect}"
+        elif check_rule_enabled 'slash' && [[ ! "${homepage}" =~ \/$ ]] && [[ "${homepage_redirect}" =~ \/$ ]]; then
+          # homepage doesn't have a trailing slash but redirect does
+          add_warning_to_review "Server prefers to include a trailing slash → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
+          warnings+=('slash')
+          fixed="${homepage_redirect}"
+        elif check_rule_enabled 'no_slash' && [[ "${homepage}" =~ \/$ ]] && [[ ! "${homepage_redirect}" =~ \/$ ]]; then
+          # homepage has a trailing slash but doesn't
+          add_warning_to_review "Server prefers to exclude a trailing slash → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
+          warnings+=('no_slash')
           fixed="${homepage_redirect}"
         elif check_rule_enabled 'redirect'; then
           add_warning_to_review "Redirect found → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
@@ -457,6 +469,8 @@ print_rule 'domain' 'Domain has changed'
 print_rule 'http' 'Only HTTP is available'
 print_rule 'https' 'HTTPS (for new domain) is available'
 print_rule 'redirect' 'Redirect found'
+print_rule 'slash' 'Server prefers to include a trailing slash'
+print_rule 'no_slash' 'Server prefers to exclude a trailing slash'
 print_rule 'www' 'Server prefers to include www'
 print_rule 'no_www' 'Server prefers to exclude www'
 
