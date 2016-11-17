@@ -277,7 +277,8 @@ get_url_path() {
 #
 # Returns redirect URL.
 get_url_redirect() {
-  curl --silent --location --head --header "${BROWSER_HEADERS}" --max-time 10 --output /dev/null --write-out "%{url_effective}" "$1" 2>/dev/null | tr '[:upper:]' '[:lower:]'
+  [[ -z "$*" ]] && return 1
+  curl --silent --location --head --header "${BROWSER_HEADERS}" --max-time 10 --output /dev/null --write-out "%{url_effective}" "$1" 2>/dev/null
 }
 
 # Check if HTTPS is available for URL.

@@ -281,6 +281,12 @@ load ../lib/cask-scripts/cask
   [ "${output}" == '/index.html' ]
 }
 
+# get_url_redirect()
+@test "get_url_redirect() when no arguments" {
+  run get_url_redirect
+  [ "${status}" -eq 1 ]
+}
+
 # check_url_https_availability()
 @test "check_url_https_availability() when no arguments" {
   run check_url_https_availability
