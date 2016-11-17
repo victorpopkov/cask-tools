@@ -2,8 +2,16 @@
 <cask-homepage>
   <rules>
     <skip>
+      <cask>air-video-server</cask>
       <cask>airmail-beta</cask>
+      <cask>firefox-beta</cask>
+      <cask>firefox-esr</cask>
+      <cask>firefoxdeveloperedition</cask>
+      <cask>java6</cask>
+      <cask>keyboard-maestro6</cask>
       <cask>microsoft-office-2011</cask>
+      <cask>opera-developer</cask>
+      <cask>porting-kit-legacy</cask>
       <cask>thunderbird-ja</cask>
       <cask>unifi-controller-beta</cask>
     </skip>
