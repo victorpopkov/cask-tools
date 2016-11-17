@@ -235,6 +235,7 @@ get_url_content() {
 #
 # Returns response code and execution status code.
 get_url_status() {
+  [[ -z "$*" ]] && return 1
   curl --silent --compressed --head --header "${BROWSER_HEADERS}" --max-time 10 --output /dev/null --write-out '%{http_code}' "$1" 2>/dev/null
   printf "\n%i" "$?"
 }
@@ -246,6 +247,7 @@ get_url_status() {
 #
 # Returns host.
 get_url_host() {
+  [[ -z "$*" ]] && return 1
   ruby -ruri -e "
   host = URI.parse('$1').host.downcase
   p host.start_with?('www.') ? host[4..-1] : host" | unquote
@@ -285,6 +287,30 @@ check_url_https_availability() {
   return 1
 }
 
+# Check if URL has www.
+#
+# Arguments:
+#   $1 - URL
+#
+# Returns:
+#   0 - Has www
+#   1 - Doens't have www
+check_url_www() {
+  [[ "$1" =~ http[s]?\:\/\/www ]] && return 0 || return 1
+}
+
+# Check if URL has HTTPS.
+#
+# Arguments:
+#   $1 - URL
+#
+# Returns:
+#   0 - Has HTTPS
+#   1 - Doens't have HTTPS
+check_url_https() {
+  [[ "$1" =~ ^https\: ]] && return 0 || return 1
+}
+
 # Generate random string with given length.
 #
 # Arguments:
@@ -292,6 +318,7 @@ check_url_https_availability() {
 #
 # Returns reandom string.
 random() {
+  [[ -z "$*" ]] && return 1
   date +%s | shasum -a 256 | base64 | head -c "$1" ; echo
 }
 
@@ -299,14 +326,18 @@ random() {
 #
 # Arguments:
 #   $1 - Separator
+#   $2 - Array
 #
 # Returns joined string.
 join_by() {
   local IFS
 
   IFS="$1"
+  [[ -z "$*" ]] && return 1
   shift
+
   sed "s/${IFS/ }/${IFS}/g" <<< "$*"
+  return 0
 }
 
 # Extract version from string.
