@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.2.3
+# Version:         0.2.4
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   16.11.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.2.3'
+readonly VERSION='0.2.4'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -213,7 +213,6 @@ review_homepage() {
   if [[ "${status}" -eq 0 ]] && [[ "${skip}" == 'false' ]]; then
     # correct status and not skipped
     [[ "${code}" -eq 200 ]] && status_color=2 || status_color=3
-    add_to_review 'Cask homepage' "${homepage} [$(tput setaf "${status_color}")${code}$(tput sgr0)]"
 
     if [[ "${code}" -eq 301 ]] || [[ "${code}" -eq 302 ]]; then
       # redirect found
@@ -245,12 +244,10 @@ review_homepage() {
   elif [[ "${skip}" == 'true' ]]; then
     # skipped
     [[ "${code}" -eq 200 ]] && status_color=2 || status_color=3
-    add_to_review 'Cask homepage' "${homepage} [$(tput setaf "${status_color}")${code}$(tput sgr0)]"
     status_color=7
     status_msg='skipped'
   else
     # curl returned non 0 status (error)
-    add_to_review 'Cask homepage' "${homepage} [$(tput setaf "${status_color}")${code}$(tput sgr0)]"
     status_color=1
     status_msg='error'
     [[ "${status}" -eq 28 ]] && status_msg='error (request timed out)'
@@ -300,15 +297,20 @@ review_homepage() {
     output_csv "${cask}" "${homepage}" "${code}" "${status_msg}" "$([[ "${#warnings[@]}" -gt 0 ]] && echo "${warnings_str}" || echo '-')" "$([[ ! -z "${fixed}" ]] && echo "${fixed}" || echo '-')"
   fi
 
-  add_to_review 'Status' "$(tput setaf "${status_color}")${status_msg}$(tput sgr0)"
-
   # check if fixing is enabled and available
   if [[ "${FIX}" == 'true' ]] && [[ ! -z "${fixed}" ]]; then
+    add_to_review 'Cask homepage' "${homepage} [$(tput setaf "${status_color}")${code}$(tput sgr0)] → $(tput setaf 7)${fixed}$(tput sgr0) [$(tput setaf 2)200$(tput sgr0)]"
     # fix
     FIXED_TOTAL+=1
     modify_stanza "${cask}" 'homepage' "'${fixed}'"
     git commit "${cask}.rb" --message "Update ${cask} homepage (${warnings_str})" --quiet
+    status_color=2
+    status_msg='fixed'
+  else
+    add_to_review 'Cask homepage' "${homepage} [$(tput setaf "${status_color}")${code}$(tput sgr0)]"
   fi
+
+  add_to_review 'Status' "$(tput setaf "${status_color}")${status_msg}$(tput sgr0)"
 }
 
 # Finish the script.
