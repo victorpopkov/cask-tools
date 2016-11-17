@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.2.7
+# Version:         0.2.8
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   17.11.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.2.7'
+readonly VERSION='0.2.8'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -231,7 +231,9 @@ review_homepage() {
           add_warning_to_review "Only HTTP is available → $(tput setaf 7)http:$(tput sgr0)${homepage/https:}"
           warnings+=('http')
           fixed="http:${homepage/https:}"
-        elif check_rule_enabled 'www' && [[ ! "${homepage}" =~ http[s]?\:\/\/www ]] && [[ "${homepage_redirect}" =~ http[s]?\:\/\/www ]]; then
+        fi
+
+        if check_rule_enabled 'www' && [[ ! "${homepage}" =~ http[s]?\:\/\/www ]] && [[ "${homepage_redirect}" =~ http[s]?\:\/\/www ]]; then
           # homepage doesn't have www but redirect does
           add_warning_to_review "Server prefers to include www → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
           warnings+=('www')
@@ -241,7 +243,9 @@ review_homepage() {
           add_warning_to_review "Server prefers to exclude www → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
           warnings+=('no_www')
           fixed="${homepage_redirect}"
-        elif check_rule_enabled 'slash' && [[ ! "${homepage}" =~ \/$ ]] && [[ "${homepage_redirect}" =~ \/$ ]]; then
+        fi
+
+        if check_rule_enabled 'slash' && [[ ! "${homepage}" =~ \/$ ]] && [[ "${homepage_redirect}" =~ \/$ ]]; then
           # homepage doesn't have a trailing slash but redirect does
           add_warning_to_review "Server prefers to include a trailing slash → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
           warnings+=('slash')
@@ -251,7 +255,9 @@ review_homepage() {
           add_warning_to_review "Server prefers to exclude a trailing slash → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
           warnings+=('no_slash')
           fixed="${homepage_redirect}"
-        elif check_rule_enabled 'redirect'; then
+        fi
+
+        if [[ "${#warnings[@]}" -eq 0 ]] && check_rule_enabled 'redirect'; then
           add_warning_to_review "Redirect found → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
           warnings+=('redirect')
           fixed="${homepage_redirect}"
