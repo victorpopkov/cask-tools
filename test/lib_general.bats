@@ -257,6 +257,30 @@ load ../lib/cask-scripts/cask
   [ "${output}" == 'subdomain.example.com' ]
 }
 
+# get_url_path()
+@test "get_url_path() when no arguments" {
+  run get_url_path
+  [ "${status}" -eq 1 ]
+}
+
+@test "get_url_path() when URL without path and trailing slash: http://example.com/ => /" {
+  run get_url_path 'http://example.com/'
+  [ "${status}" -eq 0 ]
+  [ "${output}" == '/' ]
+}
+
+@test "get_url_path() when URL without path: http://example.com => /" {
+  run get_url_path 'http://example.com'
+  [ "${status}" -eq 0 ]
+  [ "${output}" == '/' ]
+}
+
+@test "get_url_path() when URL with path: http://example.com/index.html => /index.html" {
+  run get_url_path 'http://example.com/index.html'
+  [ "${status}" -eq 0 ]
+  [ "${output}" == '/index.html' ]
+}
+
 # check_url_https_availability()
 @test "check_url_https_availability() when no arguments" {
   run check_url_https_availability

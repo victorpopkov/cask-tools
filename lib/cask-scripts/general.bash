@@ -253,6 +253,23 @@ get_url_host() {
   p host.start_with?('www.') ? host[4..-1] : host" | unquote
 }
 
+# Get path from URL.
+#
+# Arguments:
+#   $1 - URL
+#
+# Returns path.
+get_url_path() {
+  local path
+
+  [[ -z "$*" ]] && return 1
+  readonly path=$(ruby -ruri -e "
+  path = URI.parse('$1').path.downcase
+  p path" | unquote)
+
+  [[ -z "${path}" ]] && echo '/' || echo "${path}"
+}
+
 # Get redirect URL from original one.
 #
 # Arguments:
