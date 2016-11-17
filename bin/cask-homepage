@@ -2,10 +2,10 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.2.5
+# Version:         0.2.6
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   16.11.2016
+# Last modified:   17.11.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.2.5'
+readonly VERSION='0.2.6'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -35,7 +35,7 @@ BRANCH_NAME=''
 DELETE_CREATED_BRANCHES='false'
 OUTPUT='false'
 OUTPUT_PATH=''
-RULES=('domain' 'http' 'https' 'redirect' 'slash' 'www' 'no_www')
+RULES=('bare_slash' 'domain' 'http' 'https' 'redirect' 'www' 'no_www')
 FIX='false'
 FIX_TOTAL=0
 FIXED_TOTAL=0
@@ -57,19 +57,19 @@ usage() {
 
     Available rules:
 
-      domain     Domain has changed
-      http       Only HTTP is available
-      https      HTTPS (for new domain) is available
-      redirect   Redirect found
-      slash      Missing a trailing slash at the end
-      www        Server prefers to include www
-      no_www     Server prefers to exclude www
+      bare_slash   Missing a bare domain URL trailing slash
+      domain       Domain has changed
+      http         Only HTTP is available
+      https        HTTPS (for new domain) is available
+      redirect     Redirect found
+      www          Server prefers to include www
+      no_www       Server prefers to exclude www
 
     options:
       -l, --pull <remote>        Use to specify a remote to pull from (defaults to 'upstream').
       -p, --push <remote>        Use to specify a remote to push to (defaults to 'origin').
-      -i, --ignore <rules>       Ignore specified warnings separated by a comma: https, http, redirect, domain and slash.
-                                 Example: '${PROGRAM} -i https,http,redirect,domain,slash [<casks>...]'
+      -i, --ignore <rules>       Ignore specified rules separated by a comma.
+                                 Example: '${PROGRAM} -i http,https,www [<casks>...]'
       -H, --header <header>      Set browser header.
       -o, --output <filepath>    Output the results in CSV format into a file.
       -f, --fix (<total>)        Try to fix warnings automatically (optional: a total number of casks to fix).
@@ -92,6 +92,7 @@ while [[ "$1" ]]; do
       ;;
     -i | --ignore)
       IFS=$',' read -rd '' -a RULES_DISABLED <<< "$2"
+      [[ -z "$2" ]] && syntax_error 'Please specify the rule(s) to ignore'
       for rule in "${RULES_DISABLED[@]}"; do
         rule=$(echo -n "${rule}" | xargs)
         check_array_contains 'RULES[@]' "${rule}" || syntax_error "Rule '${rule}' doesn't exist"
@@ -256,8 +257,6 @@ review_homepage() {
   elif [[ "${skip}" == 'true' ]]; then
     # skipped
     [[ "${code}" -eq 200 ]] && status_color=2 || status_color=3
-    status_color=7
-    status_msg='skipped'
   else
     # curl returned non 0 status (error)
     status_color=1
@@ -286,11 +285,11 @@ review_homepage() {
     fi
   fi
 
-  if check_rule_enabled 'slash'; then
-    # slash checking is enabled
+  if check_rule_enabled 'bare_slash'; then
+    # bare domain slash checking is enabled
     if [[ ! "${homepage}" =~ ${host}\/ ]]; then
-      add_warning_to_review "Missing a trailing slash at the end → ${homepage}$(tput setaf 7)/$(tput sgr0)"
-      warnings+=('slash')
+      add_warning_to_review "Missing a bare domain URL trailing slash → ${homepage}$(tput setaf 7)/$(tput sgr0)"
+      warnings+=('bare_slash')
       [[ -z "${fixed}" ]] && fixed="${homepage%/}/" || fixed="${fixed%/}/"
     fi
   fi
@@ -320,6 +319,11 @@ review_homepage() {
     status_msg='fixed'
   else
     add_to_review 'Cask homepage' "${homepage} [$(tput setaf "${status_color}")${code}$(tput sgr0)]"
+  fi
+
+  if [[ "${skip}" == 'true' ]]; then
+    status_color=7
+    status_msg='skipped'
   fi
 
   add_to_review 'Status' "$(tput setaf "${status_color}")${status_msg}$(tput sgr0)"
@@ -362,7 +366,7 @@ print_rule() {
   readonly enabled="$(tput setaf 2)enabled$(tput sgr0)"
   readonly disabled="$(tput setaf 1)disabled$(tput sgr0)"
 
-  printf '%-10s %-21s %s\n' "${rule}" "$(check_rule_enabled "${rule}" && echo "${enabled}" || echo "${disabled}")" "${description}"
+  printf '%-12s %-21s %s\n' "${rule}" "$(check_rule_enabled "${rule}" && echo "${enabled}" || echo "${disabled}")" "${description}"
 }
 
 # Finish the script.
@@ -448,11 +452,11 @@ for rule in "${RULES[@]}"; do
 done
 
 printf 'Rules status:\n\n'
+print_rule 'bare_slash' 'Missing a bare domain URL trailing slash'
 print_rule 'domain' 'Domain has changed'
 print_rule 'http' 'Only HTTP is available'
 print_rule 'https' 'HTTPS (for new domain) is available'
 print_rule 'redirect' 'Redirect found'
-print_rule 'slash' 'Missing a trailing slash at the end'
 print_rule 'www' 'Server prefers to include www'
 print_rule 'no_www' 'Server prefers to exclude www'
 
