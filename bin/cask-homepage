@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.2.4
+# Version:         0.2.5
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   16.11.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.2.4'
+readonly VERSION='0.2.5'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -35,7 +35,7 @@ BRANCH_NAME=''
 DELETE_CREATED_BRANCHES='false'
 OUTPUT='false'
 OUTPUT_PATH=''
-RULES=('domain' 'http' 'https' 'redirect' 'slash')
+RULES=('domain' 'http' 'https' 'redirect' 'slash' 'www' 'no_www')
 FIX='false'
 FIX_TOTAL=0
 FIXED_TOTAL=0
@@ -62,6 +62,8 @@ usage() {
       https      HTTPS (for new domain) is available
       redirect   Redirect found
       slash      Missing a trailing slash at the end
+      www        Server prefers to include www
+      no_www     Server prefers to exclude www
 
     options:
       -l, --pull <remote>        Use to specify a remote to pull from (defaults to 'upstream').
@@ -226,6 +228,16 @@ review_homepage() {
           add_warning_to_review "Only HTTP is available → $(tput setaf 7)http:$(tput sgr0)${homepage/https:}"
           warnings+=('http')
           fixed="http:${homepage/https:}"
+        elif check_rule_enabled 'www' && [[ ! "${homepage}" =~ http[s]?\:\/\/www ]] && [[ "${homepage_redirect}" =~ http[s]?\:\/\/www ]]; then
+          # homepage doesn't have www but redirect does
+          add_warning_to_review "Server prefers to include www → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
+          warnings+=('www')
+          fixed="${homepage_redirect}"
+        elif check_rule_enabled 'no_www' && [[ "${homepage}" =~ http[s]?\:\/\/www ]] && [[ ! "${homepage_redirect}" =~ http[s]?\:\/\/www ]]; then
+          # homepage has www but redirect doesn't
+          add_warning_to_review "Server prefers to exclude www → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
+          warnings+=('no_www')
+          fixed="${homepage_redirect}"
         elif check_rule_enabled 'redirect'; then
           add_warning_to_review "Redirect found → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
           warnings+=('redirect')
@@ -441,6 +453,8 @@ print_rule 'http' 'Only HTTP is available'
 print_rule 'https' 'HTTPS (for new domain) is available'
 print_rule 'redirect' 'Redirect found'
 print_rule 'slash' 'Missing a trailing slash at the end'
+print_rule 'www' 'Server prefers to include www'
+print_rule 'no_www' 'Server prefers to exclude www'
 
 if [[ "${#CASKS[@]}" -gt 1 ]] && [[ "${FIX}" == 'true' ]]; then
   [[ "${FIX_TOTAL}" -gt 0 ]] && printf "\nFixing first %i casks...\n" "${FIX_TOTAL}" || printf '\nFixing all casks...\n'
