@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.2.2
+# Version:         0.2.3
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   16.11.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.2.2'
+readonly VERSION='0.2.3'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -222,17 +222,17 @@ review_homepage() {
 
       if [[ "${host}" == "${redirect_host}" ]]; then
         # domain not changed
-        if [[ ! "${RULES_DISABLED[@]}" =~ http ]] && [[ "${homepage}" =~ ^https\: ]] && [[ "${homepage_redirect}" =~ ^http\: ]]; then
+        if check_rule_enabled 'http' && [[ "${homepage}" =~ ^https\: ]] && [[ "${homepage_redirect}" =~ ^http\: ]]; then
           # redirects from HTTPS to HTTP
           add_warning_to_review "Only HTTP is available → $(tput setaf 7)http:$(tput sgr0)${homepage/https:}"
           warnings+=('http')
           fixed="http:${homepage/https:}"
-        elif [[ ! "${RULES_DISABLED[@]}" =~ redirect ]]; then
+        elif check_rule_enabled 'redirect'; then
           add_warning_to_review "Redirect found → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
           warnings+=('redirect')
           fixed="${homepage_redirect}"
         fi
-      elif [[ ! "${RULES_DISABLED[@]}" =~ domain ]]; then
+      elif check_rule_enabled 'domain'; then
         # domain changed
         add_warning_to_review "Domain has changed → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
         warnings+=('domain')
@@ -256,7 +256,7 @@ review_homepage() {
     [[ "${status}" -eq 28 ]] && status_msg='error (request timed out)'
   fi
 
-  if [[ ! "${RULES_DISABLED[@]}" =~ https ]]; then
+  if check_rule_enabled 'https'; then
     # https checking is enabled
     if [[ ! "${warnings[@]}" =~ domain ]] && [[ "${homepage}" =~ ^http\: ]]; then
       # domain not changed and homepage is using HTTP
@@ -277,7 +277,7 @@ review_homepage() {
     fi
   fi
 
-  if [[ ! "${RULES_DISABLED[@]}" =~ slash ]]; then
+  if check_rule_enabled 'slash'; then
     # slash checking is enabled
     if [[ ! "${homepage}" =~ ${host}\/ ]]; then
       add_warning_to_review "Missing a trailing slash at the end → ${homepage}$(tput setaf 7)/$(tput sgr0)"
@@ -424,7 +424,8 @@ fi
 
 # process
 [[ "${#CASKS[@]}" -eq 0 ]] && CASKS=($(egrep -lir --include '*.rb' "(homepage ')" . | xargs -n1 basename | sed 's|\.rb$||' | sort))
-[[ "${#CASKS[@]}" -gt 1 ]] && printf "Checking homepages of %i casks...\n\n" "${#CASKS[@]}"
+printf 'Checking homepages of %i ' "${#CASKS[@]}"
+[[ "${#CASKS[@]}" -gt 1 ]] && printf 'casks...\n\n' || printf 'cask...\n\n'
 [[ "${OUTPUT}" == 'true' ]] && printf "\"%s\";\"%s\";\"%s\";\"%s\";\"%s\";\"%s\"\n" 'Name' 'Homepage' 'Response code' 'Status' 'Warnings' 'Fixed' > "${OUTPUT_PATH}"
 
 for rule in "${RULES[@]}"; do
@@ -432,6 +433,7 @@ for rule in "${RULES[@]}"; do
   check_array_contains 'RULES_DISABLED[@]' "${rule}" || RULES_ENABLED+=("${rule}")
 done
 
+printf 'Rules status:\n\n'
 print_rule 'domain' 'Domain has changed'
 print_rule 'http' 'Only HTTP is available'
 print_rule 'https' 'HTTPS (for new domain) is available'
