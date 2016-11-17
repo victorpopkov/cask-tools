@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.2.8
+# Version:         0.2.9
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   17.11.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.2.8'
+readonly VERSION='0.2.9'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -199,11 +199,12 @@ output_csv() {
 review_homepage() {
   local -a warnings cask_rules
   local -i code status status_color
-  local cask homepage host redirect_host out rule skip homepage_redirect status_msg fixed warnings_str
+  local cask homepage homepage_path homepage_redirect homepage_redirect_path host redirect_host out rule skip status_msg fixed warnings_str
 
   skip='false'
   readonly cask="$1"
   readonly homepage=$(get_cask_stanza_value "${cask}" 'homepage')
+  readonly homepage_path=$(get_url_path "${homepage}")
   readonly host=$(get_url_host "${homepage}")
   readonly out=$(get_url_status "${homepage}")
   readonly code=$(echo "${out}" | head -n 1)
@@ -221,36 +222,37 @@ review_homepage() {
 
     if [[ "${code}" -eq 301 ]] || [[ "${code}" -eq 302 ]]; then
       # redirect found
-      homepage_redirect=$(get_url_redirect "${homepage}")
-      redirect_host=$(get_url_host "${homepage_redirect}")
+      readonly homepage_redirect=$(get_url_redirect "${homepage}")
+      readonly homepage_redirect_path=$(get_url_path "${homepage_redirect}")
+      readonly redirect_host=$(get_url_host "${homepage_redirect}")
 
       if [[ "${host}" == "${redirect_host}" ]]; then
         # domain not changed
-        if check_rule_enabled 'http' && [[ "${homepage}" =~ ^https\: ]] && [[ "${homepage_redirect}" =~ ^http\: ]]; then
+        if check_rule_enabled 'http' && check_url_https "${homepage}" && ! check_url_https "${homepage_redirect}"; then
           # redirects from HTTPS to HTTP
           add_warning_to_review "Only HTTP is available → $(tput setaf 7)http:$(tput sgr0)${homepage/https:}"
           warnings+=('http')
           fixed="http:${homepage/https:}"
         fi
 
-        if check_rule_enabled 'www' && [[ ! "${homepage}" =~ http[s]?\:\/\/www ]] && [[ "${homepage_redirect}" =~ http[s]?\:\/\/www ]]; then
+        if check_rule_enabled 'www' && ! check_url_www "${homepage}" && check_url_www "${homepage_redirect}"; then
           # homepage doesn't have www but redirect does
           add_warning_to_review "Server prefers to include www → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
           warnings+=('www')
           fixed="${homepage_redirect}"
-        elif check_rule_enabled 'no_www' && [[ "${homepage}" =~ http[s]?\:\/\/www ]] && [[ ! "${homepage_redirect}" =~ http[s]?\:\/\/www ]]; then
+        elif check_rule_enabled 'no_www' && check_url_www "${homepage}" && ! check_url_www "${homepage_redirect}"; then
           # homepage has www but redirect doesn't
           add_warning_to_review "Server prefers to exclude www → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
           warnings+=('no_www')
           fixed="${homepage_redirect}"
         fi
 
-        if check_rule_enabled 'slash' && [[ ! "${homepage}" =~ \/$ ]] && [[ "${homepage_redirect}" =~ \/$ ]]; then
+        if check_rule_enabled 'slash' && [[ "${homepage_path%/}" == "${homepage_redirect_path%/}" ]] && [[ ! "${homepage}" =~ \/$ ]] && [[ "${homepage_redirect}" =~ \/$ ]]; then
           # homepage doesn't have a trailing slash but redirect does
           add_warning_to_review "Server prefers to include a trailing slash → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
           warnings+=('slash')
           fixed="${homepage_redirect}"
-        elif check_rule_enabled 'no_slash' && [[ "${homepage}" =~ \/$ ]] && [[ ! "${homepage_redirect}" =~ \/$ ]]; then
+        elif check_rule_enabled 'no_slash' && [[ "${homepage_path%/}" == "${homepage_redirect_path%/}" ]] && [[ "${homepage}" =~ \/$ ]] && [[ ! "${homepage_redirect}" =~ \/$ ]]; then
           # homepage has a trailing slash but doesn't
           add_warning_to_review "Server prefers to exclude a trailing slash → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
           warnings+=('no_slash')
@@ -284,7 +286,7 @@ review_homepage() {
 
   if check_rule_enabled 'https'; then
     # https checking is enabled
-    if [[ ! "${warnings[@]}" =~ domain ]] && [[ "${homepage}" =~ ^http\: ]]; then
+    if ! check_array_contains 'warnings[@]' 'domain' && ! check_url_https "${homepage}"; then
       # domain not changed and homepage is using HTTP
       check_url_https_availability "${homepage}"
       if [[ "$?" -eq 0 ]]; then
@@ -292,7 +294,7 @@ review_homepage() {
         warnings+=('https')
         fixed="https:${homepage/http:}"
       fi
-    elif [[ "${warnings[@]}" =~ domain ]] && [[ "${homepage_redirect}" =~ ^http\: ]]; then
+    elif check_array_contains 'warnings[@]' 'domain' && ! check_url_https "${homepage_redirect}"; then
       # domain changed and homepage redirect is using HTTP
       check_url_https_availability "${homepage_redirect}"
       if [[ "$?" -eq 0 ]]; then
