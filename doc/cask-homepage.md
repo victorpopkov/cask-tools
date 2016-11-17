@@ -17,12 +17,19 @@ availability by checking their response statuses. It's useful in finding casks
 that are no longer maintained or available. It also checks the URL for these
 rules (in brackets) below and gives appropriate warnings if violated:
 
-- [HTTPS (for new domain) is available](#https-for-new-domain-is-available-https) _(https)_
-- [Only HTTP is available](#only-http-is-available-http) _(http)_
-- [Redirect found](#redirect-found-redirect) _(redirect)_
+- [Missing a bare domain URL trailing slash](#missing-a-bare-domain-url-trailing-slash-bare_slash)
+  _(bare_slash)_
 - [Domain has changed](#domain-has-changed-domain) _(domain)_
-- [Missing a trailing slash at the end](#missing-a-trailing-slash-at-the-end-slash)
+- [Only HTTP is available](#only-http-is-available-http) _(http)_
+- [HTTPS (for new domain) is available](#https-for-new-domain-is-available-https)
+  _(https)_
+- [Redirect found](#redirect-found-redirect) _(redirect)_
+- [Server prefers to include a trailing slash](#server-prefers-to-include-a-trailing-slash-slash)
   _(slash)_
+- [Server prefers to exclude a trailing slash](#server-prefers-to-exclude-a-trailing-slash-no_slash)
+  _(no_slash)_
+- [Server prefers to include www](#server-prefers-to-include-www-www) _(www)_
+- [Server prefers to exclude www](#server-prefers-to-exclude-www-no_www) _(no_www)_
 
 > The word in brackets represents the rule itself and can be found a warning in
 > CSV or can be used with `-i, --ignore` option.
@@ -106,12 +113,55 @@ Show the usage message with options descriptions.
 These are the warnings that are currently supported (rule itself is in
 brackets):
 
-- [HTTPS (for new domain) is available](#https-for-new-domain-is-available-https) _(https)_
-- [Only HTTP is available](#only-http-is-available-http) _(http)_
-- [Redirect found](#redirect-found-redirect) _(redirect)_
+- [Missing a bare domain URL trailing slash](#missing-a-bare-domain-url-trailing-slash-bare_slash)
+  _(bare_slash)_
 - [Domain has changed](#domain-has-changed-domain) _(domain)_
-- [Missing a trailing slash at the end](#missing-a-trailing-slash-at-the-end-slash)
+- [Only HTTP is available](#only-http-is-available-http) _(http)_
+- [HTTPS (for new domain) is available](#https-for-new-domain-is-available-https)
+  _(https)_
+- [Redirect found](#redirect-found-redirect) _(redirect)_
+- [Server prefers to include a trailing slash](#server-prefers-to-include-a-trailing-slash-slash)
   _(slash)_
+- [Server prefers to exclude a trailing slash](#server-prefers-to-exclude-a-trailing-slash-no_slash)
+  _(no_slash)_
+- [Server prefers to include www](#server-prefers-to-include-www-www) _(www)_
+- [Server prefers to exclude www](#server-prefers-to-exclude-www-no_www) _(no_www)_
+
+#### Missing a bare domain URL trailing slash _(bare_slash)_
+
+It's highly recommended to use a trailing slash in a bare domain URL like a
+homepage. However, most mainstream browsers "append a trailing slash"
+automatically to the request.
+
+From [RFC 2616](https://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html):
+
+> Please note, that the absolute path cannot be empty; if none is present in the
+> original URI, it MUST be given as "/" (the server root).
+
+Example:
+
+```
+Cask name:       5kplayer
+Cask homepage:   https://www.5kplayer.com [200]
+Status:          warning
+
+                 1. Missing a bare domain URL trailing slash → https://www.5kplayer.com/
+```
+
+#### Domain has changed _(domain)_
+
+It's also sometimes important to catch only those redirects that have a change
+in the domain. This rule catches this kind of redirects.
+
+Example:
+
+```
+Cask name:       festify
+Cask homepage:   https://getfestify.com/ [301]
+Status:          warning
+
+                 1. Domain has changed → https://festify.rocks/
+```
 
 #### HTTPS (for new domain) is available _(https)_
 
@@ -123,7 +173,7 @@ Example:
 
 ```
 Cask name:       010-editor
-Cask homepage:   http://www.sweetscape.com/
+Cask homepage:   http://www.sweetscape.com/ [301]
 Status:          warning
 
                  1. HTTPS is available → https://www.sweetscape.com/
@@ -156,48 +206,28 @@ recommended since in the future in can become unavailable.
 Example:
 
 ```
-Cask name:       1password
-Cask homepage:   https://agilebits.com/onepassword [301]
+Cask name:       cura-beta
+Cask homepage:   https://ultimaker.com/en/products/software [301]
 Status:          warning
 
-                 1. Redirect found → https://1password.com/
+                 1. Redirect found → https://ultimaker.com/en/products/cura-software
 ```
 
-#### Domain has changed _(domain)_
+#### Server prefers to include a trailing slash _(slash)_
 
-It's also sometimes important to catch only those redirects that have a change
-in the domain. This rule catches this kind of redirects.
+This rule checks whether server appends a trailing slash to the URL.
 
-Example:
+#### Server prefers to exclude a trailing slash _(no_slash)_
 
-```
-Cask name:       festify
-Cask homepage:   https://getfestify.com/ [301]
-Status:          warning
+This rule checks whether server removes a trailing slash from the URL.
 
-                 1. Domain has changed → https://festify.rocks/
-```
+#### Server prefers to include www _(www)_
 
-#### Missing a trailing slash at the end _(slash)_
+This rule checks whether server appends a www to the URL.
 
-It's highly recommended to use a trailing slash in a bare domain URL like a
-homepage. However, most mainstream browsers "append a trailing slash"
-automatically to the request.
+#### Server prefers to exclude www _(no_www)_
 
-From [RFC 2616](https://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html):
-
-> Please note, that the absolute path cannot be empty; if none is present in the
-> original URI, it MUST be given as "/" (the server root).
-
-Example:
-
-```
-Cask name:       5kplayer
-Cask homepage:   https://www.5kplayer.com
-Status:          warning
-
-                 1. Missing a trailing slash at the end → https://www.5kplayer.com/
-```
+This rule checks whether server removes a www from the URL.
 
 ## Examples
 
@@ -208,10 +238,22 @@ By default you just have to `cd` into the Casks directory and run the script:
 ```bash
 $ cd ~/path/to/homebrew-cask/Casks
 $ cask-homepage
-Checking homepages of 3420 casks...
+Checking homepages of 3424 casks...
+
+Rules status:
+
+bare_slash   enabled    Missing a bare domain URL trailing slash
+domain       enabled    Domain has changed
+http         enabled    Only HTTP is available
+https        enabled    HTTPS (for new domain) is available
+redirect     enabled    Redirect found
+slash        enabled    Server prefers to include a trailing slash
+no_slash     enabled    Server prefers to exclude a trailing slash
+www          enabled    Server prefers to include www
+no_www       enabled    Server prefers to exclude www
 ---------------------------------------------------------------------------------------------------------------------------------------------
 Cask name:       010-editor
-Cask homepage:   http://www.sweetscape.com/
+Cask homepage:   http://www.sweetscape.com/ [301]
 Status:          warning
 
                  1. HTTPS is available → https://www.sweetscape.com/
@@ -220,13 +262,14 @@ Cask name:       1password
 Cask homepage:   https://agilebits.com/onepassword [301]
 Status:          warning
 
-                 1. Redirect found → https://1password.com/
+                 1. Domain has changed → https://1password.com/
 ---------------------------------------------------------------------------------------------------------------------------------------------
-Cask name:       4peaks
-Cask homepage:   http://nucleobytes.com/index.php/4peaks [301]
+Cask name:       ableton-live
+Cask homepage:   https://ableton.com/en/live [301]
 Status:          warning
 
-                 1. Redirect found → http://nucleobytes.com/4peaks/
+                 1. Server prefers to include www → https://www.ableton.com/en/live/
+                 2. Server prefers to include a trailing slash → https://www.ableton.com/en/live/
 ...
 ```
 
@@ -243,5 +286,5 @@ with `-o` option and `~/path/to/output.csv` argument. For example:
 
 ```bash
 cd ~/path/to/homebrew-versions/Casks
-cask-homepage -u -o '~/path/to/output.csv'
+cask-homepage -o '~/path/to/output.csv'
 ```
