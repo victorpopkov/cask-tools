@@ -63,7 +63,7 @@ example to disable all warnings and display only casks that have homepage
 errors:
 
 ```bash
-cask-homepage -i https,http,redirect,domain,slash
+cask-homepage -i bare_slash,domain,http,https,redirect,slash,no_slash,www,no_www
 ```
 
 #### `-H, --header <header>`
@@ -127,6 +127,9 @@ brackets):
 - [Server prefers to include www](#server-prefers-to-include-www-www) _(www)_
 - [Server prefers to exclude www](#server-prefers-to-exclude-www-no_www) _(no_www)_
 
+If one of the enabled rules is violated one of the warnings from above will be
+shown. Each successfully checked cask can have multiple warnings.
+
 #### Missing a bare domain URL trailing slash _(bare_slash)_
 
 It's highly recommended to use a trailing slash in a bare domain URL like a
@@ -156,11 +159,11 @@ in the domain. This rule catches this kind of redirects.
 Example:
 
 ```
-Cask name:       festify
-Cask homepage:   https://getfestify.com/ [301]
+Cask name:       1password
+Cask homepage:   https://agilebits.com/onepassword [301]
 Status:          warning
 
-                 1. Domain has changed → https://festify.rocks/
+                 1. Domain has changed → https://1password.com/
 ```
 
 #### HTTPS (for new domain) is available _(https)_
@@ -187,11 +190,11 @@ version instead. This rule helps to catch this kind of redirects.
 Example:
 
 ```
-Cask name:       airdisplay
-Cask homepage:   https://avatron.com/apps/air-display/ [301]
+Cask name:       doitim
+Cask homepage:   https://doit.im/ [302]
 Status:          warning
 
-                 1. Only HTTP is available → http://avatron.com/apps/air-display/
+                 1. Only HTTP is available → http://doit.im/
 ```
 
 #### Redirect found _(redirect)_
@@ -217,17 +220,57 @@ Status:          warning
 
 This rule checks whether server appends a trailing slash to the URL.
 
+Example:
+
+```
+Cask name:       ghost
+Cask homepage:   https://ghost.org/downloads [301]
+Status:          warning
+
+                 1. Server prefers to include a trailing slash → https://ghost.org/downloads/
+```
+
 #### Server prefers to exclude a trailing slash _(no_slash)_
 
 This rule checks whether server removes a trailing slash from the URL.
+
+Example:
+
+```
+Cask name:       logoist
+Cask homepage:   http://www.syniumsoftware.com/logoist/ [301]
+Status:          warning
+
+                 1. Server prefers to exclude a trailing slash → http://www.syniumsoftware.com/logoist
+```
 
 #### Server prefers to include www _(www)_
 
 This rule checks whether server appends a www to the URL.
 
+Example:
+
+```
+Cask name:       bee
+Cask homepage:   http://neat.io/bee/ [301]
+Status:          warning
+
+                 1. Server prefers to include www → http://www.neat.io/bee/
+```
+
 #### Server prefers to exclude www _(no_www)_
 
 This rule checks whether server removes a www from the URL.
+
+Example:
+
+```
+Cask name:       appcleaner
+Cask homepage:   https://www.freemacsoft.net/appcleaner/ [301]
+Status:          warning
+
+                 1. Server prefers to exclude www → https://freemacsoft.net/appcleaner/
+```
 
 ## Examples
 
