@@ -2,10 +2,10 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.2.10
+# Version:         0.2.11
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   17.11.2016
+# Last modified:   18.11.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.2.10'
+readonly VERSION='0.2.11'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -76,7 +76,7 @@ usage() {
       -o, --output <filepath>    Output the results in CSV format into a file.
       -f, --fix (<total>)        Try to fix warnings automatically (optional: a total number of casks to fix).
       -a, --all                  Show and output all casks even if homepages are good.
-      -d, --delete-branch        Deletes local and remote branch named '${BRANCH_NAME}'.
+      -d, --delete-branches      Deletes local and remote branch named '${BRANCH_NAME}'.
       -v, --version              Show current script version.
       -h, --help                 Show this help." | sed -E 's/^ {4}//'
 }
@@ -198,7 +198,7 @@ output_csv() {
 #   $1 - Cask name
 review_homepage() {
   local -a warnings cask_rules
-  local -i code status status_color
+  local -i code code_color status status_color
   local cask homepage homepage_path homepage_redirect homepage_redirect_path host redirect_host out rule skip status_msg fixed warnings_str
 
   skip='false'
@@ -218,7 +218,7 @@ review_homepage() {
 
   if [[ "${status}" -eq 0 ]] && [[ "${skip}" == 'false' ]]; then
     # correct status and not skipped
-    [[ "${code}" -eq 200 ]] && status_color=2 || status_color=3
+    [[ "${code}" -eq 200 ]] && code_color=2 || code_color=3
 
     if [[ "${code}" -eq 301 ]] || [[ "${code}" -eq 302 ]]; then
       # redirect found
@@ -249,12 +249,12 @@ review_homepage() {
 
         if check_rule_enabled 'slash' && [[ "${homepage_path%/}" == "${homepage_redirect_path%/}" ]] && [[ ! "${homepage}" =~ \/$ ]] && [[ "${homepage_redirect}" =~ \/$ ]]; then
           # homepage doesn't have a trailing slash but redirect does
-          add_warning_to_review "Server prefers to include a trailing slash → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
+          add_warning_to_review "Server prefers to include a trailing slash → $(highlight "${homepage_redirect}" '\/$' '\/' 7)"
           warnings+=('slash')
           fixed="${homepage_redirect}"
         elif check_rule_enabled 'no_slash' && [[ "${homepage_path%/}" == "${homepage_redirect_path%/}" ]] && [[ "${homepage}" =~ \/$ ]] && [[ ! "${homepage_redirect}" =~ \/$ ]]; then
           # homepage has a trailing slash but doesn't
-          add_warning_to_review "Server prefers to exclude a trailing slash → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
+          add_warning_to_review "Server prefers to exclude a trailing slash → ${homepage_redirect}"
           warnings+=('no_slash')
           fixed="${homepage_redirect}"
         fi
@@ -276,7 +276,7 @@ review_homepage() {
     status_msg='good'
   elif [[ "${skip}" == 'true' ]]; then
     # skipped
-    [[ "${code}" -eq 200 ]] && status_color=2 || status_color=3
+    [[ "${code}" -eq 200 ]] && code_color=2 || code_color=3
   else
     # curl returned non 0 status (error)
     status_color=1
@@ -330,7 +330,7 @@ review_homepage() {
 
   # check if fixing is enabled and available
   if [[ "${FIX}" == 'true' ]] && [[ ! -z "${fixed}" ]]; then
-    add_to_review 'Cask homepage' "${homepage} [$(tput setaf "${status_color}")${code}$(tput sgr0)] → $(tput setaf 7)${fixed}$(tput sgr0) [$(tput setaf 2)200$(tput sgr0)]"
+    add_to_review 'Cask homepage' "${homepage} [$(tput setaf "${code_color}")${code}$(tput sgr0)] → $(tput setaf 7)${fixed}$(tput sgr0) [$(tput setaf 2)200$(tput sgr0)]"
     # fix
     FIXED_TOTAL+=1
     modify_stanza "${cask}" 'homepage' "'${fixed}'"
@@ -338,7 +338,7 @@ review_homepage() {
     status_color=2
     status_msg='fixed'
   else
-    add_to_review 'Cask homepage' "${homepage} [$(tput setaf "${status_color}")${code}$(tput sgr0)]"
+    add_to_review 'Cask homepage' "${homepage} [$(tput setaf "${code_color}")${code}$(tput sgr0)]"
   fi
 
   if [[ "${skip}" == 'true' ]]; then
@@ -402,7 +402,7 @@ print_rule() {
 finish() {
   git reset HEAD --hard --quiet
   git checkout master --quiet
-  git branch -D "${BRANCH_NAME}" --quiet
+  [[ ! -z "${BRANCH_NAME}" ]] && git branch -D "${BRANCH_NAME}" --quiet
 
   # show message
   if [[ "$1" == 'abort' ]]; then
@@ -463,7 +463,8 @@ fi
 # process
 [[ "${#CASKS[@]}" -eq 0 ]] && CASKS=($(egrep -lir --include '*.rb' "(homepage ')" . | xargs -n1 basename | sed 's|\.rb$||' | sort))
 printf 'Checking homepages of %i ' "${#CASKS[@]}"
-[[ "${#CASKS[@]}" -gt 1 ]] && printf 'casks...\n\n' || printf 'cask...\n\n'
+[[ "${#CASKS[@]}" -gt 1 ]] && printf 'casks' || printf 'cask'
+printf ' using these rules:\n\n'
 [[ "${OUTPUT}" == 'true' ]] && printf "\"%s\";\"%s\";\"%s\";\"%s\";\"%s\";\"%s\"\n" 'Name' 'Homepage' 'Response code' 'Status' 'Warnings' 'Fixed' > "${OUTPUT_PATH}"
 
 for rule in "${RULES[@]}"; do
@@ -471,7 +472,6 @@ for rule in "${RULES[@]}"; do
   check_array_contains 'RULES_DISABLED[@]' "${rule}" || RULES_ENABLED+=("${rule}")
 done
 
-printf 'Rules status:\n\n'
 print_rule 'bare_slash' 'Missing a bare domain URL trailing slash'
 print_rule 'domain' 'Domain has changed'
 print_rule 'http' 'Only HTTP is available'
