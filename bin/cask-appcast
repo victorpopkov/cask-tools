@@ -2,10 +2,10 @@
 #
 # Get the latest available version from appcast URL.
 #
-# Version:         0.3.15
+# Version:         0.3.16
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   21.10.2016
+# Last modified:   18.11.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.3.14'
+readonly VERSION='0.3.16'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 declare -a URLS
@@ -150,8 +150,7 @@ while [[ "$1" ]]; do
       URLS=("$@")
       for url in "${URLS[@]}"; do
         if [[ ! "${url}" =~ (https?|ftp|file)://[-A-Za-z0-9\+\&@#/%?=~_|!:,.\;]*[-A-Za-z0-9\+\&@#/%=~_|] ]]; then
-          if [[ "${#URLS[@]}" -gt 1 ]]; then error 'One of the provided appcast URLs is not valid'
-          else error 'The provided appcast URL is not valid'; fi
+          [[ "${#URLS[@]}" -gt 1 ]] && syntax_error 'One of the provided appcast URLs is not valid' || syntax_error "The provided appcast URL '${url}' is not valid"
         fi
       done
       break
