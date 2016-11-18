@@ -54,9 +54,9 @@ cask hasn't been updated by someone else yet.
 
 ### Available options
 
-#### `-i, --ignore <warnings>`
+#### `-i, --ignore <rules>`
 
-Ignore specified warnings separated by a comma: redirect https and slash.
+Ignore specified rules separated by a comma: redirect https and slash.
 
 It's useful when you would like to disable some warnings during the check. For
 example to disable all warnings and display only casks that have homepage
@@ -96,9 +96,9 @@ By default, only the casks with homepage errors or warnings are shown on
 screen and added to the CSV file. This parameter forces to show all the casks
 even if the homepage is good.
 
-#### `-d, --delete-branch`
+#### `-d, --delete-branches`
 
-Deletes local and remote branch named 'cask-homepage_fix'.
+Deletes local and remote branches named `cask-homepage_*`.
 
 #### `-v, --version`
 
@@ -281,9 +281,7 @@ By default you just have to `cd` into the Casks directory and run the script:
 ```bash
 $ cd ~/path/to/homebrew-cask/Casks
 $ cask-homepage
-Checking homepages of 3424 casks...
-
-Rules status:
+Checking homepages of 3435 casks using these rules:
 
 bare_slash   enabled    Missing a bare domain URL trailing slash
 domain       enabled    Domain has changed
