@@ -368,6 +368,18 @@ load ../lib/cask-scripts/cask
   [ "${output}" == 'one, two, three' ]
 }
 
+# highlight()
+@test "highlight() when no arguments" {
+  run highlight
+  [ "${status}" -eq 1 ]
+}
+
+@test "highlight() when highlight a specific part of the string" {
+  run highlight 'https://www.example.com/' 'www' 'www' 7
+  [ "${status}" -eq 0 ]
+  [ "${output}" == "https://$(tput setaf 7)www$(tput sgr0).example.com/" ]
+}
+
 # extract_version()
 @test "extract_version(): 1.0.1 => 1.0.1" {
   run extract_version '1.0.1'

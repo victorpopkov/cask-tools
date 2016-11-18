@@ -358,6 +358,28 @@ join_by() {
   return 0
 }
 
+# Highlight a specific part of the string using provided color.
+#
+# Arguments:
+#   $1 - String
+#   $2 - Part to highlight
+#   $3 - Replace with
+#   $4 - Highlight color
+#
+# Returns highlighted string.
+highlight() {
+  local -i color
+  local string part replace
+
+  readonly string="$1"
+  readonly part="$2"
+  readonly replace="$3"
+  readonly color="$4"
+  [[ -z "${string}" ]] || [[ -z "${part}" ]] || [[ -z "${replace}" ]] || [[ -z "${color}" ]] && return 1
+
+  sed -e "s/${part}/$(tput setaf "${color}")${replace}$(tput sgr0)/" <<< "${string}"
+}
+
 # Extract version from string.
 #
 # Arguments:
