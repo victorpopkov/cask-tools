@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.2.13
+# Version:         0.2.14
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   20.11.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.2.13'
+readonly VERSION='0.2.14'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -213,22 +213,28 @@ review_homepage() {
   ignore_redirect='false'
   ignore_domain='false'
 
-  # skip cask if defined in config
-  config_rules=($(get_xml_config_values '//skip' 'cask'))
+  # skip a cask if defined in config
+  config_rules=($(get_xml_config_values '//skip/casks' 'cask'))
   for rule in "${config_rules[@]}"; do
     [[ "${cask}" == "${rule}" ]] && skip='true'
   done
 
-  # ignore redirect if defined in config
-  config_rules=($(get_xml_config_values '//ignore-redirect' 'cask'))
+  # ignore a cask specific redirect rule
+  config_rules=($(get_xml_config_values '//ignore-redirect/casks' 'cask'))
   for rule in "${config_rules[@]}"; do
     [[ "${cask}" == "${rule}" ]] && ignore_redirect='true'
   done
 
-  # ignore domain if defined in config
-  config_rules=($(get_xml_config_values '//ignore-domain' 'cask'))
+  # ignore a cask specific domain redirect rule
+  config_rules=($(get_xml_config_values '//ignore-domain/casks' 'cask'))
   for rule in "${config_rules[@]}"; do
     [[ "${cask}" == "${rule}" ]] && ignore_domain='true'
+  done
+
+  # ignore a domain redirect rule based on the url
+  config_rules=($(get_xml_config_values '//ignore-domain/urls' 'url'))
+  for rule in "${config_rules[@]}"; do
+    [[ "${host}" =~ ${rule} ]] && ignore_domain='true'
   done
 
   if [[ "${status}" -eq 0 ]] && [[ "${skip}" == 'false' ]]; then
