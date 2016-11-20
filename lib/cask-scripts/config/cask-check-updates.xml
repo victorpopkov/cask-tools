@@ -60,7 +60,7 @@
     <matching-tag>
       <cask tag="Bloodhound">adobe-bloodhound</cask>
       <cask tag="phoneexpander.com/downloads">phoneexpander</cask>
-      <cask tag="processing-022">processing2</cask>
+      <cask tag="processing-.*-2.*">processing2</cask>
       <cask tag="XQuartz">xquartz</cask>
       <cask tag="XQuartz">xquartz-beta</cask>
     </matching-tag>
@@ -157,7 +157,6 @@
       </cask>
       <cask name="marked">
         <version />
-        <build />
       </cask>
       <cask name="monodraw">
         <text>b</text>
