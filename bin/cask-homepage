@@ -2,10 +2,10 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.2.11
+# Version:         0.2.12
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   18.11.2016
+# Last modified:   20.11.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.2.11'
+readonly VERSION='0.2.12'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -197,11 +197,12 @@ output_csv() {
 # Arguments:
 #   $1 - Cask name
 review_homepage() {
-  local -a warnings cask_rules
+  local -a warnings skip_rules ignore_redirect_rules ignore_redirect
   local -i code code_color status status_color
   local cask homepage homepage_path homepage_redirect homepage_redirect_path host redirect_host out rule skip status_msg fixed warnings_str
 
   skip='false'
+  ignore_redirect='false'
   readonly cask="$1"
   readonly homepage=$(get_cask_stanza_value "${cask}" 'homepage')
   readonly homepage_path=$(get_url_path "${homepage}")
@@ -211,9 +212,15 @@ review_homepage() {
   readonly status=$(echo "${out}" | tail -n 1)
 
   # skip cask if defined in config
-  cask_rules=($(get_xml_config_values '//skip' 'cask'))
-  for rule in "${cask_rules[@]}"; do
+  skip_rules=($(get_xml_config_values '//skip' 'cask'))
+  for rule in "${skip_rules[@]}"; do
     [[ "${cask}" == "${rule}" ]] && skip='true'
+  done
+
+  # ignore redirect if defined in config
+  ignore_redirect_rules=($(get_xml_config_values '//ignore-redirect' 'cask'))
+  for rule in "${ignore_redirect_rules[@]}"; do
+    [[ "${cask}" == "${rule}" ]] && ignore_redirect='true'
   done
 
   if [[ "${status}" -eq 0 ]] && [[ "${skip}" == 'false' ]]; then
@@ -259,7 +266,7 @@ review_homepage() {
           fixed="${homepage_redirect}"
         fi
 
-        if [[ "${#warnings[@]}" -eq 0 ]] && check_rule_enabled 'redirect'; then
+        if [[ "${ignore_redirect}" == 'false' ]] && [[ "${#warnings[@]}" -eq 0 ]] && check_rule_enabled 'redirect'; then
           add_warning_to_review "Redirect found → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
           warnings+=('redirect')
           fixed="${homepage_redirect}"
@@ -284,7 +291,7 @@ review_homepage() {
     [[ "${status}" -eq 28 ]] && status_msg='error (request timed out)'
   fi
 
-  if check_rule_enabled 'https'; then
+  if [[ "${skip}" == 'false' ]] && check_rule_enabled 'https'; then
     # https checking is enabled
     if ! check_array_contains 'warnings[@]' 'domain' && ! check_url_https "${homepage}"; then
       # domain not changed and homepage is using HTTP
@@ -305,7 +312,7 @@ review_homepage() {
     fi
   fi
 
-  if check_rule_enabled 'bare_slash'; then
+  if [[ "${skip}" == 'false' ]] && check_rule_enabled 'bare_slash'; then
     # bare domain slash checking is enabled
     if [[ ! "${homepage}" =~ ${host}\/ ]]; then
       add_warning_to_review "Missing a bare domain URL trailing slash → ${homepage}$(tput setaf 7)/$(tput sgr0)"
@@ -482,7 +489,7 @@ print_rule 'no_slash' 'Server prefers to exclude a trailing slash'
 print_rule 'www' 'Server prefers to include www'
 print_rule 'no_www' 'Server prefers to exclude www'
 
-if [[ "${#CASKS[@]}" -gt 1 ]] && [[ "${FIX}" == 'true' ]]; then
+if [[ "${FIX}" == 'true' ]]; then
   [[ "${FIX_TOTAL}" -gt 0 ]] && printf "\nFixing first %i casks...\n" "${FIX_TOTAL}" || printf '\nFixing all casks...\n'
 fi
 
