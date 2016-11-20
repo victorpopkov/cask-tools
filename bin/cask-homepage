@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.2.12
+# Version:         0.2.13
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   20.11.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.2.12'
+readonly VERSION='0.2.13'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -197,12 +197,10 @@ output_csv() {
 # Arguments:
 #   $1 - Cask name
 review_homepage() {
-  local -a warnings skip_rules ignore_redirect_rules ignore_redirect
+  local -a warnings config_rules
   local -i code code_color status status_color
-  local cask homepage homepage_path homepage_redirect homepage_redirect_path host redirect_host out rule skip status_msg fixed warnings_str
+  local cask homepage homepage_path homepage_redirect homepage_redirect_path host redirect_host out rule skip status_msg fixed warnings_str ignore_redirect ignore_domain
 
-  skip='false'
-  ignore_redirect='false'
   readonly cask="$1"
   readonly homepage=$(get_cask_stanza_value "${cask}" 'homepage')
   readonly homepage_path=$(get_url_path "${homepage}")
@@ -211,16 +209,26 @@ review_homepage() {
   readonly code=$(echo "${out}" | head -n 1)
   readonly status=$(echo "${out}" | tail -n 1)
 
+  skip='false'
+  ignore_redirect='false'
+  ignore_domain='false'
+
   # skip cask if defined in config
-  skip_rules=($(get_xml_config_values '//skip' 'cask'))
-  for rule in "${skip_rules[@]}"; do
+  config_rules=($(get_xml_config_values '//skip' 'cask'))
+  for rule in "${config_rules[@]}"; do
     [[ "${cask}" == "${rule}" ]] && skip='true'
   done
 
   # ignore redirect if defined in config
-  ignore_redirect_rules=($(get_xml_config_values '//ignore-redirect' 'cask'))
-  for rule in "${ignore_redirect_rules[@]}"; do
+  config_rules=($(get_xml_config_values '//ignore-redirect' 'cask'))
+  for rule in "${config_rules[@]}"; do
     [[ "${cask}" == "${rule}" ]] && ignore_redirect='true'
+  done
+
+  # ignore domain if defined in config
+  config_rules=($(get_xml_config_values '//ignore-domain' 'cask'))
+  for rule in "${config_rules[@]}"; do
+    [[ "${cask}" == "${rule}" ]] && ignore_domain='true'
   done
 
   if [[ "${status}" -eq 0 ]] && [[ "${skip}" == 'false' ]]; then
@@ -271,7 +279,7 @@ review_homepage() {
           warnings+=('redirect')
           fixed="${homepage_redirect}"
         fi
-      elif check_rule_enabled 'domain'; then
+      elif [[ "${ignore_domain}" == 'false' ]] && check_rule_enabled 'domain'; then
         # domain changed
         add_warning_to_review "Domain has changed → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
         warnings+=('domain')
