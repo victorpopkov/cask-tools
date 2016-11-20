@@ -2,17 +2,31 @@
 <cask-homepage>
   <rules>
     <skip>
-      <cask>airmail-beta</cask>
+      <casks>
+        <cask>airmail-beta</cask>
+      </casks>
     </skip>
     <ignore-redirect>
       <casks>
         <cask>adguard</cask>
+        <cask>air-video-server-hd</cask>
         <cask>air-video-server</cask>
+        <cask>application-loader</cask>
         <cask>avast</cask>
+        <cask>bankid</cask>
         <cask>beatunes</cask>
+        <cask>beyerdynamicvs</cask>
+        <cask>bitmessage</cask>
+        <cask>bitscope-chart</cask>
+        <cask>bitscope-dso</cask>
+        <cask>bitscope-logic</cask>
+        <cask>bitscope-meter</cask>
         <cask>bitwig-studio</cask>
         <cask>bluesense</cask>
         <cask>cacoo-ninja</cask>
+        <cask>chatwork</cask>
+        <cask>chirp</cask>
+        <cask>cloudup</cask>
         <cask>crashplan</cask>
         <cask>dvdstyler</cask>
         <cask>firefox-beta</cask>
@@ -33,6 +47,7 @@
         <cask>krita</cask>
         <cask>lightkey</cask>
         <cask>logitech-harmony</cask>
+        <cask>logitech-media-server</cask>
         <cask>mamp</cask>
         <cask>mathtype</cask>
         <cask>microsoft-office-2011</cask>
@@ -40,21 +55,26 @@
         <cask>minecraft</cask>
         <cask>mipony</cask>
         <cask>openmw</cask>
+        <cask>openttd</cask>
         <cask>opera-developer</cask>
+        <cask>origin</cask>
         <cask>pdfkey-pro</cask>
         <cask>porting-kit-legacy</cask>
         <cask>qcad</cask>
         <cask>seafile-client</cask>
         <cask>securesafe</cask>
+        <cask>sketchbook</cask>
         <cask>skype</cask>
+        <cask>skypewebplugin</cask>
         <cask>sonos</cask>
         <cask>synology-assistant</cask>
         <cask>synology-cloud-station-backup</cask>
         <cask>synology-cloud-station-drive</cask>
         <cask>synology-photo-station-uploader</cask>
         <cask>synologyeiauthenticator</cask>
-        <cask>thunderbird-ja</cask>
-        <cask>unifi-controller-beta</cask>
+        <cask>teamdrive</cask>
+        <cask>teamviewer</cask>
+        <cask>ukelele</cask>
         <cask>upeditor</cask>
         <cask>utorrent</cask>
         <cask>viber</cask>
@@ -62,5 +82,16 @@
         <cask>wacom-intuos-tablet</cask>
       </casks>
     </ignore-redirect>
+    <ignore-domain>
+      <urls>
+        <url>.*\.sourceforge\.net</url>
+      </urls>
+      <casks>
+        <cask>adware-removal-tool</cask>
+        <cask>microsoft-office-2011</cask>
+        <cask>thunderbird-ja</cask>
+        <cask>unifi-controller-beta</cask>
+      </casks>
+    </ignore-domain>
   </rules>
 </cask-homepage>
