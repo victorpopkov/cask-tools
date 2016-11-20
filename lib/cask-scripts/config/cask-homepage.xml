@@ -2,18 +2,63 @@
 <cask-homepage>
   <rules>
     <skip>
-      <cask>air-video-server</cask>
       <cask>airmail-beta</cask>
+    </skip>
+    <ignore-redirect>
+      <cask>adguard</cask>
+      <cask>air-video-server</cask>
+      <cask>avast</cask>
+      <cask>beatunes</cask>
+      <cask>bitwig-studio</cask>
+      <cask>bluesense</cask>
+      <cask>cacoo-ninja</cask>
+      <cask>crashplan</cask>
+      <cask>dvdstyler</cask>
       <cask>firefox-beta</cask>
       <cask>firefox-esr</cask>
+      <cask>firefox</cask>
       <cask>firefoxdeveloperedition</cask>
+      <cask>fitbit-connect</cask>
+      <cask>hubic</cask>
+      <cask>ifilex</cask>
+      <cask>inkscape</cask>
+      <cask>instabridge</cask>
+      <cask>iojs</cask>
+      <cask>itrash</cask>
       <cask>java6</cask>
+      <cask>keka</cask>
+      <cask>kensington-trackball-works</cask>
       <cask>keyboard-maestro6</cask>
+      <cask>krita</cask>
+      <cask>lightkey</cask>
+      <cask>logitech-harmony</cask>
+      <cask>mamp</cask>
+      <cask>mathtype</cask>
       <cask>microsoft-office-2011</cask>
+      <cask>minecraft-server</cask>
+      <cask>minecraft</cask>
+      <cask>mipony</cask>
+      <cask>openmw</cask>
       <cask>opera-developer</cask>
+      <cask>pdfkey-pro</cask>
       <cask>porting-kit-legacy</cask>
+      <cask>qcad</cask>
+      <cask>seafile-client</cask>
+      <cask>securesafe</cask>
+      <cask>skype</cask>
+      <cask>sonos</cask>
+      <cask>synology-assistant</cask>
+      <cask>synology-cloud-station-backup</cask>
+      <cask>synology-cloud-station-drive</cask>
+      <cask>synology-photo-station-uploader</cask>
+      <cask>synologyeiauthenticator</cask>
       <cask>thunderbird-ja</cask>
       <cask>unifi-controller-beta</cask>
-    </skip>
+      <cask>upeditor</cask>
+      <cask>utorrent</cask>
+      <cask>viber</cask>
+      <cask>wacom-intuos-pro-tablet</cask>
+      <cask>wacom-intuos-tablet</cask>
+    </ignore-redirect>
   </rules>
 </cask-homepage>
