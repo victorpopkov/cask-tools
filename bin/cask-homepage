@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them.
 #
-# Version:         0.2.15
+# Version:         0.2.16
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   20.11.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.2.15'
+readonly VERSION='0.2.16'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -293,7 +293,7 @@ review_homepage() {
         fi
       elif [[ "${ignore_domain}" == 'false' ]] && check_rule_enabled 'domain'; then
         # domain changed
-        add_warning_to_review "Domain has changed → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
+        add_warning_to_review "Domain has changed → $(highlight "${homepage_redirect}" "${redirect_host}" "${redirect_host}" 7)"
         warnings+=('domain')
         fixed="${homepage_redirect}"
       fi
