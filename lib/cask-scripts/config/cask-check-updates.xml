@@ -267,6 +267,9 @@
         <delimiter />
         <devmate-part />
       </cask>
+      <cask name="texpad">
+        <url pattern="/(.*Texpad_)(.*)\.dmg/" replacement="\\2" />
+      </cask>
       <cask name="time-tracker">
         <version pattern="/-binary$/" />
       </cask>
@@ -276,6 +279,11 @@
         <build />
         <delimiter />
         <amazonaws-part />
+      </cask>
+      <cask name="veertu-desktop">
+        <version pattern="/\\(.*\\)/" />
+        <text>.</text>
+        <build />
       </cask>
       <cask name="virtualhostx">
         <version />
