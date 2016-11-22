@@ -4,7 +4,7 @@
 #
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   23.10.2016
+# Last modified:   22.11.2016
 
 # Constants and globals
 declare PROGRAM

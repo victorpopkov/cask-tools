@@ -4,7 +4,7 @@
 #
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   23.10.2016
+# Last modified:   22.11.2016
 
 # Get value(s) of a cask stanza.
 #
@@ -200,13 +200,36 @@ get_xml_config_custom_rule() {
 modify_stanza() {
   local cask stanza value
 
-  cask="${1/.rb}"
-  stanza="$2"
-  value="$3"
+  readonly cask="${1/.rb}"
+  readonly stanza="$2"
+  readonly value="$3"
 
   perl -0777 -i -e'
     $stanza_to_modify = shift(@ARGV);
     $new_stanza_value = shift(@ARGV);
     print <> =~ s|\A.*^\s*\Q$stanza_to_modify\E\s\K[^\n]*|$new_stanza_value|smr;
   ' "${stanza}" "${value}" "${cask}.rb"
+}
+
+# Edit a cask.
+#
+# Globals:
+#   EDITOR
+#   GIT_EDITOR
+#
+# Arguments:
+#   $1 - Cask name
+#
+# Returns rule and status.
+edit_cask() {
+  local cask
+
+  readonly cask="${1/.rb}"
+  [[ -z "$*" ]] && return 1
+
+  if [[ -n "${EDITOR}" ]]; then
+    eval "${EDITOR}" "${cask}.rb"
+  else
+    [[ -n "${GIT_EDITOR}" ]] && eval "${GIT_EDITOR}" "${cask}" || open -W "${cask}.rb"
+  fi
 }
