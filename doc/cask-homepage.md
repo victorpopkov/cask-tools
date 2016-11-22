@@ -54,17 +54,33 @@ cask hasn't been updated by someone else yet.
 
 ### Available options
 
-#### `-i, --ignore <rules>`
+#### `-l, --pull <remote>`
 
-Ignore specified rules separated by a comma: redirect https and slash.
+Use to specify a remote to pull from (defaults to 'upstream').
 
-It's useful when you would like to disable some warnings during the check. For
-example to disable all warnings and display only casks that have homepage
-errors:
+#### `-p, --push <remote>`
 
-```bash
-cask-homepage -i bare_slash,domain,http,https,redirect,slash,no_slash,www,no_www
-```
+Use to specify a remote to push to (defaults to 'origin').
+
+#### `-b, --push-branch <name>`
+
+Use to specify a branch name to push to.
+
+By default it's generated automatically when fixing mode is enabled using the
+format: `cask-homepage_<random>`. When you specify you own one, take into
+account that **all existing changes in this branch will be overwritten** using
+`git push --force`.
+
+#### `-e, --push-edit`
+
+Edit pushed changes.
+
+This option can be used if you need to make pushed changes: for example if you
+already created a PR and you need to modify some of the casks.
+
+It automatically pulls the selected branch from the `origin`, asks which casks
+to modify and launches the default editor to modify them. After making all the
+changes it rebases the changes and pushes to the same branch again.
 
 #### `-H, --header <header>`
 
@@ -98,7 +114,7 @@ even if the homepage is good.
 
 #### `-d, --delete-branches`
 
-Deletes local and remote branches named `cask-homepage_*`.
+Deletes local and remote branches named `cask-homepage_<random>`.
 
 #### `-v, --version`
 

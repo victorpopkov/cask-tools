@@ -13,15 +13,19 @@ To learn more about each script explore [doc](doc/) directory.
 ### [cask-appcast](doc/cask-appcast.md)
 
 Get the latest available version, checkpoint and download URL(s) from appcast.
+[Learn more...](doc/cask-appcast.md)
 
 ### [cask-check-updates](doc/cask-check-updates.md)
 
 Scan casks with appcasts for outdated ones and get the latest available
 version(s).
+[Learn more...](doc/cask-check-updates.md)
 
 ### [cask-homepage](doc/cask-homepage.md)
 
-Check homepages of the casks and try to fix them. Suggested by [**@miccal**](https://github.com/miccal).
+Check homepages of the casks and try to fix them. [Learn more...](doc/cask-homepage.md)
+
+Suggested by [**@miccal**](https://github.com/miccal).
 
 ## Installation
 
