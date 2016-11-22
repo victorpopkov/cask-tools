@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them using provided rules.
 #
-# Version:         0.3.0
+# Version:         0.3.1
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   22.11.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.3.0'
+readonly VERSION='0.3.1'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -428,16 +428,13 @@ finish() {
   fi
 }
 
-# Editing mode.
+# Edit existing pushed changes.
 #
 # Globals:
 #   CASKS
 #   REMOTE_PULL
-#
-# Arguments:
-#   $1 - Status: 'abort' or 'success'
-#   $2 - Message
-editing_mode() {
+#   REMOTE_PUSH
+edit_mode() {
   local -i fixed
   local last_upstream_commit cask commit
 
@@ -516,7 +513,7 @@ fi
 
 # edit mode
 if [[ "${EDIT}" == 'true' ]]; then
-  editing_mode
+  edit_mode
   exit 0
 fi
 

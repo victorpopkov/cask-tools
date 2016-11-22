@@ -165,6 +165,7 @@ add_to_review() {
 # Globals:
 #   REVIEW_NAMES
 #   REVIEW_VALUES
+#   REVIEW_WARNINGS
 #
 # Arguments:
 #   $1 - Length of the name string (optional)
@@ -271,6 +272,9 @@ get_url_path() {
 }
 
 # Get redirect URL from original one.
+#
+# Globals:
+#   BROWSER_HEADERS
 #
 # Arguments:
 #   $1 - URL

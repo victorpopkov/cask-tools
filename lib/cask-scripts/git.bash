@@ -54,7 +54,7 @@ git_get_branch_diverge_point() {
 # Delete creaeted branches that start with program name.
 #
 # Globals:
-#   BRANCH_NAME
+#   PROGRAM
 #   REMOTE_PUSH
 #
 # Arguments:
@@ -76,8 +76,8 @@ git_delete_program_branches() {
 # Make git push.
 #
 # Globals:
-#   REMOTE_PUSH
 #   BRANCH_NAME
+#   REMOTE_PUSH
 git_push() {
   git push --force "${REMOTE_PUSH}" "${BRANCH_NAME}" --quiet
 }
