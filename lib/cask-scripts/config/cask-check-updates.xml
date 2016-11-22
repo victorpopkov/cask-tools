@@ -47,7 +47,6 @@
       <cask>versions</cask>
     </version-delimiter-build>
     <version-only>
-      <cask>framer</cask>
       <cask>trailrunner</cask>
     </version-only>
     <build-only>
@@ -83,6 +82,11 @@
       </cask>
       <cask name="disablemonitor">
         <version pattern="/^G/" />
+      </cask>
+      <cask name="djay-pro">
+        <version />
+        <delimiter />
+        <url pattern="/(.*)\\/(.*)\\/(.*)\\/.*/" replacement="\\3" />
       </cask>
       <cask name="docker">
         <version pattern="/-.*$/" />
@@ -150,11 +154,6 @@
           <version />
         </title>
       </cask> -->
-      <cask name="manico">
-        <version />
-        <text>-</text>
-        <build />
-      </cask>
       <cask name="marked">
         <version />
       </cask>
