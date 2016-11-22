@@ -15,17 +15,23 @@ To learn more about each script explore [doc](doc/) directory.
 Get the latest available version, checkpoint and download URL(s) from appcast.
 [Learn more...](doc/cask-appcast.md)
 
+<img src="http://caskroom.victorpopkov.com/cask-scripts/cask-appcast.gif" data-canonical-src="http://caskroom.victorpopkov.com/cask-scripts/cask-appcast.gif" width="400" />
+
 ### [cask-check-updates](doc/cask-check-updates.md)
 
 Scan casks with appcasts for outdated ones and get the latest available
 version(s).
 [Learn more...](doc/cask-check-updates.md)
 
+<img src="http://caskroom.victorpopkov.com/cask-scripts/cask-check-updates.gif" data-canonical-src="http://caskroom.victorpopkov.com/cask-scripts/cask-check-updates.gif" width="400" />
+
 ### [cask-homepage](doc/cask-homepage.md)
 
 Check homepages of the casks and try to fix them. [Learn more...](doc/cask-homepage.md)
 
 Suggested by [**@miccal**](https://github.com/miccal).
+
+<img src="http://caskroom.victorpopkov.com/cask-scripts/cask-homepage.gif" data-canonical-src="http://caskroom.victorpopkov.com/cask-scripts/cask-homepage.gif" width="400" />
 
 ## Installation
 
