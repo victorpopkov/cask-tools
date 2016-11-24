@@ -16,6 +16,8 @@ version(s).
 
 ## Description
 
+<img src="http://caskroom.victorpopkov.com/cask-scripts/cask-check-updates.gif" data-canonical-src="http://caskroom.victorpopkov.com/cask-scripts/cask-check-updates.gif" width="700" />
+
 The `cask-check-updates` was designed specifically to find outdated casks that
 have appcasts and automatically retrieve latest available versions. It also
 normalizes retrieved versions to match the patterns used in casks.

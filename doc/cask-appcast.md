@@ -9,6 +9,8 @@ Get the latest available version, checkpoint and download URL(s) from appcast.
 
 ## Description
 
+<img src="http://caskroom.victorpopkov.com/cask-scripts/cask-appcast.gif" data-canonical-src="http://caskroom.victorpopkov.com/cask-scripts/cask-appcast.gif" width="700" />
+
 The purpose of `cask-appcast` is to get the latest available version, checkpoint
 and download URL(s) from appcast by detecting which of supported providers is
 being used. In the case of unsupported provider, only the checkpoint is

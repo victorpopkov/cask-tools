@@ -12,6 +12,8 @@ Check homepages of the casks and try to fix them.
 
 ## Description
 
+<img src="http://caskroom.victorpopkov.com/cask-scripts/cask-homepage.gif" data-canonical-src="http://caskroom.victorpopkov.com/cask-scripts/cask-homepage.gif" width="700" />
+
 The `cask-homepage` script is designed to check homepages of the casks for
 availability by checking their response statuses. It's useful in finding casks
 that are no longer maintained or available. It also checks the URL for these
