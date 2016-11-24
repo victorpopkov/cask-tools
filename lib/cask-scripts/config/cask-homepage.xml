@@ -30,13 +30,17 @@
         <cask>cloudup</cask>
         <cask>crashplan</cask>
         <cask>dvdstyler</cask>
+        <cask>feed-the-beast</cask>
         <cask>firefox-beta</cask>
         <cask>firefox-esr</cask>
         <cask>firefox</cask>
         <cask>firefoxdeveloperedition</cask>
         <cask>fitbit-connect</cask>
         <cask>frizzix</cask>
+        <cask>heroes-of-newerth</cask>
+        <cask>hewlettpackardprinterdrivers</cask>
         <cask>hubic</cask>
+        <cask>iannix</cask>
         <cask>ifilex</cask>
         <cask>inkscape</cask>
         <cask>instabridge</cask>
@@ -68,6 +72,7 @@
         <cask>opera-developer</cask>
         <cask>origin</cask>
         <cask>pandora</cask>
+        <cask>paymowidget</cask>
         <cask>pdfkey-pro</cask>
         <cask>pl2303</cask>
         <cask>polyphone</cask>
@@ -93,6 +98,7 @@
         <cask>teamdrive</cask>
         <cask>teamviewer</cask>
         <cask>texmacs</cask>
+        <cask>thetube</cask>
         <cask>thunderbird</cask>
         <cask>tipp10</cask>
         <cask>twindocs</cask>
@@ -112,11 +118,18 @@
       </urls>
       <casks>
         <cask>adware-removal-tool</cask>
+        <cask>beyerdynamicvs</cask>
+        <cask>captur</cask>
         <cask>curse</cask>
+        <cask>dofus</cask>
+        <cask>freeplane</cask>
+        <cask>jansi</cask>
         <cask>league-of-legends</cask>
         <cask>microsoft-office-2011</cask>
         <cask>pokerstars</cask>
+        <cask>proxpn</cask>
         <cask>thunderbird-ja</cask>
+        <cask>tomtom-mysports-connect</cask>
         <cask>unifi-controller-beta</cask>
       </casks>
     </ignore-domain>
