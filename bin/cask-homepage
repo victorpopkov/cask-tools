@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them using provided rules.
 #
-# Version:         0.3.1
+# Version:         0.3.2
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   22.11.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.3.1'
+readonly VERSION='0.3.2'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -182,7 +182,6 @@ check_rule_enabled() {
 # Globals:
 #   OUTPUT
 #   OUTPUT_PATH
-#   SHOW_ALL
 #
 # Arguments:
 #   $1 - Cask name
@@ -190,7 +189,7 @@ check_rule_enabled() {
 #   $3 - Response code
 #   $4 - Status
 #   $5 - Warnings
-#   $5 - Fixed
+#   $6 - Fixed
 output_csv() {
   [[ "${OUTPUT}" == 'true' ]] && printf "\"%s\";\"%s\";\"%s\";\"%s\";\"%s\";\"%s\"\n" "$1" "$2" "$3" "$4" "$5" "$6" >> "${OUTPUT_PATH}"
 }
@@ -225,30 +224,29 @@ review_homepage() {
 
   # skip a cask if defined in config
   config_rules=($(get_xml_config_values '//skip/casks' 'cask'))
-  for rule in "${config_rules[@]}"; do
-    [[ "${cask}" == "${rule}" ]] && skip='true'
-  done
+  check_array_contains 'config_rules' "${cask}" && skip='true'
 
   # ignore a cask specific redirect rule
-  config_rules=($(get_xml_config_values '//ignore-redirect/casks' 'cask'))
+  config_rules=($(get_xml_config_values '//ignore/redirect/casks' 'cask'))
   for rule in "${config_rules[@]}"; do
     [[ "${cask}" == "${rule}" ]] && ignore_redirect='true'
   done
 
   # ignore a redirect rule based on the url
-  config_rules=($(get_xml_config_values '//ignore-redirect/urls' 'url'))
+  config_rules=($(get_xml_config_values '//ignore/redirect/urls' 'url'))
+  check_array_contains 'config_rules' "${cask}" && ignore_redirect='true'
   for rule in "${config_rules[@]}"; do
     [[ "${cask}" == "${rule}" ]] && ignore_redirect='true'
   done
 
   # ignore a cask specific domain redirect rule
-  config_rules=($(get_xml_config_values '//ignore-domain/casks' 'cask'))
+  config_rules=($(get_xml_config_values '//ignore/domain/casks' 'cask'))
   for rule in "${config_rules[@]}"; do
     [[ "${cask}" == "${rule}" ]] && ignore_domain='true'
   done
 
   # ignore a domain redirect rule based on the url
-  config_rules=($(get_xml_config_values '//ignore-domain/urls' 'url'))
+  config_rules=($(get_xml_config_values '//ignore/domain/urls' 'url'))
   for rule in "${config_rules[@]}"; do
     [[ "${host}" =~ ${rule} ]] && ignore_domain='true'
   done
