@@ -20,7 +20,7 @@ that are no longer maintained or available. It also checks the URL for these
 rules (in brackets) below and gives appropriate warnings if violated:
 
 - [Host has changed](#host-has-changed-host) _(host)_
-- [Redirect found](#redirect-found-redirect) _(redirect)_
+- [Path has changed](#path-has-changed) _(path)_
 - [Only HTTP is available](#only-http-is-available-http) _(http)_
 - [HTTPS is available](#https-is-available-https) _(https)_
 - [Server prefers to include WWW](#server-prefers-to-include-www-www) _(www)_
@@ -131,7 +131,7 @@ These are the warnings that are currently supported (rule itself is in
 brackets):
 
 - [Host has changed](#host-has-changed-host) _(host)_
-- [Redirect found](#redirect-found-redirect) _(redirect)_
+- [Path has changed](#path-has-changed) _(path)_
 - [Only HTTP is available](#only-http-is-available-http) _(http)_
 - [HTTPS is available](#https-is-available-https) _(https)_
 - [Server prefers to include WWW](#server-prefers-to-include-www-www) _(www)_
@@ -162,11 +162,9 @@ Status:          warning
                  2. Redirect found → https://1password.com/
 ```
 
-#### Redirect found _(redirect)_
+#### Path has changed _(path)_
 
-Usually when the homepage changes a redirect is added to the old URL to help
-users find the new homepage location. However, the usage of old URL is not
-recommended since in the future in can become unavailable.
+This rule helps to find URLs where path has been changed.
 
 Example:
 
@@ -175,7 +173,7 @@ Cask name:       cura-beta
 Cask homepage:   https://ultimaker.com/en/products/software [301]
 Status:          warning
 
-                 1. Redirect found → https://ultimaker.com/en/products/cura-software
+                 1. Path has changed → https://ultimaker.com/en/products/cura-software
 ```
 
 #### Only HTTP is available _(http)_
