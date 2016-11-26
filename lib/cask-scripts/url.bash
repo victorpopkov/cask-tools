@@ -337,14 +337,14 @@ url_fix_redirect() {
   return 1
 }
 
-# Fix URL based on redirect if domain has changed.
+# Fix URL based on redirect if host has changed.
 #
 # Arguments:
 #   $1 - URL
 #   $2 - Redirect URL
 #
 # Returns fixed URL if successfull.
-url_fix_domain() {
+url_fix_host() {
   local url redirect host redirect_host url_path redirect_path
 
   readonly url="$1"

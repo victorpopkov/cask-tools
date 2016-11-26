@@ -7,7 +7,7 @@
       </casks>
     </skip>
     <ignore>
-      <domain>
+      <host>
         <urls>
           <url>.*\.sourceforge\.net</url>
           <url>osdn.jp</url>
@@ -28,7 +28,7 @@
           <cask>tomtom-mysports-connect</cask>
           <cask>unifi-controller-beta</cask>
         </casks>
-      </domain>
+      </host>
       <redirect>
         <casks>
           <cask>adguard</cask>
