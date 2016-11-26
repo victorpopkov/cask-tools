@@ -6,6 +6,9 @@ Check homepages of the casks and try to fix them.
   - [Lists of homepages](#lists-of-homepages)
   - [Available options](#available-options)
   - [Available warnings (rules)](#available-warnings-rules)
+- [Automatic fixing](#automatic-fixing)
+- [Configuration](#configuration)
+  - [Rules](#rules)
 - [Examples](#examples)
   - [Default](#default)
   - [CSV lists](#csv-lists)
@@ -81,7 +84,7 @@ already created a PR and you need to modify some of the casks.
 
 It automatically pulls the selected branch from the `origin`, asks which casks
 to modify and launches the default editor to modify them. After making all the
-changes it rebases the changes and pushes to the same branch again.
+changes it rebases them and pushes to the same branch again.
 
 #### `-H, --header <header>`
 
@@ -164,7 +167,7 @@ Status:          warning
 
 #### Path has changed _(path)_
 
-It helps to find URLs where path has been changed.
+It helps to find URLs where the path has been changed.
 
 Example:
 
@@ -195,7 +198,7 @@ Status:          warning
 
 Since the HTTPS is more preferred over the usual plain HTTP the script checks if
 it's available and gives an appropriate warning message if found. It will also
-check if it's available even if host has been changed.
+check if it's available even if the host has been changed.
 
 Example:
 
@@ -285,6 +288,59 @@ Status:          warning
 
                  1. Missing a bare domain URL trailing slash → https://www.5kplayer.com/
 ```
+
+## Automatic fixing
+
+This script can also fix all the issues automatically by creating a temporary
+branch and push all the changes there. It won't open a PR automatically so you
+can manually check it before submitting.
+
+By default, when `-f/--fix` flag is applied, it will fix all the casks. However,
+you can specify the amount of casks to fix or fix only certain casks using:
+
+```bash
+cask-homepage -f <number> [<casks>...]
+```
+
+At the moment, the script doesn't fix the "host has been verified" comments, but
+it supports quick PR editing using `-e/--push-edit` flag so you can easily make
+any changes to already existing branch:
+
+```bash
+cask-homepage -e
+```
+
+When using the `-e/--push-edit` flag it will run the script in the interactive
+mode where you can specify which of created branches and casks you would like to
+edit and uses the default editor for that. After making all the changes to the
+casks and commit descriptions it will automatically rebase and push all the
+changes to the same branch again.
+
+## Configuration
+
+Since there are always some cases when applying one of the rules can break the
+URL or the given warning doesn't make the URL better, it's important to have an
+ability to manually disable some of them. In order to make it happen the  XML
+[configuration](../lib/cask-scripts/config/cask-homepage.xml) file is used that
+includes different rules to make it possible.
+
+### Rules
+
+There are not many rules needed so there are only two main groups: **skip** and
+**ignore**.
+
+#### skip
+
+In some rare cases, it's better to completely disable the homepage checking for
+some casks. When this rule is applied it will force the cask to be skipped
+during the checking process. The skipped casks won't be shown in the CSV list by
+default and only on the screen with "skipped" status.
+
+#### ignore
+
+You can ignore any warning specifically by using this rule. There are two ways
+to achieve that: ignore the rule only for a specific cask or ignore all of the
+casks that match the certain URL pattern.
 
 ## Examples
 
