@@ -371,67 +371,67 @@ load ../lib/cask-scripts/url
   [ -z "${output}" ]
 }
 
-# url_fix_redirect()
-@test "url_fix_redirect() when no arguments" {
-  run url_fix_redirect
+# url_fix_path()
+@test "url_fix_path() when no arguments" {
+  run url_fix_path
   [ "${status}" -eq 1 ]
   [ -z "${output}" ]
 }
 
-@test "url_fix_redirect() when hosts are the same and different path in redirect" {
+@test "url_fix_path() when hosts are the same and different path in redirect" {
   local url redirect
   readonly url='http://example.com/'
   readonly redirect='http://example.com/index.html'
-  run url_fix_redirect "${url}" "${redirect}"
+  run url_fix_path "${url}" "${redirect}"
   [ "${status}" -eq 0 ]
   [ "${output}" == "${redirect}" ]
 }
 
-@test "url_fix_redirect() when schemas are different, hosts are the same and different path in redirect" {
+@test "url_fix_path() when schemas are different, hosts are the same and different path in redirect" {
   local url redirect
   url='https://example.com/'
   redirect='http://example.com/index.html'
-  run url_fix_redirect "${url}" "${redirect}"
+  run url_fix_path "${url}" "${redirect}"
   [ "${status}" -eq 0 ]
   [ "${output}" == 'https://example.com/index.html' ]
 
   url='http://example.com/'
   redirect='https://example.com/index.html'
-  run url_fix_redirect "${url}" "${redirect}"
+  run url_fix_path "${url}" "${redirect}"
   [ "${status}" -eq 0 ]
   [ "${output}" == 'http://example.com/index.html' ]
 }
 
-# url_fix_domain()
-@test "url_fix_domain() when no arguments" {
-  run url_fix_domain
+# url_fix_host()
+@test "url_fix_host() when no arguments" {
+  run url_fix_host
   [ "${status}" -eq 1 ]
   [ -z "${output}" ]
 }
 
-@test "url_fix_domain() when hosts are the same but paths are different" {
+@test "url_fix_host() when hosts are the same but paths are different" {
   local url redirect
   readonly url='http://example.com/'
   readonly redirect='http://example.com/index.html'
-  run url_fix_domain "${url}" "${redirect}"
+  run url_fix_host "${url}" "${redirect}"
   [ "${status}" -eq 1 ]
   [ -z "${output}" ]
 }
 
-@test "url_fix_domain() when hosts are different but paths are the same" {
+@test "url_fix_host() when hosts are different but paths are the same" {
   local url redirect
   url='http://example.com/'
   redirect='http://other.com/'
-  run url_fix_domain "${url}" "${redirect}"
+  run url_fix_host "${url}" "${redirect}"
   [ "${status}" -eq 0 ]
   [ "${output}" == 'http://other.com/' ]
 }
 
-@test "url_fix_domain() when hosts and paths are different (redirect path should be ignored)" {
+@test "url_fix_host() when hosts and paths are different (redirect path should be ignored)" {
   local url redirect
   url='http://example.com/'
   redirect='http://other.com/index.html'
-  run url_fix_domain "${url}" "${redirect}"
+  run url_fix_host "${url}" "${redirect}"
   [ "${status}" -eq 0 ]
   [ "${output}" == 'http://other.com/' ]
 }
