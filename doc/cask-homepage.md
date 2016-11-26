@@ -149,7 +149,7 @@ shown. Each successfully checked cask can have multiple warnings.
 #### Host has changed _(host)_
 
 It's also sometimes important to catch only those redirects that have a change
-in the host. This rule catches this kind of redirects.
+in the host itself. This rule is a good way to find those.
 
 Example:
 
@@ -164,7 +164,7 @@ Status:          warning
 
 #### Path has changed _(path)_
 
-This rule helps to find URLs where path has been changed.
+It helps to find URLs where path has been changed.
 
 Example:
 
@@ -193,9 +193,9 @@ Status:          warning
 
 #### HTTPS is available _(https)_
 
-Since the HTTPS is more preferred over the usual HTTP the script checks if it's
-available and gives an appropriate warning message if found. If a domain has
-changed this rule also applies to the new domain.
+Since the HTTPS is more preferred over the usual plain HTTP the script checks if
+it's available and gives an appropriate warning message if found. It will also
+check if it's available even if host has been changed.
 
 Example:
 
@@ -209,7 +209,7 @@ Status:          warning
 
 #### Server prefers to include WWW _(www)_
 
-This rule checks whether server appends a www to the URL.
+This rule checks whether server prefers to forcefully append a WWW to the URL.
 
 Example:
 
@@ -223,7 +223,7 @@ Status:          warning
 
 #### Server prefers to exclude WWW _(no_www)_
 
-This rule checks whether server removes a www from the URL.
+This rule checks whether server prefers to forcefully remove a WWW from the URL.
 
 Example:
 
@@ -237,7 +237,8 @@ Status:          warning
 
 #### Server prefers to include a trailing slash _(slash)_
 
-This rule checks whether server appends a trailing slash to the URL.
+This rule checks whether server prefers to forcefully append a trailing slash to
+the URL.
 
 Example:
 
@@ -251,7 +252,8 @@ Status:          warning
 
 #### Server prefers to exclude a trailing slash _(no_slash)_
 
-This rule checks whether server removes a trailing slash from the URL.
+This rule checks whether server prefers to forcefully remove a trailing slash
+from the URL. It ignores all the cases where _bare_slash_ is needed.
 
 Example:
 
@@ -288,7 +290,9 @@ Status:          warning
 
 ### Default
 
-By default you just have to `cd` into the Casks directory and run the script:
+By default you just have to `cd` into the Casks directory and run the script. It
+will automatically use all the rules by default and should only those casks that
+have some warnings or errors.
 
 ```bash
 $ cd ~/path/to/homebrew-cask/Casks
@@ -296,14 +300,14 @@ $ cask-homepage
 Checking homepages of 3435 casks using these rules:
 
 bare_slash   enabled    Missing a bare domain URL trailing slash
-domain       enabled    Domain has changed
+host         enabled    Host has changed
 http         enabled    Only HTTP is available
-https        enabled    HTTPS (for new domain) is available
-redirect     enabled    Redirect found
-slash        enabled    Server prefers to include a trailing slash
+https        enabled    HTTPS is available
 no_slash     enabled    Server prefers to exclude a trailing slash
-www          enabled    Server prefers to include www
-no_www       enabled    Server prefers to exclude www
+no_www       enabled    Server prefers to exclude WWW
+path         enabled    Path has changed
+slash        enabled    Server prefers to include a trailing slash
+www          enabled    Server prefers to include WWW
 ---------------------------------------------------------------------------------------------------------------------------------------------
 Cask name:       010-editor
 Cask homepage:   http://www.sweetscape.com/ [301]
@@ -315,13 +319,14 @@ Cask name:       1password
 Cask homepage:   https://agilebits.com/onepassword [301]
 Status:          warning
 
-                 1. Domain has changed → https://1password.com/
+                 1. Host has changed → https://1password.com/onepassword
+                 2. Path has changed → https://1password.com/
 ---------------------------------------------------------------------------------------------------------------------------------------------
 Cask name:       ableton-live
 Cask homepage:   https://ableton.com/en/live [301]
 Status:          warning
 
-                 1. Server prefers to include www → https://www.ableton.com/en/live/
+                 1. Server prefers to include WWW → https://www.ableton.com/en/live/
                  2. Server prefers to include a trailing slash → https://www.ableton.com/en/live/
 ...
 ```
