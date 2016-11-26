@@ -235,6 +235,33 @@ load ../lib/cask-scripts/general
   [ "${output}" == "https://$(tput setaf 7)www$(tput sgr0).example.com/" ]
 }
 
+# highlight_diff()
+@test "highlight_diff() when no arguments" {
+  run highlight_diff
+  [ "${status}" -eq 1 ]
+}
+
+@test "highlight_diff() when first difference highlighted" {
+  run highlight_diff 'http://example.com/' 'https://example.com/'
+  [ "${status}" -eq 0 ]
+  [ "${output}" == "http$(tput setaf 7)s$(tput sgr0)://example.com/" ]
+
+  run highlight_diff 'http://example.com/' 'http://www.example.com/'
+  [ "${status}" -eq 0 ]
+  [ "${output}" == "http://$(tput setaf 7)www.$(tput sgr0)example.com/" ]
+
+  run highlight_diff 'http://example.com/' 'http://test.example.com/'
+  [ "${status}" -eq 0 ]
+  [ "${output}" == "http://$(tput setaf 7)test.$(tput sgr0)example.com/" ]
+}
+
+@test "highlight_diff() if color resets when only last character added" {
+  run highlight_diff 'http://example.com' 'http://example.com/'
+  [ "${status}" -eq 0 ]
+  echo "${output}"
+  [ "${output}" == "http://example.com$(tput setaf 7)/$(tput sgr0)" ]
+}
+
 # extract_version()
 @test "extract_version(): 1.0.1 => 1.0.1" {
   run extract_version '1.0.1'

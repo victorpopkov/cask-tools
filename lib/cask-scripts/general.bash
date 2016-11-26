@@ -262,6 +262,64 @@ highlight() {
   sed -e "s/${part}/$(tput setaf "${color}")${replace}$(tput sgr0)/" <<< "${string}"
 }
 
+# Highlight first difference between two strings using provided color.
+#
+# Arguments:
+#   $1 - Original string (required)
+#   $2 - Modified string (required)
+#   $3 - Highlight color (optional)
+#   $4 - Precision (optional)
+#
+# Returns highlighted string.
+highlight_diff() {
+  local -i max_length color precision chars_shift
+  local original modified
+
+  readonly original="$1"
+  readonly modified="$2"
+  [[ -z "${original}" ]] || [[ -z "${modified}" ]] && return 1
+
+  color="$3"
+  [[ -z "$3" ]] && color=7
+  readonly color
+
+  precision="$4"
+  [[ -z "$4" ]] && precision=20
+  readonly precision
+
+  [[ "${#original}" -gt "${#modified}" ]] && max_length="${#original}" || max_length="${#modified}"
+
+  for ((i = 0; i < max_length; i++)); do
+    char_original="${original:${i}:1}"
+    char="${modified:${i}:1}"
+
+    if [[ "${char_original}" != "${char}" ]]; then
+      if [[ "${chars_shift}" -eq 0 ]]; then
+        chars_shift=0
+        for ((j = i; j < max_length; j++)); do
+          if [[ "${chars_shift}" -eq 0 ]]; then
+            for ((k = 0; k < max_length; k++)); do
+              if [[ "${original:${j}:${precision}}" == "${modified:${k}:${precision}}" ]]; then
+                chars_shift="${k}"
+                break
+              fi
+            done
+          fi
+        done
+        printf "$(tput setaf "${color}")"
+      fi
+    fi
+
+    [[ "${chars_shift}" -eq "${i}" ]] && printf "$(tput sgr0)"
+    printf "${char}"
+  done
+
+  [[ "${original}" != "${modified}" ]] && [[ "${chars_shift}" -eq 0 ]] && printf "$(tput sgr0)"
+
+  printf "\n"
+  return 0
+}
+
 # Extract version from string.
 #
 # Arguments:
