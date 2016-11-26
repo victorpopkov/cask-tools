@@ -2,9 +2,11 @@
 #
 # Git specific shared functions that are used in multiple scripts.
 #
+# Requires functions from general.bash to be loaded.
+#
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   22.11.2016
+# Last modified:   26.11.2016
 
 # Constants and globals
 declare -a CASKS

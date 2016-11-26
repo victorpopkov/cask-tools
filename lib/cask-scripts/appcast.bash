@@ -2,9 +2,11 @@
 #
 # Appcast specific shared functions that are used in multiple scripts.
 #
+# Requires functions from general.bash to be loaded.
+#
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   23.10.2016
+# Last modified:   26.10.2016
 
 # Constants and globals
 declare BROWSER_HEADERS

@@ -2,7 +2,6 @@
 load test_helper
 load ../lib/cask-scripts/general
 load ../lib/cask-scripts/appcast
-load ../lib/cask-scripts/cask
 
 # generate_appcast_checkpoint()
 @test "generate_appcast_checkpoint() when no arguments passed" {
