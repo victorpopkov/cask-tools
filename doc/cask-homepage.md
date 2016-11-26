@@ -20,7 +20,7 @@ that are no longer maintained or available. It also checks the URL for these
 rules (in brackets) below and gives appropriate warnings if violated:
 
 - [Host has changed](#host-has-changed-host) _(host)_
-- [Path has changed](#path-has-changed) _(path)_
+- [Path has changed](#path-has-changed-path) _(path)_
 - [Only HTTP is available](#only-http-is-available-http) _(http)_
 - [HTTPS is available](#https-is-available-https) _(https)_
 - [Server prefers to include WWW](#server-prefers-to-include-www-www) _(www)_
@@ -131,7 +131,7 @@ These are the warnings that are currently supported (rule itself is in
 brackets):
 
 - [Host has changed](#host-has-changed-host) _(host)_
-- [Path has changed](#path-has-changed) _(path)_
+- [Path has changed](#path-has-changed-path) _(path)_
 - [Only HTTP is available](#only-http-is-available-http) _(http)_
 - [HTTPS is available](#https-is-available-https) _(https)_
 - [Server prefers to include WWW](#server-prefers-to-include-www-www) _(www)_
