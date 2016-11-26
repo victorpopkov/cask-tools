@@ -19,19 +19,18 @@ availability by checking their response statuses. It's useful in finding casks
 that are no longer maintained or available. It also checks the URL for these
 rules (in brackets) below and gives appropriate warnings if violated:
 
-- [Missing a bare domain URL trailing slash](#missing-a-bare-domain-url-trailing-slash-bare_slash)
-  _(bare_slash)_
-- [Domain has changed](#domain-has-changed-domain) _(domain)_
-- [Only HTTP is available](#only-http-is-available-http) _(http)_
-- [HTTPS (for new domain) is available](#https-for-new-domain-is-available-https)
-  _(https)_
+- [Host has changed](#host-has-changed-host) _(host)_
 - [Redirect found](#redirect-found-redirect) _(redirect)_
+- [Only HTTP is available](#only-http-is-available-http) _(http)_
+- [HTTPS is available](#https-is-available-https) _(https)_
+- [Server prefers to include WWW](#server-prefers-to-include-www-www) _(www)_
+- [Server prefers to exclude WWW](#server-prefers-to-exclude-www-no_www) _(no_www)_
 - [Server prefers to include a trailing slash](#server-prefers-to-include-a-trailing-slash-slash)
   _(slash)_
 - [Server prefers to exclude a trailing slash](#server-prefers-to-exclude-a-trailing-slash-no_slash)
   _(no_slash)_
-- [Server prefers to include www](#server-prefers-to-include-www-www) _(www)_
-- [Server prefers to exclude www](#server-prefers-to-exclude-www-no_www) _(no_www)_
+- [Missing a bare domain URL trailing slash](#missing-a-bare-domain-url-trailing-slash-bare_slash)
+  _(bare_slash)_
 
 > The word in brackets represents the rule itself and can be found a warning in
 > CSV or can be used with `-i, --ignore` option.
@@ -131,48 +130,26 @@ Show the usage message with options descriptions.
 These are the warnings that are currently supported (rule itself is in
 brackets):
 
-- [Missing a bare domain URL trailing slash](#missing-a-bare-domain-url-trailing-slash-bare_slash)
-  _(bare_slash)_
-- [Domain has changed](#domain-has-changed-domain) _(domain)_
-- [Only HTTP is available](#only-http-is-available-http) _(http)_
-- [HTTPS (for new domain) is available](#https-for-new-domain-is-available-https)
-  _(https)_
+- [Host has changed](#host-has-changed-host) _(host)_
 - [Redirect found](#redirect-found-redirect) _(redirect)_
+- [Only HTTP is available](#only-http-is-available-http) _(http)_
+- [HTTPS is available](#https-is-available-https) _(https)_
+- [Server prefers to include WWW](#server-prefers-to-include-www-www) _(www)_
+- [Server prefers to exclude WWW](#server-prefers-to-exclude-www-no_www) _(no_www)_
 - [Server prefers to include a trailing slash](#server-prefers-to-include-a-trailing-slash-slash)
   _(slash)_
 - [Server prefers to exclude a trailing slash](#server-prefers-to-exclude-a-trailing-slash-no_slash)
   _(no_slash)_
-- [Server prefers to include www](#server-prefers-to-include-www-www) _(www)_
-- [Server prefers to exclude www](#server-prefers-to-exclude-www-no_www) _(no_www)_
+- [Missing a bare domain URL trailing slash](#missing-a-bare-domain-url-trailing-slash-bare_slash)
+  _(bare_slash)_
 
 If one of the enabled rules is violated one of the warnings from above will be
 shown. Each successfully checked cask can have multiple warnings.
 
-#### Missing a bare domain URL trailing slash _(bare_slash)_
-
-It's highly recommended to use a trailing slash in a bare domain URL like a
-homepage. However, most mainstream browsers "append a trailing slash"
-automatically to the request.
-
-From [RFC 2616](https://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html):
-
-> Please note, that the absolute path cannot be empty; if none is present in the
-> original URI, it MUST be given as "/" (the server root).
-
-Example:
-
-```
-Cask name:       5kplayer
-Cask homepage:   https://www.5kplayer.com [200]
-Status:          warning
-
-                 1. Missing a bare domain URL trailing slash → https://www.5kplayer.com/
-```
-
-#### Domain has changed _(domain)_
+#### Host has changed _(host)_
 
 It's also sometimes important to catch only those redirects that have a change
-in the domain. This rule catches this kind of redirects.
+in the host. This rule catches this kind of redirects.
 
 Example:
 
@@ -181,23 +158,24 @@ Cask name:       1password
 Cask homepage:   https://agilebits.com/onepassword [301]
 Status:          warning
 
-                 1. Domain has changed → https://1password.com/
+                 1. Host has changed → https://1password.com/onepassword
+                 2. Redirect found → https://1password.com/
 ```
 
-#### HTTPS (for new domain) is available _(https)_
+#### Redirect found _(redirect)_
 
-Since the HTTPS is more preferred over the usual HTTP the script checks if it's
-available and gives an appropriate warning message if found. If a domain has
-changed this rule also applies to the new domain.
+Usually when the homepage changes a redirect is added to the old URL to help
+users find the new homepage location. However, the usage of old URL is not
+recommended since in the future in can become unavailable.
 
 Example:
 
 ```
-Cask name:       010-editor
-Cask homepage:   http://www.sweetscape.com/ [301]
+Cask name:       cura-beta
+Cask homepage:   https://ultimaker.com/en/products/software [301]
 Status:          warning
 
-                 1. HTTPS is available → https://www.sweetscape.com/
+                 1. Redirect found → https://ultimaker.com/en/products/cura-software
 ```
 
 #### Only HTTP is available _(http)_
@@ -215,23 +193,48 @@ Status:          warning
                  1. Only HTTP is available → http://doit.im/
 ```
 
-#### Redirect found _(redirect)_
+#### HTTPS is available _(https)_
 
-Usually when the homepage changes a redirect is added to the old URL to help
-users find the new homepage location. However, the usage of old URL is not
-recommended since in the future in can become unavailable.
-
-> Please note, that **this rule doesn't disable _http_ and _domain_ rules** even
-> though they are also a part of the redirect.
+Since the HTTPS is more preferred over the usual HTTP the script checks if it's
+available and gives an appropriate warning message if found. If a domain has
+changed this rule also applies to the new domain.
 
 Example:
 
 ```
-Cask name:       cura-beta
-Cask homepage:   https://ultimaker.com/en/products/software [301]
+Cask name:       010-editor
+Cask homepage:   http://www.sweetscape.com/ [301]
 Status:          warning
 
-                 1. Redirect found → https://ultimaker.com/en/products/cura-software
+                 1. HTTPS is available → https://www.sweetscape.com/
+```
+
+#### Server prefers to include WWW _(www)_
+
+This rule checks whether server appends a www to the URL.
+
+Example:
+
+```
+Cask name:       bee
+Cask homepage:   http://neat.io/bee/ [301]
+Status:          warning
+
+                 1. Server prefers to include WWW → http://www.neat.io/bee/
+```
+
+#### Server prefers to exclude WWW _(no_www)_
+
+This rule checks whether server removes a www from the URL.
+
+Example:
+
+```
+Cask name:       appcleaner
+Cask homepage:   https://www.freemacsoft.net/appcleaner/ [301]
+Status:          warning
+
+                 1. Server prefers to exclude WWW → https://freemacsoft.net/appcleaner/
 ```
 
 #### Server prefers to include a trailing slash _(slash)_
@@ -262,32 +265,25 @@ Status:          warning
                  1. Server prefers to exclude a trailing slash → http://www.syniumsoftware.com/logoist
 ```
 
-#### Server prefers to include www _(www)_
+#### Missing a bare domain URL trailing slash _(bare_slash)_
 
-This rule checks whether server appends a www to the URL.
+It's highly recommended to use a trailing slash in a bare domain URL like a
+homepage. However, most mainstream browsers "append a trailing slash"
+automatically to the request.
 
-Example:
+From [RFC 2616](https://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html):
 
-```
-Cask name:       bee
-Cask homepage:   http://neat.io/bee/ [301]
-Status:          warning
-
-                 1. Server prefers to include www → http://www.neat.io/bee/
-```
-
-#### Server prefers to exclude www _(no_www)_
-
-This rule checks whether server removes a www from the URL.
+> Please note, that the absolute path cannot be empty; if none is present in the
+> original URI, it MUST be given as "/" (the server root).
 
 Example:
 
 ```
-Cask name:       appcleaner
-Cask homepage:   https://www.freemacsoft.net/appcleaner/ [301]
+Cask name:       5kplayer
+Cask homepage:   https://www.5kplayer.com [200]
 Status:          warning
 
-                 1. Server prefers to exclude www → https://freemacsoft.net/appcleaner/
+                 1. Missing a bare domain URL trailing slash → https://www.5kplayer.com/
 ```
 
 ## Examples
