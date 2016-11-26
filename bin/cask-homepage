@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them using provided rules.
 #
-# Version:         0.4.1
+# Version:         0.4.2
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   26.11.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.4.1'
+readonly VERSION='0.4.2'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -35,7 +35,7 @@ BRANCH_NAME=''
 DELETE_BRANCHES='false'
 OUTPUT='false'
 OUTPUT_PATH=''
-RULES=('bare_slash' 'host' 'http' 'https' 'redirect' 'slash' 'no_slash' 'www' 'no_www')
+RULES=('bare_slash' 'host' 'http' 'https' 'path' 'slash' 'no_slash' 'www' 'no_www')
 FIX='false'
 FIX_TOTAL=0
 FIXED_TOTAL=0
@@ -64,11 +64,11 @@ usage() {
       host         Host has changed
       http         Only HTTP is available
       https        HTTPS is available
-      redirect     Redirect found
-      slash        Server prefers to include a trailing slash
       no_slash     Server prefers to exclude a trailing slash
-      www          Server prefers to include www
       no_www       Server prefers to exclude www
+      path         Path has changed
+      slash        Server prefers to include a trailing slash
+      www          Server prefers to include www
 
     options:
       -l, --pull <remote>        Use to specify a remote to pull from (defaults to 'upstream').
@@ -285,7 +285,7 @@ review_homepage() {
       readonly redirect_host=$(get_url_host "${homepage_redirect}")
 
       check_rule_enabled 'host'       && review_url 'host'       'Host has changed'                           "${fixed}" "${homepage_redirect}"
-      check_rule_enabled 'redirect'   && review_url 'redirect'   'Redirect found'                             "${fixed}" "${homepage_redirect}"
+      check_rule_enabled 'path'       && review_url 'path'       'Path has changed'                           "${fixed}" "${homepage_redirect}"
       check_rule_enabled 'http'       && review_url 'http'       'Only HTTP is available'                     "${fixed}" "${homepage_redirect}"
       check_rule_enabled 'https'      && review_url 'https'      'HTTPS is available'                         "${fixed}" "${homepage_redirect}"
       check_rule_enabled 'www'        && review_url 'www'        'Server prefers to include WWW'              "${fixed}" "${homepage_redirect}"
@@ -485,11 +485,11 @@ print_rule 'bare_slash' 'Missing a bare domain URL trailing slash'
 print_rule 'host'       'Host has changed'
 print_rule 'http'       'Only HTTP is available'
 print_rule 'https'      'HTTPS is available'
-print_rule 'redirect'   'Redirect found'
-print_rule 'slash'      'Server prefers to include a trailing slash'
 print_rule 'no_slash'   'Server prefers to exclude a trailing slash'
-print_rule 'www'        'Server prefers to include WWW'
 print_rule 'no_www'     'Server prefers to exclude WWW'
+print_rule 'path'       'Path has changed'
+print_rule 'slash'      'Server prefers to include a trailing slash'
+print_rule 'www'        'Server prefers to include WWW'
 
 if [[ "${FIX}" == 'true' ]]; then
   [[ "${FIX_TOTAL}" -gt 0 ]] && printf "\nFixing first %i casks...\n" "${FIX_TOTAL}" || printf '\nFixing all casks...\n'

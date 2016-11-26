@@ -29,7 +29,7 @@
           <cask>unifi-controller-beta</cask>
         </casks>
       </host>
-      <redirect>
+      <path>
         <casks>
           <cask>adguard</cask>
           <cask>air-video-server-hd</cask>
@@ -135,7 +135,7 @@
           <cask>wacom-intuos-tablet</cask>
           <cask>xerox-print-driver</cask>
         </casks>
-      </redirect>
+      </path>
     </ignore>
   </rules>
 </cask-homepage>

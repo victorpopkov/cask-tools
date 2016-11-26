@@ -310,14 +310,14 @@ url_fix_bare_slash() {
   return 1
 }
 
-# Fix URL based on redirect if path exists.
+# Fix URL based on redirect if path changed.
 #
 # Arguments:
 #   $1 - URL
 #   $2 - Redirect URL
 #
 # Returns fixed URL if successfull.
-url_fix_redirect() {
+url_fix_path() {
   local url redirect host url_path redirect_path
 
   readonly url="$1"
