@@ -101,9 +101,7 @@ check_url_https_availability() {
   readonly code=$(echo "${out}" | head -n 1)
   readonly status=$(echo "${out}" | tail -n 1)
 
-  if [[ "${status}" -eq 0 ]] && [[ "${code}" -eq 200 ]]; then
-    return 0
-  fi
+  [[ "${status}" -eq 0 ]] && [[ "${code}" -eq 200 ]] && return 0
 
   return 1
 }
@@ -130,4 +128,239 @@ check_url_www() {
 #   1 - Doens't have HTTPS
 check_url_https() {
   [[ "$1" =~ ^https\: ]] && return 0 || return 1
+}
+
+# Fix URL based on redirect if forced to use plain HTTP.
+#
+# Arguments:
+#   $1 - URL
+#   $2 - Redirect URL
+#
+# Returns fixed URL if successfull.
+url_fix_http() {
+  local url redirect
+
+  readonly url="$1"
+  readonly redirect="$2"
+  [[ -z "${url}" ]] || [[ -z "${redirect}" ]] && return 1
+  [[ "$(get_url_host "${url}")" != "$(get_url_host "${redirect}")" ]] && return 1
+
+  if check_url_https "${url}" && ! check_url_https "${redirect}"; then
+    echo "${url/https:/http:}"
+    return 0
+  fi
+
+  return 1
+}
+
+# Fix URL based on redirect if forced to use HTTPS.
+#
+# Arguments:
+#   $1 - URL
+#   $2 - Redirect URL
+#
+# Returns fixed URL if successfull.
+url_fix_https() {
+  local url redirect
+
+  readonly url="$1"
+  readonly redirect="$2"
+  [[ -z "${url}" ]] && return 1
+  [[ "$(get_url_host "${url}")" != "$(get_url_host "${redirect}")" ]] && return 1
+
+  if [[ ! -z "${redirect}" ]]; then
+    # when we have a redirect
+    if ! check_url_https "${url}" && check_url_https "${redirect}"; then
+      echo "${url/http:/https:}"
+      return 0
+    fi
+  fi
+
+  # check manually if HTTPS is available
+  check_url_https_availability "${url}"
+  if [[ "$?" -eq 0 ]]; then
+    echo "${url/http:/https:}"
+    return 0
+  fi
+
+  return 1
+}
+
+# Fix URL based on redirect if forced to add WWW in host.
+#
+# Arguments:
+#   $1 - URL
+#   $2 - Redirect URL
+#
+# Returns fixed URL if successfull.
+url_fix_www() {
+  local url redirect host
+
+  readonly url="$1"
+  readonly redirect="$2"
+  [[ -z "${url}" ]] || [[ -z "${redirect}" ]] && return 1
+  readonly host=$(get_url_host "${url}")
+  [[ "${host}" != "$(get_url_host "${redirect}")" ]] && return 1
+
+  if ! check_url_www "${url}" && check_url_www "${redirect}"; then
+    echo "${url/${host}/www.${host}}"
+    return 0
+  fi
+
+  return 1
+}
+
+# Fix URL based on redirect if forced to remove WWW in host.
+#
+# Arguments:
+#   $1 - URL
+#   $2 - Redirect URL
+#
+# Returns fixed URL if successfull.
+url_fix_no_www() {
+  local url redirect host
+
+  readonly url="$1"
+  readonly redirect="$2"
+  [[ -z "${url}" ]] || [[ -z "${redirect}" ]] && return 1
+  readonly host=$(get_url_host "${url}")
+  [[ "${host}" != "$(get_url_host "${redirect}")" ]] && return 1
+
+  if check_url_www "${url}" && ! check_url_www "${redirect}"; then
+    echo "${url/www.${host}/${host}}"
+    return 0
+  fi
+
+  return 1
+}
+
+# Fix URL based on redirect if forced to add a trailing slash.
+#
+# Arguments:
+#   $1 - URL
+#   $2 - Redirect URL
+#
+# Returns fixed URL if successfull.
+url_fix_slash() {
+  local url redirect host url_path redirect_path
+
+  readonly url="$1"
+  readonly redirect="$2"
+  [[ -z "${url}" ]] || [[ -z "${redirect}" ]] && return 1
+  readonly host=$(get_url_host "${url}")
+  [[ "${host}" != "$(get_url_host "${redirect}")" ]] && return 1
+
+  readonly url_path=$(get_url_path "${url}")
+  readonly redirect_path=$(get_url_path "${url}")
+
+  if [[ ! "${url}" =~ ${host}$ ]] && [[ "${url_path%/}" == "${redirect_path%/}" ]] && [[ ! "${url}" =~ \/$ ]] && [[ "${redirect}" =~ \/$ ]]; then
+    echo "${url}/"
+    return 0
+  fi
+
+  return 1
+}
+
+# Fix URL based on redirect if forced to remove a trailing slash.
+#
+# Arguments:
+#   $1 - URL
+#   $2 - Redirect URL
+#
+# Returns fixed URL if successfull.
+url_fix_no_slash() {
+  local url redirect host url_path redirect_path
+
+  readonly url="$1"
+  readonly redirect="$2"
+  [[ -z "${url}" ]] || [[ -z "${redirect}" ]] && return 1
+  readonly host=$(get_url_host "${url}")
+  [[ "${host}" != "$(get_url_host "${redirect}")" ]] && return 1
+
+  readonly url_path=$(get_url_path "${url}")
+  readonly redirect_path=$(get_url_path "${url}")
+
+  if [[ ! "${url}" =~ ${host}\/$ ]] && [[ "${url_path%/}" == "${redirect_path%/}" ]] && [[ "${url}" =~ \/$ ]] && [[ ! "${redirect}" =~ \/$ ]]; then
+    echo "${url%/}"
+    return 0
+  fi
+
+  return 1
+}
+
+# Fix URL by adding a bare trailing slash.
+#
+# Arguments:
+#   $1 - URL
+#
+# Returns fixed URL if successfull.
+url_fix_bare_slash() {
+  local url host
+
+  readonly url="$1"
+  [[ -z "${url}" ]] && return 1
+
+  readonly host=$(get_url_host "${url}")
+
+  if [[ "${url}" =~ ${host}$ ]]; then
+    echo "${url%/}/"
+    return 0
+  fi
+
+  return 1
+}
+
+# Fix URL based on redirect if path exists.
+#
+# Arguments:
+#   $1 - URL
+#   $2 - Redirect URL
+#
+# Returns fixed URL if successfull.
+url_fix_redirect() {
+  local url redirect host url_path redirect_path
+
+  readonly url="$1"
+  readonly redirect="$2"
+  [[ -z "${url}" ]] || [[ -z "${redirect}" ]] && return 1
+  readonly host=$(get_url_host "${url}")
+  [[ "${host}" != "$(get_url_host "${redirect}")" ]] && return 1
+
+  readonly url_path=$(get_url_path "${url}")
+  readonly redirect_path=$(get_url_path "${redirect}")
+
+  if [[ "${url_path}" != "${redirect_path}" ]]; then
+    echo "${url/${host}${url_path}/${host}${redirect_path}}"
+    return 0
+  fi
+
+  return 1
+}
+
+# Fix URL based on redirect if domain has changed.
+#
+# Arguments:
+#   $1 - URL
+#   $2 - Redirect URL
+#
+# Returns fixed URL if successfull.
+url_fix_domain() {
+  local url redirect host redirect_host url_path redirect_path
+
+  readonly url="$1"
+  readonly redirect="$2"
+  [[ -z "${url}" ]] || [[ -z "${redirect}" ]] && return 1
+  readonly host=$(get_url_host "${url}")
+  readonly redirect_host=$(get_url_host "${redirect}")
+  [[ "${host}" == "${redirect_host}" ]] && return 1
+
+  readonly url_path=$(get_url_path "${url}")
+  readonly redirect_path=$(get_url_path "${redirect}")
+
+  if [[ "${host}" != "${redirect_host}" ]]; then
+    echo "${url/${host}/${redirect_host}}"
+    return 0
+  fi
+
+  return 1
 }
