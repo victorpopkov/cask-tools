@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them using provided rules.
 #
-# Version:         0.3.3
+# Version:         0.4.0
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   26.11.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.3.3'
+readonly VERSION='0.4.0'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -196,6 +196,52 @@ output_csv() {
   [[ "${OUTPUT}" == 'true' ]] && printf "\"%s\";\"%s\";\"%s\";\"%s\";\"%s\";\"%s\"\n" "$1" "$2" "$3" "$4" "$5" "$6" >> "${OUTPUT_PATH}"
 }
 
+# Review URL using provided method name.
+#
+# Used external variables:
+#   fixed
+#   warnings
+#   cask
+#
+# Arguments:
+#   $1 - Warning rule
+#   $2 - Message
+#   $3 - URL
+#   $4 - Redirect
+review_url() {
+  local -a config_rules
+  local method rule msg url redirect fixed_new
+
+  readonly rule="$1"
+  readonly msg="$2"
+  readonly url="$3"
+  readonly redirect="$4"
+  [[ -z "${rule}" ]] || [[ -z "${msg}" ]] || [[ -z "${url}" ]] || [[ -z "${redirect}" ]] && return 1
+
+  readonly method="url_fix_${rule}"
+
+  # cask specific ignore rule
+  config_rules=($(get_xml_config_values "//ignore/${rule}/casks" 'cask'))
+  for r in "${config_rules[@]}"; do
+    [[ "${cask}" == "${r}" ]] && return 1
+  done
+
+  # URL specific ignore rule
+  config_rules=($(get_xml_config_values "//ignore/${rule}/urls" 'url'))
+  for r in "${config_rules[@]}"; do
+    [[ "${url}" =~ ${r} ]] && return 1
+  done
+
+  fixed_new=$(${method} "${url}" "${redirect}")
+  if [[ ! -z "${fixed_new}" ]] && [[ "${fixed}" != "${fixed_new}" ]]; then
+    fixed="${fixed_new}"
+    warnings+=("${rule}")
+    add_warning_to_review "${msg} → $(highlight_diff "${url}" "${fixed}")"
+  fi
+
+  return 0
+}
+
 # Create homepage review for specified cask.
 #
 # Globals:
@@ -210,7 +256,7 @@ output_csv() {
 review_homepage() {
   local -a warnings config_rules
   local -i code code_color status status_color
-  local cask homepage homepage_path homepage_redirect homepage_redirect_path host redirect_host out rule skip status_msg fixed warnings_str ignore_redirect ignore_domain
+  local cask homepage homepage_path homepage_redirect homepage_redirect_path host redirect_host out rule skip status_msg fixed warnings_str
 
   readonly cask="$1"
   readonly homepage=$(get_cask_stanza_value "${cask}" 'homepage')
@@ -219,144 +265,50 @@ review_homepage() {
   readonly out=$(get_url_status "${homepage}")
   readonly code=$(echo "${out}" | head -n 1)
   readonly status=$(echo "${out}" | tail -n 1)
-
-  skip='false'
-  ignore_redirect='false'
-  ignore_domain='false'
+  [[ -z "${fixed}" ]] && fixed="${homepage}"
 
   # skip a cask if defined in config
   config_rules=($(get_xml_config_values '//skip/casks' 'cask'))
-  check_array_contains 'config_rules' "${cask}" && skip='true'
+  check_array_contains 'config_rules' "${cask}" && skip='true' || skip='false'
+  readonly skip
 
-  # ignore a cask specific redirect rule
-  config_rules=($(get_xml_config_values '//ignore/redirect/casks' 'cask'))
-  for rule in "${config_rules[@]}"; do
-    [[ "${cask}" == "${rule}" ]] && ignore_redirect='true'
-  done
+  [[ "${code}" -eq 200 ]] && code_color=2 || code_color=3
 
-  # ignore a redirect rule based on the url
-  config_rules=($(get_xml_config_values '//ignore/redirect/urls' 'url'))
-  check_array_contains 'config_rules' "${cask}" && ignore_redirect='true'
-  for rule in "${config_rules[@]}"; do
-    [[ "${cask}" == "${rule}" ]] && ignore_redirect='true'
-  done
-
-  # ignore a cask specific domain redirect rule
-  config_rules=($(get_xml_config_values '//ignore/domain/casks' 'cask'))
-  for rule in "${config_rules[@]}"; do
-    [[ "${cask}" == "${rule}" ]] && ignore_domain='true'
-  done
-
-  # ignore a domain redirect rule based on the url
-  config_rules=($(get_xml_config_values '//ignore/domain/urls' 'url'))
-  for rule in "${config_rules[@]}"; do
-    [[ "${host}" =~ ${rule} ]] && ignore_domain='true'
-  done
-
-  if [[ "${status}" -eq 0 ]] && [[ "${skip}" == 'false' ]]; then
-    # correct status and not skipped
-    [[ "${code}" -eq 200 ]] && code_color=2 || code_color=3
-
-    if [[ "${code}" -eq 301 ]] || [[ "${code}" -eq 302 ]]; then
-      # redirect found
+  if [[ "${skip}" == 'true' ]]; then
+    status_color=7
+    status_msg='skipped'
+  elif [[ "${skip}" == 'false' ]]; then
+    if [[ "${status}" -eq 0 ]]; then
+      # success
       readonly homepage_redirect=$(get_url_redirect "${homepage}")
       readonly homepage_redirect_path=$(get_url_path "${homepage_redirect}")
       readonly redirect_host=$(get_url_host "${homepage_redirect}")
 
-      if [[ "${host}" == "${redirect_host}" ]]; then
-        # domain not changed
-        if check_rule_enabled 'http' && check_url_https "${homepage}" && ! check_url_https "${homepage_redirect}"; then
-          # redirects from HTTPS to HTTP
-          add_warning_to_review "Only HTTP is available → $(tput setaf 7)http:$(tput sgr0)${homepage/https:}"
-          warnings+=('http')
-          fixed="http:${homepage/https:}"
-        fi
+      check_rule_enabled 'domain'     && review_url 'domain'     'Domain has changed'                         "${fixed}" "${homepage_redirect}"
+      check_rule_enabled 'redirect'   && review_url 'redirect'   'Redirect found'                             "${fixed}" "${homepage_redirect}"
+      check_rule_enabled 'http'       && review_url 'http'       'Only HTTP is available'                     "${fixed}" "${homepage_redirect}"
+      check_rule_enabled 'https'      && review_url 'https'      'HTTPS is available'                         "${fixed}" "${homepage_redirect}"
+      check_rule_enabled 'www'        && review_url 'www'        'Server prefers to include WWW'              "${fixed}" "${homepage_redirect}"
+      check_rule_enabled 'no_www'     && review_url 'no_www'     'Server prefers to exclude WWW'              "${fixed}" "${homepage_redirect}"
+      check_rule_enabled 'slash'      && review_url 'slash'      'Server prefers to include a trailing slash' "${fixed}" "${homepage_redirect}"
+      check_rule_enabled 'no_slash'   && review_url 'no_slash'   'Server prefers to exclude a trailing slash' "${fixed}" "${homepage_redirect}"
+      check_rule_enabled 'bare_slash' && review_url 'bare_slash' 'Missing a bare domain URL trailing slash'   "${fixed}" "${homepage_redirect}"
 
-        if check_rule_enabled 'www' && ! check_url_www "${homepage}" && check_url_www "${homepage_redirect}"; then
-          # homepage doesn't have www but redirect does
-          add_warning_to_review "Server prefers to include www → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
-          warnings+=('www')
-          fixed="${homepage_redirect}"
-        elif check_rule_enabled 'no_www' && check_url_www "${homepage}" && ! check_url_www "${homepage_redirect}"; then
-          # homepage has www but redirect doesn't
-          add_warning_to_review "Server prefers to exclude www → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
-          warnings+=('no_www')
-          fixed="${homepage_redirect}"
-        fi
-
-        if check_rule_enabled 'slash' && [[ "${homepage_path%/}" == "${homepage_redirect_path%/}" ]] && [[ ! "${homepage}" =~ \/$ ]] && [[ "${homepage_redirect}" =~ \/$ ]]; then
-          # homepage doesn't have a trailing slash but redirect does
-          add_warning_to_review "Server prefers to include a trailing slash → $(highlight "${homepage_redirect}" '\/$' '\/' 7)"
-          warnings+=('slash')
-          fixed="${homepage_redirect}"
-        elif check_rule_enabled 'no_slash' && [[ "${homepage_path%/}" == "${homepage_redirect_path%/}" ]] && [[ "${homepage}" =~ \/$ ]] && [[ ! "${homepage_redirect}" =~ \/$ ]]; then
-          # homepage has a trailing slash but doesn't
-          add_warning_to_review "Server prefers to exclude a trailing slash → ${homepage_redirect}"
-          warnings+=('no_slash')
-          fixed="${homepage_redirect}"
-        fi
-
-        if [[ "${ignore_redirect}" == 'false' ]] && [[ "${#warnings[@]}" -eq 0 ]] && check_rule_enabled 'redirect'; then
-          add_warning_to_review "Redirect found → $(tput setaf 7)${homepage_redirect}$(tput sgr0)"
-          warnings+=('redirect')
-          fixed="${homepage_redirect}"
-        fi
-      elif [[ "${ignore_domain}" == 'false' ]] && check_rule_enabled 'domain'; then
-        # domain changed
-        add_warning_to_review "Domain has changed → $(highlight "${homepage_redirect}" "${redirect_host}" "${redirect_host}" 7)"
-        warnings+=('domain')
-        fixed="${homepage_redirect}"
-      fi
-    fi
-
-    status_color=2
-    status_msg='good'
-  elif [[ "${skip}" == 'true' ]]; then
-    # skipped
-    [[ "${code}" -eq 200 ]] && code_color=2 || code_color=3
-  else
-    # curl returned non 0 status (error)
-    status_color=1
-    status_msg='error'
-    [[ "${status}" -eq 28 ]] && status_msg='error (request timed out)'
-  fi
-
-  if [[ "${skip}" == 'false' ]] && check_rule_enabled 'https'; then
-    # https checking is enabled
-    if ! check_array_contains 'warnings[@]' 'domain' && ! check_url_https "${homepage}"; then
-      # domain not changed and homepage is using HTTP
-      check_url_https_availability "${homepage}"
-      if [[ "$?" -eq 0 ]]; then
-        add_warning_to_review "HTTPS is available → $(tput setaf 7)https:$(tput sgr0)${homepage/http:}"
-        warnings+=('https')
-        fixed="https:${homepage/http:}"
-      fi
-    elif check_array_contains 'warnings[@]' 'domain' && ! check_url_https "${homepage_redirect}"; then
-      # domain changed and homepage redirect is using HTTP
-      check_url_https_availability "${homepage_redirect}"
-      if [[ "$?" -eq 0 ]]; then
-        add_warning_to_review "HTTPS for new domain is available → $(tput setaf 7)https:$(tput sgr0)${homepage_redirect/http:}"
-        warnings+=('https')
-        fixed="https:${homepage_redirect/http:}"
-      fi
-    fi
-  fi
-
-  if [[ "${skip}" == 'false' ]] && check_rule_enabled 'bare_slash'; then
-    # bare domain slash checking is enabled
-    if [[ ! "${homepage}" =~ ${host}\/ ]]; then
-      add_warning_to_review "Missing a bare domain URL trailing slash → ${homepage}$(tput setaf 7)/$(tput sgr0)"
-      warnings+=('bare_slash')
-      [[ -z "${fixed}" ]] && fixed="${homepage%/}/" || fixed="${fixed%/}/"
+      status_color=2
+      status_msg='good'
+    else
+      # curl returned non 0 status (error)
+      status_color=1
+      status_msg='error'
+      [[ "${status}" -eq 28 ]] && status_msg='error (request timed out)'
     fi
   fi
 
   if [[ "${#REVIEW_WARNINGS[@]}" -gt 0 ]]; then
     status_color=3
     status_msg='warning'
+    warnings_str=$(join_by ', ' "${warnings[@]}")
   fi
-
-  warnings_str=$(join_by ', ' "${warnings[@]}")
 
   # check if output to CSV is needed
   if [[ "${#warnings[@]}" -gt 0 ]] || [[ "${SHOW_ALL}" == 'true' ]]; then
@@ -371,17 +323,11 @@ review_homepage() {
     # fix
     FIXED_TOTAL+=1
     modify_stanza "${cask}" 'homepage' "'${fixed}'"
-
     git commit "${cask}.rb" --message "Update ${cask} homepage (${warnings_str})" --quiet
     status_color=2
     status_msg='fixed'
   else
     add_to_review 'Cask homepage' "${homepage} [$(tput setaf "${code_color}")${code}$(tput sgr0)]"
-  fi
-
-  if [[ "${skip}" == 'true' ]]; then
-    status_color=7
-    status_msg='skipped'
   fi
 
   add_to_review 'Status' "$(tput setaf "${status_color}")${status_msg}$(tput sgr0)"
@@ -542,8 +488,8 @@ print_rule 'https' 'HTTPS (for new domain) is available'
 print_rule 'redirect' 'Redirect found'
 print_rule 'slash' 'Server prefers to include a trailing slash'
 print_rule 'no_slash' 'Server prefers to exclude a trailing slash'
-print_rule 'www' 'Server prefers to include www'
-print_rule 'no_www' 'Server prefers to exclude www'
+print_rule 'www' 'Server prefers to include WWW'
+print_rule 'no_www' 'Server prefers to exclude WWW'
 
 if [[ "${FIX}" == 'true' ]]; then
   [[ "${FIX_TOTAL}" -gt 0 ]] && printf "\nFixing first %i casks...\n" "${FIX_TOTAL}" || printf '\nFixing all casks...\n'
