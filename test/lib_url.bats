@@ -144,3 +144,294 @@ load ../lib/cask-scripts/url
   run check_url_https 'http://example.com/'
   [ "${status}" -eq 1 ]
 }
+
+# url_fix_http()
+@test "url_fix_http() when no arguments" {
+  run url_fix_http
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+@test "url_fix_http() when URL and redirect have different hosts" {
+  local url redirect
+  readonly url='https://example.com/index.html'
+  readonly redirect='http://test.example.com/'
+  run url_fix_http "${url}" "${redirect}"
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+@test "url_fix_http() when URL with HTTPS but with redirect to plain HTTP" {
+  local url redirect
+  readonly url='https://example.com/index.html'
+  readonly redirect='http://example.com/'
+  run url_fix_http "${url}" "${redirect}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == 'http://example.com/index.html' ]
+}
+
+@test "url_fix_http() when URL and redirect both have the same schema" {
+  local url redirect
+  url='http://example.com/index.html'
+  redirect='http://example.com/'
+  run url_fix_http "${url}" "${redirect}"
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+
+  url='https://example.com/index.html'
+  redirect='https://example.com/'
+  run url_fix_http "${url}" "${redirect}"
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+# url_fix_https()
+@test "url_fix_https() when no arguments" {
+  run url_fix_https
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+@test "url_fix_https() when URL and redirect have different hosts" {
+  local url redirect
+  readonly url='http://example.com/index.html'
+  readonly redirect='https://test.example.com/'
+  run url_fix_https "${url}" "${redirect}"
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+@test "url_fix_https() when URL with HTTP but with redirect to HTTPS" {
+  local url redirect
+  readonly url='http://example.com/index.html'
+  readonly redirect='https://example.com/'
+  run url_fix_https "${url}" "${redirect}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == 'https://example.com/index.html' ]
+}
+
+# url_fix_www()
+@test "url_fix_www() when no arguments" {
+  run url_fix_www
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+@test "url_fix_www() when URL and redirect have different hosts" {
+  local url redirect
+  readonly url='http://example.com/index.html'
+  readonly redirect='http://www.test.example.com/'
+  run url_fix_www "${url}" "${redirect}"
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+@test "url_fix_www() when URL without WWW but redirect has" {
+  local url redirect
+  readonly url='http://example.com/index.html'
+  readonly redirect='http://www.example.com/'
+  run url_fix_www "${url}" "${redirect}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == 'http://www.example.com/index.html' ]
+}
+
+@test "url_fix_www() when URL and redirect both have WWW" {
+  local url redirect
+  readonly url='http://www.example.com/index.html'
+  readonly redirect='http://www.example.com/'
+  run url_fix_www "${url}" "${redirect}"
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+# url_fix_no_www()
+@test "url_fix_no_www() when no arguments" {
+  run url_fix_no_www
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+@test "url_fix_no_www() when URL and redirect have different hosts" {
+  local url redirect
+  readonly url='http://www.example.com/index.html'
+  readonly redirect='http://test.example.com/'
+  run url_fix_no_www "${url}" "${redirect}"
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+@test "url_fix_no_www() when URL without WWW but redirect has" {
+  local url redirect
+  readonly url='http://www.example.com/index.html'
+  readonly redirect='http://example.com/'
+  run url_fix_no_www "${url}" "${redirect}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == 'http://example.com/index.html' ]
+}
+
+@test "url_fix_no_www() when URL and redirect both don't have WWW" {
+  local url redirect
+  readonly url='http://example.com/index.html'
+  readonly redirect='http://example.com/'
+  run url_fix_no_www "${url}" "${redirect}"
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+# url_fix_slash()
+@test "url_fix_slash() when no arguments" {
+  run url_fix_slash
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+@test "url_fix_slash() when server forces to add a trailing slash" {
+  local url redirect
+  readonly url='http://example.com/example'
+  readonly redirect='http://example.com/example/'
+  run url_fix_slash "${url}" "${redirect}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == "${redirect}" ]
+}
+
+@test "url_fix_slash() when no action required since already have a trailing slash" {
+  local url redirect
+  readonly url='http://example.com/example/'
+  readonly redirect='http://example.com/example/'
+  run url_fix_slash "${url}" "${redirect}"
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+@test "url_fix_slash() when we are dealing with a bare domain trailing slash (should be ignored)" {
+  local url redirect
+  readonly url='http://example.com'
+  readonly redirect='http://example.com/'
+  run url_fix_slash "${url}" "${redirect}"
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+# url_fix_no_slash()
+@test "url_fix_no_slash() when no arguments" {
+  run url_fix_no_slash
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+@test "url_fix_no_slash() when server forces to remove a trailing slash" {
+  local url redirect
+  readonly url='http://example.com/example/'
+  readonly redirect='http://example.com/example'
+  run url_fix_no_slash "${url}" "${redirect}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == "${redirect}" ]
+}
+
+@test "url_fix_no_slash() when no action required since already doesn't have a trailing slash" {
+  local url redirect
+  readonly url='http://example.com/example'
+  readonly redirect='http://example.com/example'
+  run url_fix_no_slash "${url}" "${redirect}"
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+@test "url_fix_no_slash() when we are dealing with a bare domain trailing slash (should be ignored)" {
+  local url redirect
+  readonly url='http://example.com/'
+  readonly redirect='http://example.com'
+  run url_fix_no_slash "${url}" "${redirect}"
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+# url_fix_bare_slash()
+@test "url_fix_bare_slash() when no arguments" {
+  run url_fix_bare_slash
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+@test "url_fix_bare_slash() when URL should have a bare trailing slash" {
+  local url
+  readonly url='http://example.com'
+  run url_fix_bare_slash "${url}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == "${url}/" ]
+}
+
+@test "url_fix_bare_slash() when URL shouldn't have a bare trailing slash" {
+  run url_fix_bare_slash 'http://example.com/example'
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+
+  run url_fix_bare_slash 'http://example.com/index.html?example'
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+# url_fix_redirect()
+@test "url_fix_redirect() when no arguments" {
+  run url_fix_redirect
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+@test "url_fix_redirect() when hosts are the same and different path in redirect" {
+  local url redirect
+  readonly url='http://example.com/'
+  readonly redirect='http://example.com/index.html'
+  run url_fix_redirect "${url}" "${redirect}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == "${redirect}" ]
+}
+
+@test "url_fix_redirect() when schemas are different, hosts are the same and different path in redirect" {
+  local url redirect
+  url='https://example.com/'
+  redirect='http://example.com/index.html'
+  run url_fix_redirect "${url}" "${redirect}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == 'https://example.com/index.html' ]
+
+  url='http://example.com/'
+  redirect='https://example.com/index.html'
+  run url_fix_redirect "${url}" "${redirect}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == 'http://example.com/index.html' ]
+}
+
+# url_fix_domain()
+@test "url_fix_domain() when no arguments" {
+  run url_fix_domain
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+@test "url_fix_domain() when hosts are the same but paths are different" {
+  local url redirect
+  readonly url='http://example.com/'
+  readonly redirect='http://example.com/index.html'
+  run url_fix_domain "${url}" "${redirect}"
+  [ "${status}" -eq 1 ]
+  [ -z "${output}" ]
+}
+
+@test "url_fix_domain() when hosts are different but paths are the same" {
+  local url redirect
+  url='http://example.com/'
+  redirect='http://other.com/'
+  run url_fix_domain "${url}" "${redirect}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == 'http://other.com/' ]
+}
+
+@test "url_fix_domain() when hosts and paths are different (redirect path should be ignored)" {
+  local url redirect
+  url='http://example.com/'
+  redirect='http://other.com/index.html'
+  run url_fix_domain "${url}" "${redirect}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == 'http://other.com/' ]
+}
