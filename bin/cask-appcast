@@ -2,10 +2,10 @@
 #
 # Get the latest available version from appcast URL.
 #
-# Version:         0.3.16
+# Version:         0.3.17
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   18.11.2016
+# Last modified:   26.11.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.3.16'
+readonly VERSION='0.3.17'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 declare -a URLS
@@ -36,6 +36,8 @@ DOWNLOADS='false'
 
 # shellcheck source=/dev/null
 source "${BASE_PATH}/lib/cask-scripts/general.bash"
+# shellcheck source=/dev/null
+source "${BASE_PATH}/lib/cask-scripts/url.bash"
 # shellcheck source=/dev/null
 source "${BASE_PATH}/lib/cask-scripts/appcast.bash"
 # shellcheck source=/dev/null

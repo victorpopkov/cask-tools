@@ -2,10 +2,10 @@
 #
 # Check homepages of the casks and try to fix them using provided rules.
 #
-# Version:         0.3.2
+# Version:         0.3.3
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   22.11.2016
+# Last modified:   26.11.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.3.2'
+readonly VERSION='0.3.3'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -44,6 +44,8 @@ EDIT='false'
 
 # shellcheck source=/dev/null
 source "${BASE_PATH}/lib/cask-scripts/general.bash"
+# shellcheck source=/dev/null
+source "${BASE_PATH}/lib/cask-scripts/url.bash"
 # shellcheck source=/dev/null
 source "${BASE_PATH}/lib/cask-scripts/cask.bash"
 # shellcheck source=/dev/null
