@@ -310,7 +310,7 @@ highlight_diff() {
       fi
     fi
 
-    [[ "${chars_shift}" -eq "${i}" ]] && printf "$(tput sgr0)"
+    [[ "${chars_shift}" -ne 0 ]] && [[ "${chars_shift}" -eq "${i}" ]] && printf "$(tput sgr0)"
     printf "${char}"
   done
 
