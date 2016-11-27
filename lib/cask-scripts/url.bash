@@ -93,6 +93,7 @@ get_url_full_path() {
 }
 
 # Get redirect URL from original one.
+# Return only an effective URL (fragment part is ignored).
 #
 # Globals:
 #   BROWSER_HEADERS
@@ -272,8 +273,8 @@ url_fix_slash() {
   readonly host=$(get_url_host "${url}")
   [[ "${host}" != "$(get_url_host "${redirect}")" ]] && return 1
 
-  readonly url_path=$(get_url_path "${url}")
-  readonly redirect_path=$(get_url_path "${url}")
+  readonly url_path=$(get_url_full_path "${url}")
+  readonly redirect_path=$(get_url_full_path "${redirect}")
 
   if [[ ! "${url}" =~ ${host}$ ]] && [[ "${url_path%/}" == "${redirect_path%/}" ]] && [[ ! "${url}" =~ \/$ ]] && [[ "${redirect}" =~ \/$ ]]; then
     echo "${url}/"
@@ -299,8 +300,8 @@ url_fix_no_slash() {
   readonly host=$(get_url_host "${url}")
   [[ "${host}" != "$(get_url_host "${redirect}")" ]] && return 1
 
-  readonly url_path=$(get_url_path "${url}")
-  readonly redirect_path=$(get_url_path "${url}")
+  readonly url_path=$(get_url_full_path "${url}")
+  readonly redirect_path=$(get_url_full_path "${redirect}")
 
   if [[ ! "${url}" =~ ${host}\/$ ]] && [[ "${url_path%/}" == "${redirect_path%/}" ]] && [[ "${url}" =~ \/$ ]] && [[ ! "${redirect}" =~ \/$ ]]; then
     echo "${url%/}"
@@ -348,8 +349,8 @@ url_fix_path() {
   readonly host=$(get_url_host "${url}")
   [[ "${host}" != "$(get_url_host "${redirect}")" ]] && return 1
 
-  readonly url_path=$(get_url_path "${url}")
-  readonly redirect_path=$(get_url_path "${redirect}")
+  readonly url_path=$(get_url_full_path "${url}")
+  readonly redirect_path=$(get_url_full_path "${redirect}")
 
   if [[ "${url_path}" != "${redirect_path}" ]]; then
     echo "${url/${host}${url_path}/${host}${redirect_path}}"
@@ -376,8 +377,8 @@ url_fix_host() {
   readonly redirect_host=$(get_url_host "${redirect}")
   [[ "${host}" == "${redirect_host}" ]] && return 1
 
-  readonly url_path=$(get_url_path "${url}")
-  readonly redirect_path=$(get_url_path "${redirect}")
+  readonly url_path=$(get_url_full_path "${url}")
+  readonly redirect_path=$(get_url_full_path "${redirect}")
 
   if [[ "${host}" != "${redirect_host}" ]]; then
     echo "${url/${host}/${redirect_host}}"

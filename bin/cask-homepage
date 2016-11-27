@@ -2,10 +2,10 @@
 #
 # Check homepages of the casks and try to fix them using provided rules.
 #
-# Version:         0.4.2
+# Version:         0.4.3
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   26.11.2016
+# Last modified:   27.11.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.4.2'
+readonly VERSION='0.4.3'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -256,7 +256,7 @@ review_url() {
 review_homepage() {
   local -a warnings config_rules
   local -i code code_color status status_color
-  local cask homepage homepage_path homepage_redirect homepage_redirect_path host redirect_host out rule skip status_msg fixed warnings_str
+  local cask homepage homepage_path host out skip fixed status_msg homepage_redirect warnings_str
 
   readonly cask="$1"
   readonly homepage=$(get_cask_stanza_value "${cask}" 'homepage')
@@ -281,8 +281,6 @@ review_homepage() {
     if [[ "${status}" -eq 0 ]]; then
       # success
       readonly homepage_redirect=$(get_url_redirect "${homepage}")
-      readonly homepage_redirect_path=$(get_url_path "${homepage_redirect}")
-      readonly redirect_host=$(get_url_host "${homepage_redirect}")
 
       check_rule_enabled 'host'       && review_url 'host'       'Host has changed'                           "${fixed}" "${homepage_redirect}"
       check_rule_enabled 'path'       && review_url 'path'       'Path has changed'                           "${fixed}" "${homepage_redirect}"

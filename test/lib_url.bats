@@ -351,10 +351,19 @@ load ../lib/cask-scripts/url
   [ -z "${output}" ]
 }
 
-@test "url_fix_slash() when server forces to add a trailing slash" {
+@test "url_fix_slash() when server forces to add a trailing slash (default)" {
   local url redirect
   readonly url='http://example.com/example'
   readonly redirect='http://example.com/example/'
+  run url_fix_slash "${url}" "${redirect}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == "${redirect}" ]
+}
+
+@test "url_fix_slash() when server forces to add a trailing slash (with fragment part)" {
+  local url redirect
+  readonly url='http://example.com/example#example'
+  readonly redirect='http://example.com/example#example/'
   run url_fix_slash "${url}" "${redirect}"
   [ "${status}" -eq 0 ]
   [ "${output}" == "${redirect}" ]
@@ -466,6 +475,15 @@ load ../lib/cask-scripts/url
   run url_fix_path "${url}" "${redirect}"
   [ "${status}" -eq 0 ]
   [ "${output}" == 'http://example.com/index.html' ]
+}
+
+@test "url_fix_path() when hosts are the same and paths have different fragment parts" {
+  local url redirect
+  readonly url='http://example.com/index.html#example1'
+  readonly redirect='http://example.com/index.html#example2'
+  run url_fix_path "${url}" "${redirect}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == "${redirect}" ]
 }
 
 # url_fix_host()
