@@ -92,6 +92,72 @@ load ../lib/cask-scripts/url
   [ "${output}" == '/index.html' ]
 }
 
+@test "get_url_path() when URL has query parts: http://example.com/index.html?example=true => /index.html" {
+  run get_url_path 'http://example.com/index.html?example=true'
+  echo "${output}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == '/index.html' ]
+}
+
+@test "get_url_path() when URL has fragment part: http://example.com/index.html#example => /index.html" {
+  run get_url_path 'http://example.com/index.html#example'
+  echo "${output}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == '/index.html' ]
+}
+
+@test "get_url_path() when URL has both query and fragment parts: http://example.com/index.html?example=true#example => /index.html" {
+  run get_url_path 'http://example.com/index.html?example=true#example'
+  echo "${output}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == '/index.html' ]
+}
+
+# get_url_full_path()
+@test "get_url_full_path() when no arguments" {
+  run get_url_path
+  [ "${status}" -eq 1 ]
+}
+
+@test "get_url_full_path() when URL without path and trailing slash: http://example.com/ => /" {
+  run get_url_full_path 'http://example.com/'
+  [ "${status}" -eq 0 ]
+  [ "${output}" == '/' ]
+}
+
+@test "get_url_full_path() when URL without path: http://example.com => /" {
+  run get_url_full_path 'http://example.com'
+  [ "${status}" -eq 0 ]
+  [ "${output}" == '/' ]
+}
+
+@test "get_url_full_path() when URL with path: http://example.com/index.html => /index.html" {
+  run get_url_full_path 'http://example.com/index.html'
+  [ "${status}" -eq 0 ]
+  [ "${output}" == '/index.html' ]
+}
+
+@test "get_url_full_path() when URL has query parts: http://example.com/index.html?example=true => /index.html?example=true" {
+  run get_url_full_path 'http://example.com/index.html?example=true'
+  echo "${output}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == '/index.html?example=true' ]
+}
+
+@test "get_url_full_path() when URL has fragment part: http://example.com/index.html#example => /index.html#example" {
+  run get_url_full_path 'http://example.com/index.html#example'
+  echo "${output}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == '/index.html#example' ]
+}
+
+@test "get_url_full_path() when URL has both query and fragment parts: http://example.com/index.html?example=true#example => /index.html?example=true#example" {
+  run get_url_full_path 'http://example.com/index.html?example=true#example'
+  echo "${output}"
+  [ "${status}" -eq 0 ]
+  [ "${output}" == '/index.html?example=true#example' ]
+}
+
 # get_url_redirect()
 @test "get_url_redirect() when no arguments" {
   run get_url_redirect

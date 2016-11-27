@@ -49,23 +49,45 @@ get_url_status() {
 get_url_host() {
   [[ -z "$*" ]] && return 1
   ruby -ruri -e "
-  host = URI.parse('$1').host.downcase
-  p host.start_with?('www.') ? host[4..-1] : host" | unquote
+    host = URI.parse('$1').host.downcase
+    p host.start_with?('www.') ? host[4..-1] : host
+  " | unquote
 }
 
-# Get path from URL.
+# Get path from URL without query and fragment parts.
 #
 # Arguments:
 #   $1 - URL
 #
-# Returns path.
+# Return path.
 get_url_path() {
   local path
 
   [[ -z "$*" ]] && return 1
   readonly path=$(ruby -ruri -e "
-  path = URI.parse('$1').path.downcase
-  p path" | unquote)
+    path = URI.parse('$1').path.downcase
+    p path
+  " | unquote)
+
+  [[ -z "${path}" ]] && echo '/' || echo "${path}"
+}
+
+# Get request URI with fragment from URL (full path).
+#
+# Arguments:
+#   $1 - URL
+#
+# Returns full path.
+get_url_full_path() {
+  local path
+
+  [[ -z "$*" ]] && return 1
+  readonly path=$(ruby -ruri -e "
+    request_uri = URI.parse('$1').request_uri
+    fragment = URI.parse('$1').fragment
+    fragment = (fragment) ? \"##{fragment}\" : ''
+    p request_uri + fragment
+  " | unquote)
 
   [[ -z "${path}" ]] && echo '/' || echo "${path}"
 }
