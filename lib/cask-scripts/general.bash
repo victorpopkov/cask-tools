@@ -298,23 +298,26 @@ highlight_diff() {
         chars_shift=0
         for ((j = i; j < max_length; j++)); do
           if [[ "${chars_shift}" -eq 0 ]]; then
-            for ((k = 0; k < max_length; k++)); do
-              if [[ "${original:${j}:${precision}}" == "${modified:${k}:${precision}}" ]]; then
+            for ((k = j; k < max_length; k++)); do
+              if [[ -z "${original:${j}:${precision}}" ]]; then
+                chars_shift="${max_length}"
+                break
+              elif [[ "${original:${j}:${precision}}" == "${modified:${k}:${precision}}" ]]; then
                 chars_shift="${k}"
                 break
               fi
             done
           fi
         done
-        printf "$(tput setaf "${color}")"
+        [[ "${chars_shift}" -ne 0 ]] && printf "$(tput setaf "${color}")"
       fi
     fi
 
     [[ "${chars_shift}" -ne 0 ]] && [[ "${chars_shift}" -eq "${i}" ]] && printf "$(tput sgr0)"
-    printf "${char}"
+    printf "%s" "${char}"
   done
 
-  [[ "${original}" != "${modified}" ]] && [[ "${chars_shift}" -eq 0 ]] && printf "$(tput sgr0)"
+  [[ "${original}" != "${modified}" ]] && [[ "${chars_shift}" -eq "${i}" ]] && printf "$(tput sgr0)"
 
   printf "\n"
   return 0
