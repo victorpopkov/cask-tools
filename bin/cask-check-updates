@@ -2,10 +2,10 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.5.12
+# Version:         0.5.13
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   26.11.2016
+# Last modified:   27.11.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.5.12'
+readonly VERSION='0.5.13'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-check-updates.xml"
@@ -538,8 +538,16 @@ main() {
   [[ "${show}" == 'true' ]] && [[ "${#CASKS[@]}" -gt 1 ]] && divide
 }
 
+# find casks
+if [[ "${#CASKS[@]}" -eq 0 ]]; then
+  if [[ ! $(which 'ag') ]]; then
+    CASKS=($(egrep -lir --include '*.rb' "(appcast ')" . | xargs -n1 basename | sed 's|\.rb$||' | sort))
+  else
+    CASKS=($(ag -l "appcast '" | sed 's|\.rb$||' | sort))
+  fi
+fi
+
 # process
-[[ "${#CASKS[@]}" -eq 0 ]] && CASKS=($(egrep -lir --include '*.rb' "(appcast ')" . | xargs -n1 basename | sed 's|\.rb$||' | sort))
 [[ "${#CASKS[@]}" -gt 1 ]] && printf "Checking updates for %i casks...\n" "${#CASKS[@]}" && divide
 [[ "${OUTPUT}" == 'true' ]] && printf "\"%s\";\"%s\";\"%s\";\"%s\";\"%s\"\n" 'Name' 'Appcast' 'Current version' 'Latest version' 'Suggested latest version' > "${OUTPUT_PATH}"
 for cask in "${CASKS[@]}"; do main "${cask}"; done
