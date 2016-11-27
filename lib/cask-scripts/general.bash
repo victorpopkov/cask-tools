@@ -79,8 +79,15 @@ unquote() {
 #   0 – Contains
 #   1 – Doesn't contain
 check_array_contains() {
-  [[ -z "$1" ]] && return 1
-  echo "${!1}" | fgrep --word-regexp -q "$2" && return 0 || return 1
+  local -a array
+  local element
+
+  readonly array=(${!1})
+  readonly element="$2"
+  [[ -z "${array[@]}" ]] || [[ -z "${element}" ]] && return 1
+
+  fgrep --word-regexp -q "${element}" <<< "${array[@]}" && return 0
+  return 1
 }
 
 # Get values from XML configurations file.
