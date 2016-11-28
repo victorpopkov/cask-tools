@@ -89,14 +89,14 @@ unquote() {
 #   0 – Contains
 #   1 – Doesn't contain
 check_array_contains() {
-  local -a array
+  local -a check_array_contains_array # name should differ from external variables
   local element
 
-  readonly array=(${!1})
+  readonly check_array_contains_array=(${!1})
   readonly element="$2"
-  [[ -z "${array[@]}" ]] || [[ -z "${element}" ]] && return 1
+  [[ -z "${check_array_contains_array[@]}" ]] || [[ -z "${element}" ]] && return 1
 
-  fgrep --word-regexp -q "${element}" <<< "${array[@]}" && return 0
+  fgrep --word-regexp -q "${element}" <<< "${check_array_contains_array[@]}" && return 0
   return 1
 }
 
