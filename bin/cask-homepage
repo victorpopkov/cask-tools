@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them using provided rules.
 #
-# Version:         0.5.1
+# Version:         0.5.2
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   28.11.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.5.1'
+readonly VERSION='0.5.2'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -347,7 +347,7 @@ review_homepage() {
     fi
   done
 
-  if git_has_remote "${REMOTE_PUSH}" && [[ "${FIX}" == 'true' ]]; then
+  if git_has_remote "${REMOTE_PUSH}" && [[ "${FIX}" == 'true' ]] && git_file_changed "${cask}.rb"; then
     # make commit
     commit_msg="Update ${cask} homepage (${warnings_str})"
     [[ "${#homepages[@]}" -gt 1 ]] && commit_msg="Update ${cask} homepages"
@@ -499,10 +499,20 @@ if [[ "${EDIT}" == 'true' ]]; then
   exit 0
 fi
 
-# fixing (preparations)
+# fixing
 if git_has_remote "${REMOTE_PUSH}" && [[ "${FIX}" == 'true' ]]; then
+   # preparations
   [[ -z "${BRANCH_NAME}" ]] && BRANCH_NAME="${PROGRAM}_$(random 12)"
   git checkout -b "${BRANCH_NAME}" --quiet
+
+  printf "$(tput setaf 2)"
+  printf "Running in fixing mode: all the changes will be pushed to branch 'remotes/${REMOTE_PUSH}/${BRANCH_NAME}'.\n"
+  printf "The pull request must be opened manually.\n\n"
+  printf "You can edit all pushed changes using the flag \`-e/--push-edit\` and following the on-screen instructions.\n\n"
+  [[ "${FIX_TOTAL}" -gt 0 ]] && printf "Fixing first %i casks with issues...\n" "${FIX_TOTAL}" || printf 'Fixing all casks with issues...\n'
+  printf "$(tput sgr0)"
+
+  divide
 fi
 
 # find casks
@@ -534,10 +544,6 @@ print_rule 'no_www'     'Server prefers to exclude WWW'
 print_rule 'path'       'Path has changed'
 print_rule 'slash'      'Server prefers to include a trailing slash'
 print_rule 'www'        'Server prefers to include WWW'
-
-if git_has_remote "${REMOTE_PUSH}" && [[ "${FIX}" == 'true' ]]; then
-  [[ "${FIX_TOTAL}" -gt 0 ]] && printf "\nFixing first %i casks...\n" "${FIX_TOTAL}" || printf '\nFixing all casks...\n'
-fi
 
 divide
 
