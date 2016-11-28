@@ -31,6 +31,21 @@ git_has_remote() {
   fgrep --word-regexp --extended-regexp -q "${remote}" <<< "${remotes[@]}"
 }
 
+# Checks if file has been changed.
+#
+# Arguments:
+#   $1 - File
+#
+# Returns status.
+git_file_changed() {
+  local file
+
+  readonly file="$1"
+  [[ -z "$*" ]] && return 1
+
+  git ls-files -m | fgrep --word-regexp --extended-regexp -q "${file}"
+}
+
 # Lists remote branches that start with program name.
 #
 # Globals:
