@@ -2,10 +2,10 @@
 #
 # Check homepages of the casks and try to fix them using provided rules.
 #
-# Version:         0.4.5
+# Version:         0.5.0
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   27.11.2016
+# Last modified:   28.11.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.4.5'
+readonly VERSION='0.5.0'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -222,9 +222,7 @@ review_url() {
 
   # cask specific ignore rule
   config_rules=($(get_xml_config_values "//ignore/${rule}/casks" 'cask'))
-  for r in "${config_rules[@]}"; do
-    [[ "${cask}" == "${r}" ]] && return 1
-  done
+  check_array_contains 'config_rules[@]' "${cask}" && return 1
 
   # URL specific ignore rule
   config_rules=($(get_xml_config_values "//ignore/${rule}/urls" 'url'))
@@ -254,33 +252,59 @@ review_url() {
 # Arguments:
 #   $1 - Cask name
 review_homepage() {
-  local -a warnings config_rules
+  local -a homepages warnings config_rules
   local -i code code_color status status_color
-  local cask homepage homepage_path host out skip fixed status_msg homepage_redirect warnings_str
+  local cask skip homepage review_name out fixed status_msg homepage_redirect warnings_str commit_msg
 
   readonly cask="$1"
-  readonly homepage=$(get_cask_stanza_value "${cask}" 'homepage')
-  readonly homepage_path=$(get_url_path "${homepage}")
-  readonly host=$(get_url_host "${homepage}")
-  readonly out=$(get_url_status "${homepage}")
-  readonly code=$(echo "${out}" | head -n 1)
-  readonly status=$(echo "${out}" | tail -n 1)
-  [[ -z "${fixed}" ]] && fixed="${homepage}"
+  readonly homepages=($(get_cask_stanza_value "${cask}" 'homepage'))
 
-  # skip a cask if defined in config
+  # find if cask should be skipped
   config_rules=($(get_xml_config_values '//skip/casks' 'cask'))
-  check_array_contains 'config_rules' "${cask}" && skip='true' || skip='false'
-  readonly skip
-
-  [[ "${code}" -eq 200 ]] && code_color=2 || code_color=3
+  check_array_contains 'config_rules[@]' "${cask}" && skip='true' || skip='false'
 
   if [[ "${skip}" == 'true' ]]; then
-    status_color=7
-    status_msg='skipped'
-  elif [[ "${skip}" == 'false' ]]; then
+    # skip
+    for ((i = 0; i < ${#homepages[@]}; i++)); do
+      # foreach homepage
+      homepage="${homepages[i]}"
+      if [[ "${i}" -eq 0 ]]; then
+        review_name='Cask homepage'
+        [[ "${#homepages[@]}" -gt 1 ]] && review_name+='s'
+      else
+        review_name=''
+      fi
+      add_to_review "${review_name}" "${homepage}"
+    done
+    add_to_review 'Status' "$(tput setaf 7)skipped$(tput sgr0)"
+    return 1
+  fi
+
+  for ((i = 0; i < ${#homepages[@]}; i++)); do
+    # foreach homepage
+    homepage="${homepages[i]}"
+    fixed="${homepage}"
+    warnings=()
+
+    if [[ "${i}" -eq 0 ]]; then
+      review_name='Cask homepage'
+      [[ "${#homepages[@]}" -gt 1 ]] && review_name+='s'
+    else
+      review_name=''
+    fi
+
+    # get response code and curl status
+    out=$(get_url_status "${homepage}")
+    code=$(echo "${out}" | head -n 1)
+    status=$(echo "${out}" | tail -n 1)
+
+    [[ "${code}" -eq 200 ]] && code_color=2 || code_color=3
+
     if [[ "${status}" -eq 0 ]]; then
       # success
-      readonly homepage_redirect=$(get_url_redirect "${homepage}")
+      status_color=2
+      status_msg='good'
+      homepage_redirect=$(get_url_redirect "${homepage}")
 
       check_rule_enabled 'host'       && review_url 'host'       'Host has changed'                           "${fixed}" "${homepage_redirect}"
       check_rule_enabled 'path'       && review_url 'path'       'Path has changed'                           "${fixed}" "${homepage_redirect}"
@@ -291,41 +315,44 @@ review_homepage() {
       check_rule_enabled 'slash'      && review_url 'slash'      'Server prefers to include a trailing slash' "${fixed}" "${homepage_redirect}"
       check_rule_enabled 'no_slash'   && review_url 'no_slash'   'Server prefers to exclude a trailing slash' "${fixed}" "${homepage_redirect}"
       check_rule_enabled 'bare_slash' && review_url 'bare_slash' 'Missing a bare domain URL trailing slash'   "${fixed}" "${homepage_redirect}"
-
-      status_color=2
-      status_msg='good'
     else
       # curl returned non 0 status (error)
       status_color=1
       status_msg='error'
       [[ "${status}" -eq 28 ]] && status_msg='error (request timed out)'
     fi
-  fi
 
-  if [[ "${#REVIEW_WARNINGS[@]}" -gt 0 ]]; then
-    status_color=3
-    status_msg='warning'
-    warnings_str=$(join_by ', ' "${warnings[@]}")
-  fi
+    # check if warnings are available
+    if [[ "${#REVIEW_WARNINGS[@]}" -gt 0 ]]; then
+      status_color=3
+      status_msg='warning'
+      warnings_str=$(join_by ', ' "${warnings[@]}")
+    fi
 
-  # check if output to CSV is needed
-  if [[ "${#warnings[@]}" -gt 0 ]] || [[ "${SHOW_ALL}" == 'true' ]]; then
-    # output to CSV
-    show='true'
-    output_csv "${cask}" "${homepage}" "${code}" "${status_msg}" "$([[ "${#warnings[@]}" -gt 0 ]] && echo "${warnings_str}" || echo '-')" "$([[ ! -z "${fixed}" ]] && echo "${fixed}" || echo '-')"
-  fi
+    if [[ "${FIX}" == 'true' ]] && [[ "${fixed}" != "${homepage}" ]]; then
+      add_to_review "${review_name}" "${homepage} [$(tput setaf "${code_color}")${code}$(tput sgr0)] → $(tput setaf 7)${fixed}$(tput sgr0)"
+      # fix
+      modify_stanza_by_value "${cask}" 'homepage' "${homepage}'" "'${fixed}'"
+      status_color=2
+      status_msg='fixed'
+    else
+      # default
+      add_to_review "${review_name}" "${homepage} [$(tput setaf "${code_color}")${code}$(tput sgr0)]"
+    fi
 
-  # check if fixing is enabled and available
-  if [[ "${FIX}" == 'true' ]] && [[ ! -z "${fixed}" ]]; then
-    add_to_review 'Cask homepage' "${homepage} [$(tput setaf "${code_color}")${code}$(tput sgr0)] → $(tput setaf 7)${fixed}$(tput sgr0) [$(tput setaf 2)200$(tput sgr0)]"
-    # fix
-    FIXED_TOTAL+=1
-    modify_stanza "${cask}" 'homepage' "'${fixed}'"
-    git commit "${cask}.rb" --message "Update ${cask} homepage (${warnings_str})" --quiet
-    status_color=2
-    status_msg='fixed'
-  else
-    add_to_review 'Cask homepage' "${homepage} [$(tput setaf "${code_color}")${code}$(tput sgr0)]"
+    # check if output to CSV is needed
+    if [[ "${#warnings[@]}" -gt 0 ]] || [[ "${SHOW_ALL}" == 'true' ]]; then
+      show='true'
+      output_csv "${cask}" "${homepage}" "${code}" "${status_msg}" "$([[ "${#warnings[@]}" -gt 0 ]] && echo "${warnings_str}" || echo '-')" "$([[ ! -z "${fixed}" ]] && echo "${fixed}" || echo '-')"
+    fi
+  done
+
+  if [[ "${FIX}" == 'true' ]]; then
+    # make commit
+    commit_msg="Update ${cask} homepage (${warnings_str})"
+    [[ "${#homepages[@]}" -gt 1 ]] && commit_msg="Update ${cask} homepages"
+    git commit "${cask}.rb" --message "${commit_msg}" --quiet
+    [[ "$?" == 0 ]] && FIXED_TOTAL+=1
   fi
 
   add_to_review 'Status' "$(tput setaf "${status_color}")${status_msg}$(tput sgr0)"
