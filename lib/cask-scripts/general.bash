@@ -40,6 +40,16 @@ error() {
   exit 1
 }
 
+# Display warning.
+#
+# Arguments:
+#   $1 - Warning description
+#
+# Returns exit status 1.
+warning() {
+  echo -e "$(tput setaf 3)$1$(tput sgr0)"
+}
+
 # Display version.
 #
 # Globals:
