@@ -6,7 +6,7 @@
 #
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   26.11.2016
+# Last modified:   28.11.2016
 
 # Get value(s) of a cask stanza.
 #
@@ -197,8 +197,6 @@ get_xml_config_custom_rule() {
 #   $1 - Cask name
 #   $2 - Stanza name
 #   $3 - New stanza value
-#
-# Returns rule and status.
 modify_stanza() {
   local cask stanza value
 
@@ -211,6 +209,29 @@ modify_stanza() {
     $new_stanza_value = shift(@ARGV);
     print <> =~ s|\A.*^\s*\Q$stanza_to_modify\E\s\K[^\n]*|$new_stanza_value|smr;
   ' "${stanza}" "${value}" "${cask}.rb"
+}
+
+# Modify cask stanza by it's value.
+#
+# Arguments:
+#   $1 - Cask name
+#   $2 - Stanza name
+#   $3 - Old stanza value
+#   $4 - New stanza value
+modify_stanza_by_value() {
+  local cask stanza old_value new_value
+
+  readonly cask="${1/.rb}"
+  readonly stanza="$2"
+  readonly old_value="$3"
+  readonly new_value="$4"
+
+  perl -0777 -i -e'
+    $stanza_to_modify = shift(@ARGV);
+    $old_stanza_value = shift(@ARGV);
+    $new_stanza_value = shift(@ARGV);
+    print <> =~ s|\A.*^\s*\Q$stanza_to_modify\E\s\K[^\n]$old_stanza_value|$new_stanza_value|smr;
+  ' "${stanza}" "${old_value}" "${new_value}" "${cask}.rb"
 }
 
 # Edit a cask.
