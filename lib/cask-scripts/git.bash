@@ -28,7 +28,7 @@ git_has_remote() {
   readonly remote="$1"
   [[ -z "$*" ]] && return 1
 
-  fgrep --word-regexp --extended-regexp -q "${remote}" <<< "${remotes[@]}"
+  fgrep --word-regexp -q "${remote}" <<< "${remotes[@]}"
 }
 
 # Checks if file has been changed.
@@ -43,7 +43,7 @@ git_file_changed() {
   readonly file="$1"
   [[ -z "$*" ]] && return 1
 
-  git ls-files -m | fgrep --word-regexp --extended-regexp -q "${file}"
+  git ls-files -m | fgrep --word-regexp -q "${file}"
 }
 
 # Lists remote branches that start with program name.
