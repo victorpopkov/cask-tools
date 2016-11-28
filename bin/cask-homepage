@@ -2,7 +2,7 @@
 #
 # Check homepages of the casks and try to fix them using provided rules.
 #
-# Version:         0.5.0
+# Version:         0.5.1
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   28.11.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.5.0'
+readonly VERSION='0.5.1'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -329,7 +329,7 @@ review_homepage() {
       warnings_str=$(join_by ', ' "${warnings[@]}")
     fi
 
-    if [[ "${FIX}" == 'true' ]] && [[ "${fixed}" != "${homepage}" ]]; then
+    if git_has_remote "${REMOTE_PUSH}" && [[ "${FIX}" == 'true' ]] && [[ "${fixed}" != "${homepage}" ]]; then
       add_to_review "${review_name}" "${homepage} [$(tput setaf "${code_color}")${code}$(tput sgr0)] → $(tput setaf 7)${fixed}$(tput sgr0)"
       # fix
       modify_stanza_by_value "${cask}" 'homepage' "${homepage}'" "'${fixed}'"
@@ -347,7 +347,7 @@ review_homepage() {
     fi
   done
 
-  if [[ "${FIX}" == 'true' ]]; then
+  if git_has_remote "${REMOTE_PUSH}" && [[ "${FIX}" == 'true' ]]; then
     # make commit
     commit_msg="Update ${cask} homepage (${warnings_str})"
     [[ "${#homepages[@]}" -gt 1 ]] && commit_msg="Update ${cask} homepages"
@@ -471,6 +471,17 @@ main() {
   [[ "${show}" == 'true' ]] && [[ "${#CASKS[@]}" -gt 1 ]] && divide
 }
 
+# additional checks
+if ! git_has_remote "${REMOTE_PULL}"; then
+  error "Remote pull branch '${REMOTE_PULL}' is not set. Please add or specify another branch using flag: \`-l/--pull\`."
+fi
+
+if ! git_has_remote "${REMOTE_PUSH}"; then
+  warning "Remote push branch '${REMOTE_PUSH}' is not set. Please add or specify another branch using flag: \`-p/--push\`.\n"
+  warning 'Fixing and editings modes has been disabled.'
+  divide
+fi
+
 # preparations
 git pull --rebase "${REMOTE_PULL}" master --quiet
 git checkout master --quiet
@@ -489,7 +500,7 @@ if [[ "${EDIT}" == 'true' ]]; then
 fi
 
 # fixing (preparations)
-if [[ "${FIX}" == 'true' ]]; then
+if git_has_remote "${REMOTE_PUSH}" && [[ "${FIX}" == 'true' ]]; then
   [[ -z "${BRANCH_NAME}" ]] && BRANCH_NAME="${PROGRAM}_$(random 12)"
   git checkout -b "${BRANCH_NAME}" --quiet
 fi
@@ -524,7 +535,7 @@ print_rule 'path'       'Path has changed'
 print_rule 'slash'      'Server prefers to include a trailing slash'
 print_rule 'www'        'Server prefers to include WWW'
 
-if [[ "${FIX}" == 'true' ]]; then
+if git_has_remote "${REMOTE_PUSH}" && [[ "${FIX}" == 'true' ]]; then
   [[ "${FIX_TOTAL}" -gt 0 ]] && printf "\nFixing first %i casks...\n" "${FIX_TOTAL}" || printf '\nFixing all casks...\n'
 fi
 
@@ -536,7 +547,7 @@ for cask in "${CASKS[@]}"; do
 done
 
 # fixing (push)
-if [[ "${FIX}" == 'true' ]]; then
+if git_has_remote "${REMOTE_PUSH}" && [[ "${FIX}" == 'true' ]]; then
   [[ "${#CASKS[@]}" -eq 1 ]] && divide
   git_push
   finish success "Pushed ${FIXED_TOTAL} casks in branch 'remotes/${REMOTE_PUSH}/${BRANCH_NAME}'..."
