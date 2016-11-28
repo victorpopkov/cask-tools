@@ -14,6 +14,23 @@ declare REMOTE_PULL
 declare REMOTE_PUSH
 declare BRANCH_NAME
 
+# Checks if remote is set.
+#
+# Arguments:
+#   $1 - Remote
+#
+# Returns status.
+git_has_remote() {
+  local -a remotes
+  local remote
+
+  readonly remotes=($(git remote))
+  readonly remote="$1"
+  [[ -z "$*" ]] && return 1
+
+  fgrep --word-regexp --extended-regexp -q "${remote}" <<< "${remotes[@]}"
+}
+
 # Lists remote branches that start with program name.
 #
 # Globals:
@@ -48,7 +65,7 @@ git_get_branch_diverge_point() {
   local branch
 
   readonly branch="$1"
-  [[ -z "${branch}" ]] && return 1
+  [[ -z "$*" ]] && return 1
 
   diff -u <(git rev-list --first-parent ${branch}) <(git rev-list --first-parent "${REMOTE_PULL}/master") | sed -ne 's/^ //p' | head -1
 }
