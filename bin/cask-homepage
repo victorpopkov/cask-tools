@@ -2,10 +2,10 @@
 #
 # Check homepages of the casks and try to fix them using provided rules.
 #
-# Version:         0.5.2
+# Version:         0.5.3
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   28.11.2016
+# Last modified:   29.11.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.5.2'
+readonly VERSION='0.5.3'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -60,15 +60,15 @@ usage() {
 
     Check homepages of the casks and try to fix them using provided rules:
 
-      bare_slash   Missing a bare domain URL trailing slash
       host         Host has changed
+      path         Path has changed
       http         Only HTTP is available
       https        HTTPS is available
-      no_slash     Server prefers to exclude a trailing slash
-      no_www       Server prefers to exclude www
-      path         Path has changed
+      www          Server prefers to include WWW
+      no_www       Server prefers to exclude WWW
       slash        Server prefers to include a trailing slash
-      www          Server prefers to include www
+      no_slash     Server prefers to exclude a trailing slash
+      bare_slash   Missing a bare domain URL trailing slash
 
     options:
       -l, --pull <remote>        Use to specify a remote to pull from (defaults to 'upstream').
@@ -478,7 +478,7 @@ fi
 
 if ! git_has_remote "${REMOTE_PUSH}"; then
   warning "Remote push branch '${REMOTE_PUSH}' is not set. Please add or specify another branch using flag: \`-p/--push\`.\n"
-  warning 'Fixing and editings modes has been disabled.'
+  warning 'Fixing and editings modes have been disabled.'
   divide
 fi
 
@@ -535,15 +535,15 @@ for rule in "${RULES[@]}"; do
   check_array_contains 'RULES_DISABLED[@]' "${rule}" || RULES_ENABLED+=("${rule}")
 done
 
-print_rule 'bare_slash' 'Missing a bare domain URL trailing slash'
 print_rule 'host'       'Host has changed'
+print_rule 'path'       'Path has changed'
 print_rule 'http'       'Only HTTP is available'
 print_rule 'https'      'HTTPS is available'
-print_rule 'no_slash'   'Server prefers to exclude a trailing slash'
-print_rule 'no_www'     'Server prefers to exclude WWW'
-print_rule 'path'       'Path has changed'
-print_rule 'slash'      'Server prefers to include a trailing slash'
 print_rule 'www'        'Server prefers to include WWW'
+print_rule 'no_www'     'Server prefers to exclude WWW'
+print_rule 'slash'      'Server prefers to include a trailing slash'
+print_rule 'no_slash'   'Server prefers to exclude a trailing slash'
+print_rule 'bare_slash' 'Missing a bare domain URL trailing slash'
 
 divide
 

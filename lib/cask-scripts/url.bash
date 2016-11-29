@@ -6,7 +6,7 @@
 #
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   26.11.2016
+# Last modified:   29.11.2016
 
 # Constants and globals
 declare BROWSER_HEADERS
