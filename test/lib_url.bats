@@ -158,10 +158,59 @@ load ../lib/cask-scripts/url
   [ "${output}" == '/index.html?example=true#example' ]
 }
 
+# get_url_fragment()
+@test "get_url_fragment() when no arguments" {
+  run get_url_fragment
+  [ "${status}" -eq 1 ]
+}
+
+@test "get_url_fragment() when URL has path, query and fragment: http://example.com/index.html?example=true#example => #example" {
+  run get_url_fragment 'http://example.com/index.html?example=true#example'
+  [ "${status}" -eq 0 ]
+  [ "${output}" == 'example' ]
+}
+
+@test "get_url_fragment() when URL has only path and fragment: http://example.com/index.html#example => #example" {
+  run get_url_fragment 'http://example.com/index.html#example'
+  [ "${status}" -eq 0 ]
+  [ "${output}" == 'example' ]
+}
+
+@test "get_url_fragment() when URL path is bare: http://example.com/#example => #example" {
+  run get_url_fragment 'http://example.com/#example'
+  [ "${status}" -eq 0 ]
+  [ "${output}" == 'example' ]
+}
+
+@test "get_url_fragment() when no fragment: http://example.com/ (should return non-zero exit code)" {
+  run get_url_fragment 'http://example.com/'
+  [ "${status}" -eq 1 ]
+}
+
 # get_url_redirect()
 @test "get_url_redirect() when no arguments" {
   run get_url_redirect
   [ "${status}" -eq 1 ]
+}
+
+@test "get_url_redirect() should return the same URL if no redirect (skipped if no connection)" {
+  if ping -q -c 1 example.com; then
+    run get_url_redirect 'http://www.example.com/'
+    [ "${status}" -eq 0 ]
+    [ "${output}" == 'http://www.example.com/' ]
+  else
+    skip
+  fi
+}
+
+@test "get_url_redirect() should also return the fragment part if no redirect and the URL had it before (skipped if no connection)" {
+  if ping -q -c 1 example.com; then
+    run get_url_redirect 'http://www.example.com/index.html#example'
+    [ "${status}" -eq 0 ]
+    [ "${output}" == 'http://www.example.com/index.html#example' ]
+  else
+    skip
+  fi
 }
 
 # check_url_https_availability()
