@@ -6,6 +6,15 @@ Collection of small scripts designed to help maintain the [Homebrew-Cask](https:
 project. The main purpose, however, is to completely automate the process of
 finding and upgrading outdated casks.
 
+- [List of scripts](#description)
+  - [cask-appcast](#cask-appcast)
+  - [cask-check-updates](#cask-check-updates)
+  - [cask-homepage](#cask-homepage)
+- [Installation](#installation)
+  - [Linux](#linux)
+  - [Mac OS X](#mac-os-x)
+- [Running tests](#running-tests)
+
 ## List of scripts
 
 To learn more about each script explore [doc](doc/) directory.
