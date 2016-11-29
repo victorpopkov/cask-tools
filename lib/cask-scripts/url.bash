@@ -49,7 +49,7 @@ get_url_status() {
 get_url_host() {
   [[ -z "$*" ]] && return 1
   ruby -ruri -e "
-    host = URI.parse('$1').host.downcase
+    host = URI.parse('$1').host
     p host.start_with?('www.') ? host[4..-1] : host
   " | unquote
 }
@@ -65,11 +65,12 @@ get_url_path() {
 
   [[ -z "$*" ]] && return 1
   readonly path=$(ruby -ruri -e "
-    path = URI.parse('$1').path.downcase
+    path = URI.parse('$1').path
     p path
   " | unquote)
 
-  [[ -z "${path}" ]] && echo '/' || echo "${path}"
+  [[ "${path}" == 'nil' ]] || [[ -z "${path}" ]] && echo '/' || echo "${path}"
+  return 0
 }
 
 # Get request URI with fragment from URL (full path).
@@ -89,7 +90,29 @@ get_url_full_path() {
     p request_uri + fragment
   " | unquote)
 
-  [[ -z "${path}" ]] && echo '/' || echo "${path}"
+  [[ "${path}" == 'nil' ]] && echo '/' || echo "${path}"
+  return 0
+}
+
+# Get fragment part from URL.
+#
+# Arguments:
+#   $1 - URL
+#
+# Return fragment.
+get_url_fragment() {
+  local fragment
+
+  [[ -z "$*" ]] && return 1
+  readonly fragment=$(ruby -ruri -e "
+    fragment = URI.parse('$1').fragment
+    p fragment
+  " | unquote)
+
+  [[ "${fragment}" == 'nil' ]] && return 1
+
+  echo "${fragment}"
+  return 0
 }
 
 # Get redirect URL from original one.
@@ -103,8 +126,16 @@ get_url_full_path() {
 #
 # Returns redirect URL.
 get_url_redirect() {
+  local url redirect fragment_url fragment_redirect
+
+  readonly url="$1"
   [[ -z "$*" ]] && return 1
-  curl --silent --location --head --header "${BROWSER_HEADERS}" --max-time 10 --output /dev/null --write-out "%{url_effective}" "$1" 2>/dev/null
+
+  readonly fragment_url=$(get_url_fragment "${url}")
+  readonly redirect=$(curl --silent --location --head --header "${BROWSER_HEADERS}" --max-time 10 --output /dev/null --write-out "%{url_effective}" "${url}" 2>/dev/null)
+  readonly fragment_redirect=$(get_url_fragment "${redirect}")
+
+  [[ ! -z "${fragment_url}" ]] && [[ -z "${fragment_redirect}" ]] && echo "${redirect}#${fragment_url}" || echo "${redirect}"
 }
 
 # Check if HTTPS is available for URL.
