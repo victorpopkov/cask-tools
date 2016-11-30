@@ -12,7 +12,7 @@ finding and upgrading outdated casks.
   - [cask-homepage](#cask-homepage)
 - [Installation](#installation)
   - [Linux](#linux)
-  - [Mac OS X](#mac-os-x)
+  - [macOS](#macOS)
 - [Running tests](#running-tests)
 
 ## List of scripts
@@ -47,7 +47,7 @@ Suggested by [**@miccal**](https://github.com/miccal).
 ### Linux
 
 Even though [Homebrew-Cask](https://github.com/caskroom/homebrew-cask) was
-created specifically for OS X, most of the scripts provided in the current
+created specifically for macOS, most of the scripts provided in the current
 repository can be used on Linux. The installation procedure is quite simple:
 just clone this repository somewhere on your system and then use `install`
 target of the provided Makefile:
@@ -71,9 +71,9 @@ To install both on Linux just run:
 apt-get install jq xmlstarlet
 ```
 
-### Mac OS X
+### macOS
 
-The easiest way to install these scripts on OS X is using my
+The easiest way to install these scripts on macOS is using my
 [homebrew-tap](https://github.com/victorpopkov/homebrew-tap)
 repository. You’ll need [Homebrew](http://brew.sh/) installed and then
 [Tap](https://github.com/Homebrew/brew/blob/master/docs/brew-tap.md) that
@@ -91,7 +91,7 @@ brew install cask-scripts
 
 Alternatively, you can use install target of the provided Makefile the same way
 as you would install them on Linux. However, using [Homebrew](http://brew.sh/)
-is the more recommended way for OS X, since it also installs all the
+is the more recommended way for macOS, since it also installs all the
 dependencies.
 
 ## Running tests

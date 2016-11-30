@@ -22,7 +22,7 @@ The `cask-check-updates` was designed specifically to find outdated casks that
 have appcasts and automatically retrieve latest available versions. It also
 normalizes retrieved versions to match the patterns used in casks.
 
-Doesn't require OS X to run and can generate CSV lists.
+Doesn't require macOS to run and can generate CSV lists.
 
 ### Supported providers
 
