@@ -12,7 +12,7 @@ finding and upgrading outdated casks.
   - [cask-homepage](#cask-homepage)
 - [Installation](#installation)
   - [Linux](#linux)
-  - [macOS](#macOS)
+  - [macOS](#macos)
 - [Running tests](#running-tests)
 
 ## List of scripts
