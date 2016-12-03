@@ -60,6 +60,7 @@
       <cask tag="Bloodhound">adobe-bloodhound</cask>
       <cask tag="phoneexpander.com/downloads">phoneexpander</cask>
       <cask tag="processing-.*-2.*">processing2</cask>
+      <cask tag="osx64">timely</cask>
       <cask tag="XQuartz">xquartz</cask>
       <cask tag="XQuartz">xquartz-beta</cask>
     </matching-tag>
