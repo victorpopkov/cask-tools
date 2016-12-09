@@ -2,10 +2,10 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.5.13
+# Version:         0.5.14
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   27.11.2016
+# Last modified:   09.12.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.5.13'
+readonly VERSION='0.5.14'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-check-updates.xml"
@@ -96,7 +96,7 @@ while [[ "$1" ]]; do
       readonly GITHUB_USER GITHUB_TOKEN
       shift
       ;;
-    -h | --header)
+    -H | --header)
       readonly BROWSER_HEADERS="$2"
       shift
       ;;
