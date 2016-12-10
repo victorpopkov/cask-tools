@@ -4,7 +4,7 @@
 #
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   28.11.2016
+# Last modified:   10.12.2016
 
 # Constants and globals
 declare PROGRAM
@@ -77,6 +77,26 @@ unquote() {
   while read -r data; do
     sed -e 's/,$//' -e "s/^\([\"']\)\(.*\)\1\$/\2/g" <<< "${data}"
   done
+}
+
+# Pluralize a single word based on provided number.
+#
+# Arguments:
+#   $1 - Word
+#   $2 - Number
+#
+# Returns pluralized word.
+pluralize() {
+  local -i number
+  local word result
+
+  readonly word="$1"
+  readonly number="$2"
+
+  result="${word}"
+  [[ "${number}" -gt 1 ]] && result+='s'
+
+  echo "${result}"
 }
 
 # Check if value exists in array.
@@ -174,6 +194,28 @@ add_to_review() {
 
   REVIEW_NAMES+=("${name}")
   REVIEW_VALUES+=("${value}")
+}
+
+# Create review name with optional pluralization only for first line.
+# Name will be shown only for first line.
+#
+# Arguments:
+#   $1 - Word
+#   $2 - Line number
+#   $3 - Number (for pluralization)
+#
+# Returns review name or empty.
+review_name() {
+  local -i line number
+  local word result
+
+  readonly word="$1"
+  readonly line="$2"
+  readonly number="$3"
+
+  if [[ "${line}" -eq 0 ]]; then
+    pluralize "${word}" "${number}"
+  fi
 }
 
 # Show review.
