@@ -2,10 +2,10 @@
 #
 # Check homepages of the casks and try to fix them using provided rules.
 #
-# Version:         0.5.3
+# Version:         0.5.4
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   29.11.2016
+# Last modified:   10.12.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.5.3'
+readonly VERSION='0.5.4'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
@@ -268,12 +268,7 @@ review_homepage() {
     for ((i = 0; i < ${#homepages[@]}; i++)); do
       # foreach homepage
       homepage="${homepages[i]}"
-      if [[ "${i}" -eq 0 ]]; then
-        review_name='Cask homepage'
-        [[ "${#homepages[@]}" -gt 1 ]] && review_name+='s'
-      else
-        review_name=''
-      fi
+      review_name=$(review_name 'Cask homepage' "${i}" "${#homepages[@]}")
       add_to_review "${review_name}" "${homepage}"
     done
     add_to_review 'Status' "$(tput setaf 7)skipped$(tput sgr0)"
@@ -286,12 +281,7 @@ review_homepage() {
     fixed="${homepage}"
     warnings=()
 
-    if [[ "${i}" -eq 0 ]]; then
-      review_name='Cask homepage'
-      [[ "${#homepages[@]}" -gt 1 ]] && review_name+='s'
-    else
-      review_name=''
-    fi
+    review_name=$(review_name 'Cask homepage' "${i}" "${#homepages[@]}")
 
     # get response code and curl status
     out=$(get_url_status "${homepage}")
