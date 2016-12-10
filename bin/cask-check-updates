@@ -2,7 +2,7 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.5.15
+# Version:         0.6.0
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
 # Last modified:   10.12.2016
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.5.15'
+readonly VERSION='0.6.0'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-check-updates.xml"
@@ -30,7 +30,6 @@ GITHUB_PRERELEASE='false'
 OUTPUT='false'
 OUTPUT_PATH=''
 SHOW_ALL='false'
-SHOW_CHECKPOINTS='false'
 
 # shellcheck source=/dev/null
 source "${BASE_PATH}/lib/cask-scripts/general.bash"
@@ -80,7 +79,6 @@ usage() {
       -o, --output <filepath>       Output the results in CSV format into a file.
       -u, --unstable                Try to get unstable releases if possible.
       -a, --all                     Show and output all casks even updated ones.
-      -c, --checkpoints             Validate checkpoints.
       -v, --version                 Show current script version.
       -h, --help                    Show this help." | sed -E 's/^ {4}//'
 }
@@ -111,9 +109,6 @@ while [[ "$1" ]]; do
       ;;
     -a | --all)
       SHOW_ALL='true'
-      ;;
-    -c | --checkpoints)
-      readonly SHOW_CHECKPOINTS='true'
       ;;
     -v | --version)
       version
@@ -327,6 +322,7 @@ suggest_cask_version() {
 #   checkpoints
 #   urls
 #   versions_max_length
+#   appcasts_max_length
 #   appcasts_counter
 #
 # Arguments:
@@ -337,6 +333,8 @@ prepare_cask_groups() {
   readonly cask="$1"
   readonly values=$(get_cask_version_appcast_checkpoint_url "${cask}")
   IFS=$'\n' read -rd '' -a lines <<< "${values}"
+  versions_max_length=0
+  appcasts_max_length=0
 
   for line in "${lines[@]}"; do
     line=($(echo "${line}" | xargs))
@@ -347,8 +345,9 @@ prepare_cask_groups() {
 
     [[ -z "${version}" ]] && continue # skip if no version
 
-    # get maximum version length for review alignment
+    # get maximum lengths for review alignment
     [[ "${versions_max_length}" -lt "${#version}" ]] && versions_max_length="${#version}"
+    [[ "${appcasts_max_length}" -lt "${#appcast}" ]] && appcasts_max_length="${#appcast}"
 
     versions+=("${version}")
     appcasts+=("${appcast}")
@@ -366,19 +365,23 @@ prepare_cask_groups() {
 # Globals:
 #   SHOW_ALL
 #
+# Used external variables:
+#   versions
+#   appcasts
+#   checkpoints
+#   urls
+#
 # Arguments:
 #   $1 - Cask name
 review_cask_versions() {
-  local -a versions appcasts checkpoints urls latest
-  local -i versions_max_length appcasts_counter i code status
+  local -a latest
+  local -i i appcasts_counter latest_status updated_counter outdated_counter review_status_color
   local cask
   local version appcast checkpoint url
   local latest_version latest_checkpoint latest_url
-  local content suggested_version suggested_latest_version review_name review_value
+  local content suggested_version suggested_latest_version review_name review_value review_status
 
   readonly cask="$1"
-
-  prepare_cask_groups "${cask}"
 
   for ((i = 0; i < ${#versions[@]}; i++)); do
     version="${versions[i]}"
@@ -386,39 +389,58 @@ review_cask_versions() {
     checkpoint="${checkpoints[i]}"
     url="${urls[i]}"
 
-    review_name=$(review_name 'Cask version' "${i}" "${appcasts_counter}")
+    review_status='error'
+    review_name=$(review_name 'Version' "${i}" "${appcasts_counter}")
     review_value=$(printf "%-${versions_max_length}s" "${version}")
 
     if [[ ! -z "${appcast}" ]] && [[ ! -z "${checkpoint}" ]]; then
       # when we have both appcast and a checkpoint
       prepare_url_content_code_status "${appcast}"
       latest=($(get_appcast_version_with_downloads "${cask}" "${appcast}"))
-      status="$?"
+      latest_status="$?"
       latest_checkpoint="$(generate_appcast_checkpoint "${content}")"
       latest_version="${latest[0]}"
       latest_url="${latest[1]}"
 
       suggested_version=$(suggest_cask_version "${cask}" "${version}" "${version}" "${url}")
-      suggested_latest_version=$(suggest_cask_version "${cask}" "${version}" "${latest_version}" "${latest_url}")
+      if [[ "${latest_status}" -eq 0 ]]; then
+        suggested_latest_version=$(suggest_cask_version "${cask}" "${version}" "${latest_version}" "${latest_url}")
+      else
+        latest_version=''
+        suggested_latest_version=''
+      fi
 
-      if [[ "${status}" -eq 0 ]]; then
-        # appcast response was successfull
-        if [[ "${latest_checkpoint}" == "${checkpoint}" ]]; then
-          # checkpoints match
+      if [[ "${latest_checkpoint}" == "${checkpoint}" ]]; then
+        # checkpoints match (updated)
+        updated_counter+=1
+        review_status='updated'
+
+        if [[ "${latest_status}" -eq 0 ]]; then
           review_value+=" | ${latest_version}"
           if [[ "${latest_version}" != "${suggested_latest_version}" ]]; then
             review_value+=" → $(tput setaf 7)${suggested_latest_version}$(tput sgr0)"
           fi
-          [[ "${SHOW_ALL}" == 'true' ]] && output_csv "${cask}" "${appcast}" "${version}" "${latest_version}" "${suggested_latest_version}"
-        elif [[ "${latest_checkpoint}" != "${checkpoint}" ]] && [[ ! -z "${latest_version}" ]]; then
-          # checkpoints doesn't match but we know the latest version
+        else
+          review_value+=" | -"
+          latest_version='-'
+          suggested_latest_version='-'
+        fi
+
+        [[ "${SHOW_ALL}" == 'true' ]] && output_csv "${cask}" "${appcast}" "${version}" "${review_status}" "${latest_version}" "${suggested_latest_version}"
+      elif [[ "${latest_checkpoint}" != "${checkpoint}" ]]; then
+        # checkpoints doesn't match (outdated)
+        outdated_counter+=1
+        review_status='outdated'
+
+        if [[ ! -z "${latest_version}" ]]; then
+          # we know the latest version
           if [[ "${latest_version}" =~ ${version} ]] || [[ "${version}" =~ ${latest_version} ]]; then
             # old and new versions are the same
             review_value+=" | ${latest_version}"
             if [[ "${latest_version}" != "${suggested_version}" ]]; then
               review_value+=" → $(tput setaf 7)${suggested_version}$(tput sgr0)"
             fi
-            [[ "${SHOW_ALL}" == 'true' ]] && output_csv "${cask}" "${appcast}" "${version}" "${latest_version}" "${suggested_version}"
+            [[ "${SHOW_ALL}" == 'true' ]] && output_csv "${cask}" "${appcast}" "${version}" "${review_status}" "${latest_version}" "${suggested_version}"
           else
             # new version available
             show='true' # show in a review on screen
@@ -427,22 +449,43 @@ review_cask_versions() {
               review_value+=" → $(tput setaf 2)${suggested_latest_version}$(tput sgr0)"
             fi
             review_value+=" (latest)"
-            output_csv "${cask}" "${appcast}" "${version}" "${latest_version}" "${suggested_latest_version}"
+            output_csv "${cask}" "${appcast}" "${version}" "${review_status}" "${latest_version}" "${suggested_latest_version}"
           fi
-        elif [[ "${latest_checkpoint}" != "${checkpoint}" ]] && [[ -z "${latest_version}" ]]; then
-          # checkpoints doesn't match and latest version is unknown
+        else
+          # latest version is unknown
           show='true' # show in a review on screen
           review_value+=" | -"
-          output_csv "${cask}" "${appcast}" "${version}" "-" "-"
+          output_csv "${cask}" "${appcast}" "${version}" "${review_status}" "-" "-"
         fi
       fi
     fi
 
     add_to_review "${review_name}" "${review_value}"
   done
+
+  if [[ "${updated_counter}" -eq 0 ]] && [[ "${outdated_counter}" -eq 0 ]]; then
+    review_status_color=1
+    review_status='error'
+  fi
+
+  if [[ "${updated_counter}" -gt 0 ]]; then
+    review_status_color=2
+    review_status='updated'
+  fi
+
+  if [[ "${outdated_counter}" -gt 0 ]]; then
+    review_status_color=3
+    review_status='outdated'
+  fi
+
+  add_to_review 'Status' "$(tput setaf ${review_status_color})${review_status}$(tput sgr0)"
 }
 
 # Review cask appcasts.
+#
+# Used external variables:
+#   appcasts
+#   checkpoints
 #
 # Arguments:
 #   $1 - Cask name
@@ -450,28 +493,10 @@ review_cask_versions() {
 #   $3 - Current version
 #   $4 - Latest version
 review_cask_appcasts() {
-  local -a appcasts checkpoints
-  local -i appcasts_max_length i code status
+  local i code status
   local cask values version appcast checkpoint content latest_checkpoint latest_version review_name review_value msg
 
   readonly cask="$1"
-  readonly values=$(get_cask_version_appcast_checkpoint_url "${cask}")
-
-  IFS=$'\n' read -rd '' -a lines <<< "${values}"
-
-  for line in "${lines[@]}"; do
-    line=($(echo "${line}" | xargs))
-    version="${line[0]}"
-    appcast=$(interpolate_version "${line[1]}" "${version}")
-    checkpoint="${line[2]}"
-
-    [[ "${#line[@]}" -lt 3 ]] && continue
-    [[ -z "${appcast}" ]] && continue
-
-    [[ "${appcasts_max_length}" -lt "${#appcast}" ]] && appcasts_max_length="${#appcast}"
-    appcasts+=("${appcast}")
-    checkpoints+=("${checkpoint}")
-  done
 
   for ((i = 0; i < ${#appcasts[@]}; i++)); do
     appcast="${appcasts[i]}"
@@ -479,7 +504,7 @@ review_cask_appcasts() {
 
     prepare_url_content_code_status "${appcast}"
 
-    if [[ "${status}" -eq 60 ]] && [[ "${appcast}" =~ 'https' ]]; then
+    if [[ "${status}" -eq 60 ]] && [[ "${appcast}" =~ ^https ]]; then
       # invalid certificate chain, try HTTP instead
       appcast="${appcast/https/http}"
       prepare_url_content_code_status "${appcast}"
@@ -489,22 +514,8 @@ review_cask_appcasts() {
 
     latest_checkpoint="$(generate_appcast_checkpoint "${content}")"
 
-    review_name=$(review_name 'Cask appcast' "${i}" "${appcasts_counter}")
-
-    if [[ "${code}" -eq 200 ]]; then
-      review_value=$(printf "%-$((appcasts_max_length))s" "${appcast}")
-      if [[ "${latest_checkpoint}" == "${checkpoint}" ]]; then
-        msg="$(tput setaf 2)valid$(tput sgr0)"
-      else
-        msg="$(tput setaf 3)outdated$(tput sgr0)"
-      fi
-      review_value+=$(printf " | checkpoint: %s" "${msg}")
-    elif [[ "${status}" -eq 0 ]]; then
-      review_value=$(printf "%-$((appcasts_max_length+6))s" "${appcast} [$(tput setaf 3)${code}$(tput sgr0)]")
-    else
-      review_value=$(printf "%-$((appcasts_max_length))s" "${appcast}")
-      review_value+=$(printf " | $(tput setaf 1)curl returned status %s$(tput sgr0)" "${status}")
-    fi
+    review_name=$(review_name 'Appcast' "${i}" "${#appcasts[@]}")
+    review_value="${appcast}"
 
     add_to_review "${review_name}" "${review_value}"
   done
@@ -520,14 +531,14 @@ review_cask_appcasts() {
 #   $1 - Cask name
 #   $2 - Appcast
 #   $3 - Current version
-#   $4 - Latest version
-#   $5 - Suggested latest version
+#   $4 - Status
+#   $5 - Latest version
+#   $6 - Suggested latest version
 output_csv() {
-  [[ "${OUTPUT}" == 'true' ]] && printf "\"%s\";\"%s\";\"%s\";\"%s\";\"%s\"\n" "$1" "$2" "$3" "$4" "$5" >> "${OUTPUT_PATH}"
+  [[ "${OUTPUT}" == 'true' ]] && printf "\"%s\";\"%s\";\"%s\";\"%s\";\"%s\";\"%s\"\n" "$1" "$2" "$3" "$4" "$5" "$6" >> "${OUTPUT_PATH}"
 }
 
 # Globals:
-#   SHOW_CHECKPOINTS
 #   SHOW_ALL
 #   REVIEW_NAMES
 #   REVIEW_VALUES
@@ -536,18 +547,21 @@ output_csv() {
 # Arguments:
 #   $1 - Cask
 main() {
+  local -a versions appcasts checkpoints urls
   local cask show
 
   readonly cask="$1"
   show='false'
 
-  add_to_review 'Cask name' "$(tput setaf 7)${cask}$(tput sgr0)"
+  prepare_cask_groups "${cask}"
+
+  add_to_review 'Name' "$(tput setaf 7)${cask}$(tput sgr0)"
   review_cask_versions "${cask}"
-  [[ "${SHOW_CHECKPOINTS}" == 'true' ]] && review_cask_appcasts "${cask}"
+  review_cask_appcasts "${cask}"
   [[ "${SHOW_ALL}" == 'true' ]] && show='true'
 
   if [[ "${show}" == 'true' ]]; then
-    show_review 17
+    show_review 12
     [[ "${#CASKS[@]}" -gt 1 ]] && divide
   fi
 
@@ -568,7 +582,7 @@ fi
 
 # process
 [[ "${#CASKS[@]}" -gt 1 ]] && printf "Checking updates for %i casks...\n" "${#CASKS[@]}" && divide
-[[ "${OUTPUT}" == 'true' ]] && printf "\"%s\";\"%s\";\"%s\";\"%s\";\"%s\"\n" 'Name' 'Appcast' 'Current version' 'Latest version' 'Suggested latest version' > "${OUTPUT_PATH}"
+[[ "${OUTPUT}" == 'true' ]] && printf "\"%s\";\"%s\";\"%s\";\"%s\";\"%s\";\"%s\"\n" 'Name' 'Appcast' 'Current version' 'Status' 'Latest version' 'Suggested latest version' > "${OUTPUT_PATH}"
 for cask in "${CASKS[@]}"; do main "${cask}"; done
 
 exit 0
