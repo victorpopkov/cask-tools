@@ -2,10 +2,10 @@
 #
 # Find outdated casks and their latest versions.
 #
-# Version:         0.5.14
+# Version:         0.5.15
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   09.12.2016
+# Last modified:   10.12.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,7 +18,7 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.5.14'
+readonly VERSION='0.5.15'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
 readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-check-updates.xml"
@@ -144,6 +144,26 @@ if ! pwd | grep -q 'homebrew-.*/Casks'; then
   error "You need to be inside a '/homebrew-*/Casks' directory"
 fi
 
+# Prepare data returned from get_url_content() by moving it into external variables.
+#
+# Used external variables:
+#   content
+#   code
+#   status
+#
+# Arguments:
+#   $1 - URL
+prepare_url_content_code_status() {
+  local url out
+
+  readonly url="$1"
+
+  out=$(get_url_content "${url}")
+  content=$(echo "${out}" | sed -e :a -e '$d;N;2,2ba' -e 'P;D') # delete last 2 lines
+  code=$(echo "${out}" | tail -n 2 | head -n 1)
+  status=$(echo "${out}" | tail -n 1)
+}
+
 # Extract version number with download URL(s) from appcast content.
 #
 # Arguments:
@@ -153,20 +173,18 @@ fi
 #
 # Returns version.
 get_appcast_version_with_downloads() {
-  local cask url content out code status values version download_url tag rule
   local -a casks_matching_tag
+  local -i code status
+  local cask url content values version download_url tag rule
 
   readonly cask="$1"
   readonly url="$2"
 
   content="$3"
   if [[ -z "$3" ]]; then
-    readonly out=$(get_url_content "${url}")
-    content=$(echo "${out}" | sed -e :a -e '$d;N;2,2ba' -e 'P;D') # delete last 2 lines
-    readonly code=$(echo "${out}" | tail -n 2 | head -n 1)
-    readonly status=$(echo "${out}" | tail -n 1)
+    prepare_url_content_code_status "${url}"
   fi
-  readonly content
+  readonly content code status
 
   case "$(get_appcast_provider "${content}")" in
     'Sparkle')
@@ -274,21 +292,16 @@ suggest_cask_version() {
 
   # "<version><delimiter><build>"
   cask_rules=($(get_xml_config_values '//version-delimiter-build' 'cask'))
-  for rule in "${cask_rules[@]}"; do
-    [[ "${cask}" == "${rule}" ]] && result="${latest_version}${delimiter}${latest_build}"
-  done
+  check_array_contains 'cask_rules[@]' "${cask}" && result="${latest_version}${delimiter}${latest_build}"
 
   # "<version>"
   cask_rules=($(get_xml_config_values '//version-only' 'cask'))
-  for rule in "${cask_rules[@]}"; do
-    [[ "${cask}" == "${rule}" ]] && result="${latest_version}"
-  done
+  check_array_contains 'cask_rules[@]' "${cask}" && result="${latest_version}"
 
   # "<build>"
+  # shellcheck disable=SC2034
   cask_rules=($(get_xml_config_values '//build-only' 'cask'))
-  for rule in "${cask_rules[@]}"; do
-    [[ "${cask}" == "${rule}" ]] && result="${latest_build}"
-  done
+  check_array_contains 'cask_rules[@]' "${cask}" && result="${latest_build}"
 
   # custom rules
   rule=$(get_xml_config_custom_rule "${cask}")
@@ -306,21 +319,23 @@ suggest_cask_version() {
   echo "${result}"
 }
 
-# Review cask versions.
+# Prepare arrays with corresponding versions, appcasts, checkpoints and urls.
 #
-# Globals:
-#   SHOW_ALL
+# Used external variables:
+#   versions
+#   appcasts
+#   checkpoints
+#   urls
+#   versions_max_length
+#   appcasts_counter
 #
 # Arguments:
 #   $1 - Cask name
-review_cask_versions() {
-  local -a versions appcasts checkpoints urls latest
-  local -i versions_max_length appcasts_counter i status
-  local cask values line version appcast checkpoint url out code status content latest_checkpoint latest_version suggested_version suggested_latest_version latest_url review_name review_value
+prepare_cask_groups() {
+  local cask values line version appcast checkpoint url
 
   readonly cask="$1"
   readonly values=$(get_cask_version_appcast_checkpoint_url "${cask}")
-
   IFS=$'\n' read -rd '' -a lines <<< "${values}"
 
   for line in "${lines[@]}"; do
@@ -330,9 +345,11 @@ review_cask_versions() {
     checkpoint="${line[2]}"
     url="${line[3]}"
 
-    [[ -z "${version}" ]] && continue
+    [[ -z "${version}" ]] && continue # skip if no version
 
+    # get maximum version length for review alignment
     [[ "${versions_max_length}" -lt "${#version}" ]] && versions_max_length="${#version}"
+
     versions+=("${version}")
     appcasts+=("${appcast}")
     checkpoints+=("${checkpoint}")
@@ -342,6 +359,26 @@ review_cask_versions() {
     [[ -z "${appcast}" ]] && continue
     ((appcasts_counter++))
   done
+}
+
+# Review cask versions.
+#
+# Globals:
+#   SHOW_ALL
+#
+# Arguments:
+#   $1 - Cask name
+review_cask_versions() {
+  local -a versions appcasts checkpoints urls latest
+  local -i versions_max_length appcasts_counter i code status
+  local cask
+  local version appcast checkpoint url
+  local latest_version latest_checkpoint latest_url
+  local content suggested_version suggested_latest_version review_name review_value
+
+  readonly cask="$1"
+
+  prepare_cask_groups "${cask}"
 
   for ((i = 0; i < ${#versions[@]}; i++)); do
     version="${versions[i]}"
@@ -349,22 +386,12 @@ review_cask_versions() {
     checkpoint="${checkpoints[i]}"
     url="${urls[i]}"
 
-    if [[ "${i}" -eq 0 ]]; then
-      review_name='Cask version'
-      [[ "${appcasts_counter}" -gt 1 ]] && review_name+='s'
-    else
-      review_name=''
-    fi
-
+    review_name=$(review_name 'Cask version' "${i}" "${appcasts_counter}")
     review_value=$(printf "%-${versions_max_length}s" "${version}")
 
     if [[ ! -z "${appcast}" ]] && [[ ! -z "${checkpoint}" ]]; then
-      # when we have an appcast and a checkpoint
-      out=$(get_url_content "${appcast}")
-      content=$(echo "${out}" | sed -e :a -e '$d;N;2,2ba' -e 'P;D') # delete last 2 lines
-      code=$(echo "${out}" | tail -n 2 | head -n 1)
-      status=$(echo "${out}" | tail -n 1)
-
+      # when we have both appcast and a checkpoint
+      prepare_url_content_code_status "${appcast}"
       latest=($(get_appcast_version_with_downloads "${cask}" "${appcast}"))
       status="$?"
       latest_checkpoint="$(generate_appcast_checkpoint "${content}")"
@@ -425,7 +452,7 @@ review_cask_versions() {
 review_cask_appcasts() {
   local -a appcasts checkpoints
   local -i appcasts_max_length i code status
-  local cask values version appcast checkpoint out content latest_checkpoint latest_version review_name review_value msg
+  local cask values version appcast checkpoint content latest_checkpoint latest_version review_name review_value msg
 
   readonly cask="$1"
   readonly values=$(get_cask_version_appcast_checkpoint_url "${cask}")
@@ -450,27 +477,19 @@ review_cask_appcasts() {
     appcast="${appcasts[i]}"
     checkpoint="${checkpoints[i]}"
 
-    out=$(get_url_content "${appcast}")
-    content=$(echo "${out}" | sed -e :a -e '$d;N;2,2ba' -e 'P;D') # delete last 2 lines
-    code=$(echo "${out}" | tail -n 2 | head -n 1)
-    status=$(echo "${out}" | tail -n 1)
+    prepare_url_content_code_status "${appcast}"
 
     if [[ "${status}" -eq 60 ]] && [[ "${appcast}" =~ 'https' ]]; then
       # invalid certificate chain, try HTTP instead
       appcast="${appcast/https/http}"
-
-      out=$(get_url_content "${appcast}")
-      content=$(echo "${out}" | sed -e :a -e '$d;N;2,2ba' -e 'P;D') # delete last 2 lines
-      code=$(echo "${out}" | tail -n 2 | head -n 1)
-      status=$(echo "${out}" | tail -n 1)
+      prepare_url_content_code_status "${appcast}"
 
       [[ "${appcasts_max_length}" -eq "$((${#appcast}+1))" ]] && ((appcasts_max_length--))
     fi
 
     latest_checkpoint="$(generate_appcast_checkpoint "${content}")"
 
-    [[ "${i}" -eq 0 ]] && review_name='Cask appcast' || review_name=''
-    [[ "${i}" -eq 0 ]] && [[ "${#appcasts[@]}" -gt 1 ]] && review_name+='s'
+    review_name=$(review_name 'Cask appcast' "${i}" "${appcasts_counter}")
 
     if [[ "${code}" -eq 200 ]]; then
       review_value=$(printf "%-$((appcasts_max_length))s" "${appcast}")
@@ -523,19 +542,19 @@ main() {
   show='false'
 
   add_to_review 'Cask name' "$(tput setaf 7)${cask}$(tput sgr0)"
-
   review_cask_versions "${cask}"
   [[ "${SHOW_CHECKPOINTS}" == 'true' ]] && review_cask_appcasts "${cask}"
-
   [[ "${SHOW_ALL}" == 'true' ]] && show='true'
-  [[ "${show}" == 'true' ]] && show_review 17
+
+  if [[ "${show}" == 'true' ]]; then
+    show_review 17
+    [[ "${#CASKS[@]}" -gt 1 ]] && divide
+  fi
 
   # shellcheck disable=SC2034
   REVIEW_NAMES=()
   # shellcheck disable=SC2034
   REVIEW_VALUES=()
-
-  [[ "${show}" == 'true' ]] && [[ "${#CASKS[@]}" -gt 1 ]] && divide
 }
 
 # find casks
