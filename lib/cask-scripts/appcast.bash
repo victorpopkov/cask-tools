@@ -6,7 +6,7 @@
 #
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   26.10.2016
+# Last modified:   11.12.2016
 
 # Constants and globals
 declare BROWSER_HEADERS
@@ -24,9 +24,9 @@ generate_appcast_checkpoint() {
   local content
 
   readonly content="$1"
-  [[ -z "${content}" ]] && return 1
+  [[ -z "$*" ]] && return 1
 
-  sed -e 's/<pubDate>[^<]*<\/pubDate>//g' <<< "${content}" | shasum --algorithm 256 | awk '{ print $1 }'
+  sed -e 's/<pubDate>[^<]*<\/pubDate>//g' 2> /dev/null <<< "${content}" | shasum --algorithm 256 | awk '{ print $1 }'
 
   return 0
 }
@@ -41,7 +41,7 @@ get_appcast_provider() {
   local content result
 
   readonly content="$1"
-  [[ -z "${content}" ]] && return 1
+  [[ -z "$*" ]] && return 1
 
   # GitHub
   [[ "${content}" =~ '<feed'.*'<id>tag:github.com' ]] && result='GitHub Atom'
@@ -72,7 +72,7 @@ fix_sparkle_xmlns() {
   local content
 
   readonly content="$1"
-  [[ -z "${content}" ]] && return 1
+  [[ -z "$*" ]] && return 1
 
   if [[ "${content}" =~ '<rss'.*'xmlns:sparkle' ]]; then
     sed -e 's/ xmlns:sparkle=".*"/ xmlns:sparkle="http:\/\/www.andymatuschak.org\/xml-namespaces\/sparkle"/g' <<< "${content}"
@@ -93,7 +93,7 @@ format_xml() {
   local content
 
   content="$1"
-  [[ -z "${content}" ]] && return 1
+  [[ -z "$*" ]] && return 1
 
   content=$(xmlstarlet fo -s 2 -D -N <<< "${content}" 2> /dev/null)
   content=$(awk '{ sub(/<!--([[:space:]]*)?</, "<"); sub(/>([[:space:]]*)?-->/, ">"); print }' <<< "${content}") # uncomment tags
