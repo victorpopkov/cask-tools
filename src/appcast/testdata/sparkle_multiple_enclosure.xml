@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+  <channel>
+    <title>App</title>
+    <link>https://example.com/app/</link>
+    <description><![CDATA[App Description]]></description>
+    <language>en</language>
+    <item>
+      <title>Release 2.0.0</title>
+      <description><![CDATA[Release 2.0.0 Description]]></description>
+      <sparkle:minimumSystemVersion>10.10</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 13 May 2016 12:00:00 +0200</pubDate>
+      <!--<enclosure sparkle:version="200" sparkle:shortVersionString="2.0.0" url="https://example.com/app_2.0.0.tar.gz" length="100000" type="application/x-gzip"/>-->
+      <!--<enclosure sparkle:version="200" sparkle:shortVersionString="2.0.0" url="https://example.com/app_2.0.0.zip" length="100000" type="application/zip"/>-->
+      <!--<enclosure sparkle:version="200" sparkle:shortVersionString="2.0.0" url="https://example.com/app_2.0.0.dmg" length="100000" type="application/octet-stream"/>-->
+    </item>
+    <item>
+      <title>Release 1.1.0</title>
+      <description><![CDATA[Release 1.1.0 Description]]></description>
+      <sparkle:minimumSystemVersion>10.9</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 12 May 2016 12:00:00 +0200</pubDate>
+      <!-- <enclosure sparkle:version="110" sparkle:shortVersionString="1.1.0" url="https://example.com/app_1.1.0.tar.gz" length="100000" type="application/x-gzip"/> -->
+      <!-- <enclosure sparkle:version="110" sparkle:shortVersionString="1.1.0" url="https://example.com/app_1.1.0.zip" length="100000" type="application/zip"/> -->
+      <!-- <enclosure sparkle:version="110" sparkle:shortVersionString="1.1.0" url="https://example.com/app_1.1.0.dmg" length="100000" type="application/octet-stream"/> -->
+    </item>
+    <item>
+      <title>Release 1.0.1</title>
+      <description><![CDATA[Release 1.0.1 Description]]></description>
+      <sparkle:minimumSystemVersion>10.9</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 11 May 2016 12:00:00 +0200</pubDate>
+      <enclosure sparkle:version="101" sparkle:shortVersionString="1.0.1" url="https://example.com/app_1.0.1.tar.gz" length="100000" type="application/x-gzip"/>
+      <enclosure sparkle:version="101" sparkle:shortVersionString="1.0.1" url="https://example.com/app_1.0.1.zip" length="100000" type="application/zip"/>
+      <enclosure sparkle:version="101" sparkle:shortVersionString="1.0.1" url="https://example.com/app_1.0.1.dmg" length="100000" type="application/octet-stream"/>
+    </item>
+    <item>
+      <title>Release 1.0.0</title>
+      <description><![CDATA[Release 1.0.0 Description]]></description>
+      <sparkle:minimumSystemVersion>10.9</sparkle:minimumSystemVersion>
+      <pubDate>Mon, 10 May 2016 12:00:00 +0200</pubDate>
+      <enclosure sparkle:version="100" sparkle:shortVersionString="1.0.0" url="https://example.com/app_1.0.0.tar.gz" length="100000" type="application/x-gzip"/>
+      <enclosure sparkle:version="100" sparkle:shortVersionString="1.0.0" url="https://example.com/app_1.0.0.zip" length="100000" type="application/zip"/>
+      <enclosure sparkle:version="100" sparkle:shortVersionString="1.0.0" url="https://example.com/app_1.0.0.dmg" length="100000" type="application/octet-stream"/>
+    </item>
+  </channel>
+</rss>

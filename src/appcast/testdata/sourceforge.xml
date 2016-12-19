@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:files="https://sourceforge.net/api/files.rdf#" xmlns:media="http://video.search.yahoo.com/mrss/" xmlns:doap="http://usefulinc.com/ns/doap#" xmlns:sf="https://sourceforge.net/api/sfelements.rdf#" version="2.0">
+  <channel xmlns:files="https://sourceforge.net/api/files.rdf#" xmlns:media="http://video.search.yahoo.com/mrss/" xmlns:doap="http://usefulinc.com/ns/doap#" xmlns:sf="https://sourceforge.net/api/sfelements.rdf#">
+    <title>App</title>
+    <link>https://example.com/app/</link>
+    <description><![CDATA[App Description]]></description>
+    <pubDate>Thu, 13 May 2016 12:00:00 +0200</pubDate>
+    <managingEditor>noreply@sourceforge.net (SourceForge.net)</managingEditor>
+    <docs>https://example.com/app/rss</docs>
+    <item>
+      <title><![CDATA[/app/2.0.0.dmg]]></title>
+      <link>https://sourceforge.net/projects/example/files/app/2.0.0.dmg/download</link>
+      <guid>https://sourceforge.net/projects/example/files/app/2.0.0.dmg/download</guid>
+      <pubDate>Thu, 13 May 2016 12:00:00 +0200</pubDate>
+      <description><![CDATA[/app/2.0.0.dmg]]></description>
+      <files:sf-file-id xmlns:files="https://sourceforge.net/api/files.rdf#">25973918</files:sf-file-id>
+      <files:extra-info xmlns:files="https://sourceforge.net/api/files.rdf#">data</files:extra-info>
+      <media:content xmlns:media="http://video.search.yahoo.com/mrss/" type="application/octet-stream; charset=binary" url="https://sourceforge.net/projects/example/files/app/2.0.0.dmg/download" filesize="100000"><media:hash algo="md5">9d4eb90b4f3e9e7f9774c0275e0b2715</media:hash></media:content>
+    </item>
+    <item>
+      <title><![CDATA[/app/1.1.0.dmg]]></title>
+      <link>https://sourceforge.net/projects/example/files/app/1.1.0.dmg/download</link>
+      <guid>https://sourceforge.net/projects/example/files/app/1.1.0.dmg/download</guid>
+      <pubDate>Wed, 12 May 2016 12:00:00 +0200</pubDate>
+      <description><![CDATA[/app/1.1.0.dmg]]></description>
+      <files:sf-file-id xmlns:files="https://sourceforge.net/api/files.rdf#">25973917</files:sf-file-id>
+      <files:extra-info xmlns:files="https://sourceforge.net/api/files.rdf#">data</files:extra-info>
+      <media:content xmlns:media="http://video.search.yahoo.com/mrss/" type="application/octet-stream; charset=binary" url="https://sourceforge.net/projects/example/files/app/1.1.0.dmg/download" filesize="100000"><media:hash algo="md5">9d4eb90b4f3e9e7f9774c0275e0b2715</media:hash></media:content>
+    </item>
+    <item>
+      <title><![CDATA[/app/1.0.1.dmg]]></title>
+      <link>https://sourceforge.net/projects/example/files/app/1.0.1.dmg/download</link>
+      <guid>https://sourceforge.net/projects/example/files/app/1.0.1.dmg/download</guid>
+      <pubDate>Tue, 11 May 2016 12:00:00 +0200</pubDate>
+      <description><![CDATA[/app/1.0.1.dmg]]></description>
+      <files:sf-file-id xmlns:files="https://sourceforge.net/api/files.rdf#">25973916</files:sf-file-id>
+      <files:extra-info xmlns:files="https://sourceforge.net/api/files.rdf#">data</files:extra-info>
+      <media:content xmlns:media="http://video.search.yahoo.com/mrss/" type="application/octet-stream; charset=binary" url="https://sourceforge.net/projects/example/files/app/1.0.1.dmg/download" filesize="100000"><media:hash algo="md5">6771fc238ece2e7cfbb4c8080eb7f2c0</media:hash></media:content>
+    </item>
+    <item>
+      <title><![CDATA[/app/1.0.0.dmg]]></title>
+      <link>https://sourceforge.net/projects/example/files/app/1.0.0.dmg/download</link>
+      <guid>https://sourceforge.net/projects/example/files/app/1.0.0.dmg/download</guid>
+      <pubDate>Mon, 10 May 2016 12:00:00 +0200</pubDate>
+      <description><![CDATA[/app/1.0.0.dmg]]></description>
+      <files:sf-file-id xmlns:files="https://sourceforge.net/api/files.rdf#">25973914</files:sf-file-id>
+      <files:extra-info xmlns:files="https://sourceforge.net/api/files.rdf#">data</files:extra-info>
+      <media:content xmlns:media="http://video.search.yahoo.com/mrss/" type="application/octet-stream; charset=binary" url="https://sourceforge.net/projects/example/files/app/1.0.0.dmg/download" filesize="100000"><media:hash algo="md5">726050dded99543bcc0fbd4dc14103f2</media:hash></media:content>
+    </item>
+  </channel>
+</rss>
