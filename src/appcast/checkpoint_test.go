@@ -1,6 +1,7 @@
 package appcast
 
 import (
+	"fmt"
 	"testing"
 
 	"general"
@@ -25,7 +26,7 @@ func TestGetLatest(t *testing.T) {
 
 	for filename, checkpoint := range testCases {
 		// preparations
-		content := string(general.GetFileContent(testdataPath, filename))
+		content := string(general.GetFileContent(fmt.Sprintf(testdataPath, filename)))
 		c := new(Checkpoint)
 
 		// before

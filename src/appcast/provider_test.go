@@ -26,7 +26,7 @@ func TestGuessByContent(t *testing.T) {
 
 	for filename, provider := range testCases {
 		// preparations
-		content := string(general.GetFileContent(testdataPath, filename))
+		content := string(general.GetFileContent(fmt.Sprintf(testdataPath, filename)))
 		p := new(Provider)
 
 		expected := provider
