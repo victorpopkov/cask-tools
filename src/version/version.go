@@ -3,6 +3,7 @@ package version
 
 import (
 	"regexp"
+	"strings"
 
 	version "github.com/hashicorp/go-version"
 )
@@ -241,4 +242,155 @@ func (self Version) LessThan(v *Version) bool {
 	v2, _ = version.NewVersion(v.Value)
 
 	return v1.LessThan(v2)
+}
+
+// Major extracts the major semantic version part.
+func (self Version) Major() string {
+	re := regexp.MustCompile(`^\d`)
+	return re.FindAllString(self.Value, -1)[0]
+}
+
+// Minor extracts the minor semantic version part.
+func (self Version) Minor() string {
+	re := regexp.MustCompile(`^(?:\d)\.(\d)`)
+	return re.FindAllStringSubmatch(self.Value, -1)[0][1]
+}
+
+// Patch extracts the patch semantic version part.
+func (self Version) Patch() string {
+	re := regexp.MustCompile(`^(?:\d)\.(?:\d)\.(\d)`)
+	return re.FindAllStringSubmatch(self.Value, -1)[0][1]
+}
+
+// MajorMinor extracts the major and minor semantic version parts.
+func (self Version) MajorMinor() string {
+	re := regexp.MustCompile(`^((?:\d)\.(?:\d))`)
+	return re.FindAllString(self.Value, -1)[0]
+}
+
+// MajorMinorPatch extracts the major, minor and patch semantic version parts.
+func (self Version) MajorMinorPatch() string {
+	re := regexp.MustCompile(`^((?:\d)\.(?:\d)\.(?:\d))`)
+	return re.FindAllString(self.Value, -1)[0]
+}
+
+// BeforeComma extract the part before comma.
+func (self Version) BeforeComma() string {
+	re := regexp.MustCompile(`(^.*)\,`)
+	return re.FindAllStringSubmatch(self.Value, -1)[0][1]
+}
+
+// AfterComma extract the part after comma.
+func (self Version) AfterComma() string {
+	re := regexp.MustCompile(`\,(.*$)`)
+	return re.FindAllStringSubmatch(self.Value, -1)[0][1]
+}
+
+// BeforeColon extract the part before colon.
+func (self Version) BeforeColon() string {
+	re := regexp.MustCompile(`(^.*)\:`)
+	return re.FindAllStringSubmatch(self.Value, -1)[0][1]
+}
+
+// AfterColon extract the part after colon.
+func (self Version) AfterColon() string {
+	re := regexp.MustCompile(`\:(.*$)`)
+	return re.FindAllStringSubmatch(self.Value, -1)[0][1]
+}
+
+// NoDots removes all dots from version.
+func (self Version) NoDots() string {
+	re := regexp.MustCompile(`\.`)
+	return re.ReplaceAllString(self.Value, "")
+}
+
+// DotsToUnderscores convert all dots to underscores.
+func (self Version) DotsToUnderscores() string {
+	re := regexp.MustCompile(`\.`)
+	return re.ReplaceAllString(self.Value, "_")
+}
+
+// DotsToHyphens convert all dots to hyphens.
+func (self Version) DotsToHyphens() string {
+	re := regexp.MustCompile(`\.`)
+	return re.ReplaceAllString(self.Value, "-")
+}
+
+// InterpolateIntoString interpolates existing version into the provided string
+// with Ruby interpolation syntax.
+func (self Version) InterpolateIntoString(content string) (result string) {
+	result = content
+
+	regexInterpolations := regexp.MustCompile(`(#{version})|(#{version\.[^}]*.[^{]*})`)
+	regexAllMethods := regexp.MustCompile(`(?:^#{version\.)(.*)}`)
+
+	// find all version interpolations
+	matches := regexInterpolations.FindAllStringSubmatch(content, -1)
+
+	// for every version interpolation
+	for _, m := range matches {
+		match := m[0]
+
+		// extract all methods
+		methodsAll := regexAllMethods.FindAllStringSubmatch(match, -1)
+		if len(methodsAll) < 1 {
+			// when no methods, then it's just a version replace
+			re := regexp.MustCompile(match)
+			result = re.ReplaceAllString(result, self.Value)
+			continue
+		}
+
+		methods := strings.Split(methodsAll[0][1], ".")
+
+		// for every method
+		part := self.Value
+		for _, method := range methods {
+			switch method {
+			case "major":
+				part = NewVersion(part).Major()
+				break
+			case "minor":
+				part = NewVersion(part).Minor()
+				break
+			case "patch":
+				part = NewVersion(part).Patch()
+				break
+			case "major_minor":
+				part = NewVersion(part).MajorMinor()
+				break
+			case "major_minor_patch":
+				part = NewVersion(part).MajorMinorPatch()
+				break
+			case "before_comma":
+				part = NewVersion(part).BeforeComma()
+				break
+			case "after_comma":
+				part = NewVersion(part).AfterComma()
+				break
+			case "before_colon":
+				part = NewVersion(part).BeforeColon()
+				break
+			case "after_colon":
+				part = NewVersion(part).AfterColon()
+				break
+			case "no_dots":
+				part = NewVersion(part).NoDots()
+				break
+			case "dots_to_underscores":
+				part = NewVersion(part).DotsToUnderscores()
+				break
+			case "dots_to_hyphens":
+				part = NewVersion(part).DotsToHyphens()
+				break
+			default:
+				// if one of the methods is unknown, then return full string without any replacements
+				return result
+			}
+		}
+
+		re := regexp.MustCompile(match)
+		result = re.ReplaceAllString(result, part)
+	}
+
+	return result
 }

@@ -7,32 +7,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var extractAllTestCases = []struct {
-	Content string
-	Version []string
-}{
+var extractAllTestCases = map[string][]string{
 	// single
-	{"2", nil},
-	{"12", []string{"12"}},
-	{"102", []string{"102"}},
-	{"1.0.2", []string{"1.0.2"}},
-	{"10.2", []string{"10.2"}},
-	{"1.02", []string{"1.02"}},
-	{"v1.0.2", []string{"1.0.2"}},
-	{"Version 1.0.2", []string{"1.0.2"}},
-	{"Version-1.0.2", []string{"1.0.2"}},
-	{"1.0b2", []string{"1.0b2"}},
-	{"1.0RC2", []string{"1.0RC2"}},
-	{"1.0-2_i386", []string{"1.0-2_i386"}},
+	"2":             nil,
+	"12":            []string{"12"},
+	"102":           []string{"102"},
+	"1.0.2":         []string{"1.0.2"},
+	"10.2":          []string{"10.2"},
+	"1.02":          []string{"1.02"},
+	"v1.0.2":        []string{"1.0.2"},
+	"Version 1.0.2": []string{"1.0.2"},
+	"Version-1.0.2": []string{"1.0.2"},
+	"1.0b2":         []string{"1.0b2"},
+	"1.0RC2":        []string{"1.0RC2"},
+	"1.0-2_i386":    []string{"1.0-2_i386"},
 
 	// multiples
-	{"First is v1.0.1, second is v.1.0.2, third is v1.0.3", []string{"1.0.1", "1.0.2", "1.0.3"}},
+	"First is v1.0.1, second is v.1.0.2, third is v1.0.3": []string{"1.0.1", "1.0.2", "1.0.3"},
 
 	// ignored
-	{"86_64", nil},
-	{"386", nil},
-	{"64", nil},
-	{"32", nil},
+	"86_64": nil,
+	"386":   nil,
+	"64":    nil,
+	"32":    nil,
 }
 
 func GroupsTestCases() *Groups {
@@ -110,9 +107,9 @@ func TestNewVersion(t *testing.T) {
 
 //
 func TestExtractAll(t *testing.T) {
-	for _, testCase := range extractAllTestCases {
-		actual := ExtractAll(testCase.Content)
-		expected := testCase.Version
+	for content, versions := range extractAllTestCases {
+		actual := ExtractAll(content)
+		expected := versions
 
 		assert.Equal(t, expected, actual)
 	}
@@ -223,12 +220,12 @@ func TestGroupAddUrl(t *testing.T) {
 }
 
 func TestGroupExtractAll(t *testing.T) {
-	for _, testCase := range extractAllTestCases {
+	for content, versions := range extractAllTestCases {
 		g := NewGroup()
-		g.ExtractAll(testCase.Content)
+		g.ExtractAll(content)
 
 		var expected []Version
-		for _, version := range testCase.Version {
+		for _, version := range versions {
 			expected = append(expected, Version{version, 0, false})
 		}
 		actual := g.Versions
@@ -245,4 +242,45 @@ func TestVersionLessThan(t *testing.T) {
 	assert.True(t, v1.LessThan(v2))
 	assert.True(t, v3.LessThan(v1))
 	assert.True(t, v3.LessThan(v2))
+}
+
+func TestInterpolateIntoString(t *testing.T) {
+	v := NewVersion("1.2.3,1000:400")
+
+	testCases := map[string]string{
+		"#{version}": "1.2.3,1000:400",
+
+		// semantic
+		"#{version.major}":             "1",
+		"#{version.minor}":             "2",
+		"#{version.patch}":             "3",
+		"#{version.major_minor}":       "1.2",
+		"#{version.major_minor_patch}": "1.2.3",
+
+		// before & after
+		"#{version.before_comma}": "1.2.3",
+		"#{version.after_comma}":  "1000:400",
+		"#{version.before_colon}": "1.2.3,1000",
+		"#{version.after_colon}":  "400",
+
+		// dots
+		"#{version.no_dots}":             "123,1000:400",
+		"#{version.dots_to_underscores}": "1_2_3,1000:400",
+		"#{version.dots_to_hyphens}":     "1-2-3,1000:400",
+
+		// multiple
+		"#{version.major} #{version.minor} #{version.patch}": "1 2 3",
+
+		// chained
+		"#{version.before_colon.before_comma.no_dots}": "123",
+
+		// when unknown method (shouldn't change at all)
+		"#{version.unknown}":                      "#{version.unknown}",
+		"#{version.before_colon.unknown.no_dots}": "#{version.before_colon.unknown.no_dots}",
+	}
+
+	for content, interpolated := range testCases {
+		actual := v.InterpolateIntoString(content)
+		assert.Equal(t, interpolated, actual)
+	}
 }
