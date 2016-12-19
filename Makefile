@@ -8,12 +8,12 @@ help:
 
 install:
 	@mkdir -p ${DESTDIR}${PREFIX}/bin
-	@mkdir -p ${DESTDIR}${PREFIX}/lib/cask-scripts
+	@mkdir -p ${DESTDIR}${PREFIX}/lib/cask-tools
 	@cp -f bin/* ${DESTDIR}${PREFIX}/bin
 	@cp -R lib/* ${DESTDIR}${PREFIX}/lib
 
 uninstall:
-	@rm -fR ${DESTDIR}${PREFIX}/lib/cask-scripts
+	@rm -fR ${DESTDIR}${PREFIX}/lib/cask-tools
 	@rm -f ${DESTDIR}${PREFIX}/bin/cask-appcast
 	@rm -f ${DESTDIR}${PREFIX}/bin/cask-check-updates
 	@rm -f ${DESTDIR}${PREFIX}/bin/cask-homepage

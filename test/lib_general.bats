@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-load ../lib/cask-scripts/general
+load ../lib/cask-tools/general
 
 @test "syntax_error() when PROGRAM='example' and argument 'unexpected error'" {
   PROGRAM='example'

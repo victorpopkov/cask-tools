@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
-load ../lib/cask-scripts/general
-load ../lib/cask-scripts/url
+load ../lib/cask-tools/general
+load ../lib/cask-tools/url
 
 # get_url_content()
 @test "get_url_content() from example.com (skipped if no connection)" {

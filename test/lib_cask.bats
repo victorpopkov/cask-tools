@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 load test_helper
-load ../lib/cask-scripts/general
-load ../lib/cask-scripts/cask
+load ../lib/cask-tools/general
+load ../lib/cask-tools/cask
 
 # get_cask_stanza_value()
 @test "get_cask_stanza_value() when required arguments not passed" {

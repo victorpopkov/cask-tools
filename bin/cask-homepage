@@ -2,10 +2,10 @@
 #
 # Check homepages of the casks and try to fix them using provided rules.
 #
-# Version:         0.5.4
+# Version:         0.5.5
 # License:         MIT License
 # Author:          Victor Popkov <victor@popkov.me>
-# Last modified:   10.12.2016
+# Last modified:   19.12.2016
 
 # Getting this script's absoute path even when dealing with multi-level symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,10 +18,10 @@ done
 readonly SOURCE DIR
 
 # Constants and globals
-readonly VERSION='0.5.4'
+readonly VERSION='0.5.5'
 readonly BASE_PATH="$(cd "${DIR}/.." && pwd)"
 readonly PROGRAM=$(basename "$0")
-readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-scripts/config/cask-homepage.xml"
+readonly CONFIG_FILE_XML="${BASE_PATH}/lib/cask-tools/config/cask-homepage.xml"
 declare -a CASKS
 declare -a RULES
 declare -a RULES_ENABLED
@@ -43,13 +43,13 @@ SHOW_ALL='false'
 EDIT='false'
 
 # shellcheck source=/dev/null
-source "${BASE_PATH}/lib/cask-scripts/general.bash"
+source "${BASE_PATH}/lib/cask-tools/general.bash"
 # shellcheck source=/dev/null
-source "${BASE_PATH}/lib/cask-scripts/url.bash"
+source "${BASE_PATH}/lib/cask-tools/url.bash"
 # shellcheck source=/dev/null
-source "${BASE_PATH}/lib/cask-scripts/cask.bash"
+source "${BASE_PATH}/lib/cask-tools/cask.bash"
 # shellcheck source=/dev/null
-source "${BASE_PATH}/lib/cask-scripts/git.bash"
+source "${BASE_PATH}/lib/cask-tools/git.bash"
 
 # Display help.
 #
