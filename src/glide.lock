@@ -1,5 +1,5 @@
-hash: de00ccb6571d4f71b8b6382deb13bd9ae102e9c23edfbb2221f977d28fb0e11e
-updated: 2016-12-17T12:07:52.661868747+02:00
+hash: f52b8d5142055522374d17a973223d835bc90df766140f91131a5b0ee763656c
+updated: 2016-12-19T12:17:37.226252037+02:00
 imports:
 - name: github.com/alecthomas/template
   version: a0175ee3bccc567396460bf5acd36800cb10c49c
@@ -23,6 +23,8 @@ imports:
   - unix
 - name: gopkg.in/alecthomas/kingpin.v2
   version: e9044be3ab2a8e11d4e1f418d12f0790d57e8d70
+- name: gopkg.in/jarcoal/httpmock.v1
+  version: 6aa33143427f6eb0bebcc0af42e8db85e39a42c0
 testImports:
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9

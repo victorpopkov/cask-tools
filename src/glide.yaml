@@ -6,6 +6,7 @@ import:
 - package: github.com/hashicorp/go-version
 - package: gopkg.in/alecthomas/kingpin.v2
   version: ~2.2.3
+- package: gopkg.in/jarcoal/httpmock.v1
 testImport:
 - package: github.com/stretchr/testify
   version: ~1.1.4
