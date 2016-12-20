@@ -1,8 +1,10 @@
 package request
 
 import (
+	"crypto/tls"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 type Request struct {
@@ -27,8 +29,16 @@ func (self *Request) LoadContent() (content []byte, err error) {
 		req.Header.Set(header.Name, header.Value)
 	}
 
+	// prepare client
+	client := http.DefaultClient
+	client.Timeout = time.Duration(10 * time.Second)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client.Transport = tr
+
 	// make request
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
