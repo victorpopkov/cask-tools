@@ -19,6 +19,7 @@ func TestGetLatest(t *testing.T) {
 		"sparkle_incorrect_namespace.xml":    "f7ced8023765dc7f37c3597da7a1f8d33b3c22cc764e329babd3df16effdd245",
 		"sparkle_multiple_enclosure.xml":     "6ba0ab0e37d4280803ff2f197aaf362a3553849fb296a64bc946eda1bdb759c7",
 		"sparkle_no_releases.xml":            "65911706576dab873c2b30b2d6505581d17f8e2c763da7320cfb06bbc2d4eaca",
+		"sparkle_single.xml":                 "98c94ba87d4eb1d99b56652b537a26d3c68efa7efa5f497839a3832a31147a7a",
 		"sparkle_without_comments.xml":       "88ceb464f652d7bf43f351f41637facd671f8f04e9a32b4b077886d24251e472",
 		"sparkle_without_namespaces.xml":     "d4cdd55c6dbf944d03c5267f3f7be4a9f7c2f1b94929359ce7e21aeef3b0747b",
 		"unknown.xml":                        "a4161a72df970e6fca434e2b9e256b850f12d2934cdde057985b77ea892f35d8",

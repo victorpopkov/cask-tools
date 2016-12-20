@@ -19,6 +19,7 @@ func TestGuessByContent(t *testing.T) {
 		"sparkle_incorrect_namespace.xml":    Sparkle,
 		"sparkle_multiple_enclosure.xml":     Sparkle,
 		"sparkle_no_releases.xml":            Sparkle,
+		"sparkle_single.xml":                 Sparkle,
 		"sparkle_without_comments.xml":       Sparkle,
 		"sparkle_without_namespaces.xml":     Sparkle,
 		"unknown.xml":                        Unknown,
