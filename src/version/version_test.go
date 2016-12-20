@@ -174,6 +174,7 @@ func TestGroupsGroupVersionsAndCleanByWeights(t *testing.T) {
 		},
 	}
 
+	// default
 	groups := GroupsTestCases()
 
 	groups.Weighten()
@@ -183,6 +184,13 @@ func TestGroupsGroupVersionsAndCleanByWeights(t *testing.T) {
 	for _, group := range groups.Groups {
 		assert.EqualValues(t, testCases[group.PreferredVersion.Value], group.Urls)
 	}
+
+	// empty
+	groups = new(Groups)
+
+	groups.Weighten()
+	groups.GroupVersions()
+	groups.CleanByWeights()
 }
 
 func TestGroupAddVersion(t *testing.T) {

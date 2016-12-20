@@ -180,6 +180,10 @@ func (self *Groups) GroupVersions() {
 // This helps to eliminate the total number of wrong positives during the
 // version extraction.
 func (self *Groups) CleanByWeights() {
+	if len(self.Groups) == 0 {
+		return
+	}
+
 	groups := NewGroups()
 
 	w := 0
