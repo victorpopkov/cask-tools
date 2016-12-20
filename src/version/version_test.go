@@ -235,13 +235,31 @@ func TestGroupExtractAll(t *testing.T) {
 }
 
 func TestVersionLessThan(t *testing.T) {
+	// default
 	v1 := NewVersion("1.0.0")
 	v2 := NewVersion("1.0.1")
 	v3 := NewVersion("0.9.0")
 
-	assert.True(t, v1.LessThan(v2))
-	assert.True(t, v3.LessThan(v1))
-	assert.True(t, v3.LessThan(v2))
+	actual, _ := v1.LessThan(v2)
+	assert.True(t, actual)
+
+	actual, _ = v3.LessThan(v1)
+	assert.True(t, actual)
+
+	actual, _ = v3.LessThan(v2)
+	assert.True(t, actual)
+
+	// when second version is invalid
+	errorV1 := NewVersion("1.0.0")
+	errorV2 := NewVersion("test-0.9.0")
+	actual, err := errorV1.LessThan(errorV2)
+	assert.Equal(t, "Malformed version: test-0.9.0", err.Error())
+
+	// when first version is invalid
+	errorV1 = NewVersion("test-1.0.0")
+	errorV2 = NewVersion("0.9.0")
+	actual, err = errorV1.LessThan(errorV2)
+	assert.Equal(t, "Malformed version: test-1.0.0", err.Error())
 }
 
 func TestInterpolateIntoString(t *testing.T) {

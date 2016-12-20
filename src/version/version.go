@@ -234,14 +234,18 @@ func (self *Group) ExtractAll(content string) {
 }
 
 // LessThan compares if the version is less than the passed one.
-func (self Version) LessThan(v *Version) bool {
-	var v1 *version.Version
-	var v2 *version.Version
+func (self Version) LessThan(v *Version) (result bool, err error) {
+	v1, err := version.NewVersion(self.Value)
+	if err != nil {
+		return false, err
+	}
 
-	v1, _ = version.NewVersion(self.Value)
-	v2, _ = version.NewVersion(v.Value)
+	v2, err := version.NewVersion(v.Value)
+	if err != nil {
+		return false, err
+	}
 
-	return v1.LessThan(v2)
+	return v1.LessThan(v2), nil
 }
 
 // Major extracts the major semantic version part.
