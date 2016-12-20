@@ -11,7 +11,7 @@ import (
 
 func TestGetLatest(t *testing.T) {
 	testCases := map[string]string{
-		"github_default.xml":                 "1e92c6187485bdafa39716f824ddf8c1233e776fd23f9a0d42032bedc92edfb8",
+		"github_default.xml":                 "c28ff87daf2c02471fd2c836b7ed3776d927a8febbb6b8961daf64ce332f6185",
 		"sourceforge.xml":                    "1eed329e29aa768b242d23361adf225a654e7df74d58293a44d14862ef7ef975",
 		"sparkle_attributes_as_elements.xml": "06a16fc0d5c7f8e18ca04dbc52138159b5438cdb929e033dae6ddebca7e710fc",
 		"sparkle_default_asc.xml":            "8ad0cd8d67f12ed75fdfbf74e904ef8b82084875c959bec00abd5a166c512b5d",

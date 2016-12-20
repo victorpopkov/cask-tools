@@ -8,7 +8,7 @@
   <entry>
     <id>tag:github.com,2016:Repository/0000000/v2.0.0</id>
     <updated>2016-05-13T12:00:00+02:00</updated>
-    <link rel="alternate" type="text/html" href="/atom/atom/releases/tag/v2.0.0"/>
+    <link rel="alternate" type="text/html" href="/app/app/releases/tag/v2.0.0"/>
     <title>2.0.0</title>
     <content type="html">&lt;h3&gt;Release 2.0.0&lt;/h3&gt;</content>
     <author>
@@ -19,7 +19,7 @@
   <entry>
     <id>tag:github.com,2016:Repository/0000000/v1.1.0</id>
     <updated>2016-05-12T12:00:00+02:00</updated>
-    <link rel="alternate" type="text/html" href="/atom/atom/releases/tag/v1.1.0"/>
+    <link rel="alternate" type="text/html" href="/app/app/releases/tag/v1.1.0"/>
     <title>1.1.0</title>
     <content type="html">&lt;h3&gt;Release 1.1.0&lt;/h3&gt;</content>
     <author>
@@ -30,7 +30,7 @@
   <entry>
     <id>tag:github.com,2016:Repository/0000000/v1.0.1</id>
     <updated>2016-05-11T12:00:00+02:00</updated>
-    <link rel="alternate" type="text/html" href="/atom/atom/releases/tag/v1.0.1"/>
+    <link rel="alternate" type="text/html" href="/app/app/releases/tag/v1.0.1"/>
     <title>1.0.1</title>
     <content type="html">&lt;h3&gt;Release 1.0.1&lt;/h3&gt;</content>
     <author>
@@ -41,7 +41,7 @@
   <entry>
     <id>tag:github.com,2016:Repository/0000000/v1.0.0</id>
     <updated>2016-05-10T12:00:00+02:00</updated>
-    <link rel="alternate" type="text/html" href="/atom/atom/releases/tag/v1.0.0"/>
+    <link rel="alternate" type="text/html" href="/app/app/releases/tag/v1.0.0"/>
     <title>1.0.0</title>
     <content type="html">&lt;h3&gt;Release 1.0.0&lt;/h3&gt;</content>
     <author>
