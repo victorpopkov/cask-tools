@@ -13,6 +13,8 @@ func TestGetLatest(t *testing.T) {
 	testCases := map[string]string{
 		"github_default.xml":                 "c28ff87daf2c02471fd2c836b7ed3776d927a8febbb6b8961daf64ce332f6185",
 		"sourceforge.xml":                    "1eed329e29aa768b242d23361adf225a654e7df74d58293a44d14862ef7ef975",
+		"sourceforge_empty.xml":              "568863d4a2540349db3987320525303f7cdd26bba6e0cada704ce2191afc9ae5",
+		"sourceforge_single.xml":             "aae4e241300ef6abaf1d855b3acc613344541207159cf85064124f0a207e37ab",
 		"sparkle_attributes_as_elements.xml": "06a16fc0d5c7f8e18ca04dbc52138159b5438cdb929e033dae6ddebca7e710fc",
 		"sparkle_default_asc.xml":            "8ad0cd8d67f12ed75fdfbf74e904ef8b82084875c959bec00abd5a166c512b5d",
 		"sparkle_default.xml":                "583743f5e8662cb223baa5e718224fa11317b0983dbf8b3c9c8d412600b6936c",
@@ -38,6 +40,6 @@ func TestGetLatest(t *testing.T) {
 		// after
 		expected := checkpoint
 		actual := c.Latest
-		assert.Equal(t, expected, actual, "Latest checkpoints doesn't match.")
+		assert.Equal(t, expected, actual, fmt.Sprintf("Latest checkpoints doesn't match: %s", filename))
 	}
 }
