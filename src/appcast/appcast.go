@@ -183,19 +183,19 @@ func (self *BaseAppcast) SortItemsByVersions(items []Item) []Item {
 		if priority[0] != "" && priority[1] != "" {
 			v1 = version.NewVersion(priority[0])
 			v2 = version.NewVersion(priority[1])
-			break
-		}
-	}
 
-	// compare
-	if v1.LessThan(v2) {
-		// reverse items, if the first version is less than second one
-		newItems := make([]Item, len(items))
-		for i, j := 0, len(items)-1; i < j; i, j = i+1, j-1 {
-			newItems[i], newItems[j] = items[j], items[i]
-		}
+			// compare
+			firstLess, err := v1.LessThan(v2)
+			if err == nil && firstLess {
+				// reverse items, if the first version is less than second one
+				newItems := make([]Item, len(items))
+				for i, j := 0, len(items)-1; i < j; i, j = i+1, j-1 {
+					newItems[i], newItems[j] = items[j], items[i]
+				}
 
-		return newItems
+				return newItems
+			}
+		}
 	}
 
 	return items
