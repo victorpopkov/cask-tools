@@ -3,6 +3,7 @@ package appcast
 
 import (
 	"log"
+	"regexp"
 
 	"request"
 	"version"
@@ -28,6 +29,7 @@ type BaseAppcast struct {
 	Checkpoint Checkpoint
 	Provider   Provider
 	Items      []Item
+	Filter     *regexp.Regexp
 }
 
 type Content struct {
@@ -53,6 +55,11 @@ func New(url string, userAgent string, a ...interface{}) *BaseAppcast {
 	load := true
 	if len(a) > 0 {
 		load = a[0].(bool)
+	}
+
+	// set the filter if available
+	if len(a) > 1 {
+		appcast.Filter = a[1].(*regexp.Regexp)
 	}
 
 	// guess provider by URL and replace current URL with new one if needed

@@ -47,6 +47,11 @@ func (self *GitHubAppcast) Parse() {
 
 	for _, item := range j {
 		for _, asset := range item.Assets {
+			// if filter is set, skip all the releases that don't match the tag name
+			if self.Filter != nil && !self.Filter.MatchString(item.TagName) {
+				continue
+			}
+
 			// remove the first "v" from string
 			re := regexp.MustCompile(`^v`)
 			v := re.ReplaceAllString(item.TagName, "")
