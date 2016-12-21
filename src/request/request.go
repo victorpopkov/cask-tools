@@ -4,14 +4,17 @@ import (
 	"crypto/tls"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"time"
 )
 
 type Request struct {
-	Url        string
-	Content    []byte
-	StatusCode StatusCode
-	Headers    []Header
+	Url                string
+	Content            []byte
+	StatusCode         StatusCode
+	Headers            []Header
+	Error              Error
+	InsecureSkipVerify bool
 }
 
 type Header struct {
@@ -32,14 +35,19 @@ func (self *Request) LoadContent() (content []byte, err error) {
 	// prepare client
 	client := http.DefaultClient
 	client.Timeout = time.Duration(10 * time.Second)
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+
+	if self.InsecureSkipVerify {
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client.Transport = tr
 	}
-	client.Transport = tr
 
 	// make request
 	resp, err := client.Do(req)
 	if err != nil {
+		errMsg, errCode := self.getErrorMsgAndCode(err)
+		self.Error = NewError(errMsg, errCode)
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -57,4 +65,18 @@ func (self *Request) LoadContent() (content []byte, err error) {
 // struct which later will be used when making requests.
 func (self *Request) AddHeader(name string, value string) {
 	self.Headers = append(self.Headers, Header{name, value})
+}
+
+// getErrorMsgAndCode return
+func (self Request) getErrorMsgAndCode(err error) (msg string, code int) {
+	regexTimeout := regexp.MustCompile(`Client.Timeout`)
+	regexUnknownAuthority := regexp.MustCompile(`certificate signed by unknown authority`)
+
+	if regexTimeout.MatchString(err.Error()) {
+		return "Request timed out.", 3
+	} else if regexUnknownAuthority.MatchString(err.Error()) {
+		return "Certificate signed by unknown authority.", 4
+	}
+
+	return "Request error.", 1
 }

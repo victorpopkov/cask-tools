@@ -1,6 +1,7 @@
 package request
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,6 +36,11 @@ func TestLoadContent(t *testing.T) {
 	r.Url = "invalid"
 	_, actualErr := r.LoadContent()
 	assert.Equal(t, `Get invalid: no responder found`, actualErr.Error())
+
+	// InsecureSkipVerify
+	r.InsecureSkipVerify = true
+	_, actualErr = r.LoadContent()
+	assert.Equal(t, `Get invalid: unsupported protocol scheme ""`, actualErr.Error())
 }
 
 func TestAddHeader(t *testing.T) {
@@ -49,4 +55,26 @@ func TestAddHeader(t *testing.T) {
 	assert.Len(t, r.Headers, 1)
 	assert.Equal(t, "User-Agent", r.Headers[0].Name)
 	assert.Equal(t, "Example", r.Headers[0].Value)
+}
+
+func TestGetErrorMsg(t *testing.T) {
+	r := new(Request)
+
+	// request timed out
+	err := errors.New("Get http://example.com: net/http: request canceled (Client.Timeout exceeded while awaiting headers)")
+	actualMsg, actualCode := r.getErrorMsgAndCode(err)
+	assert.Equal(t, "Request timed out.", actualMsg)
+	assert.Equal(t, 3, actualCode)
+
+	// certificate signed by unknown authority"
+	err = errors.New("Get https://example.com: x509: certificate signed by unknown authority")
+	actualMsg, actualCode = r.getErrorMsgAndCode(err)
+	assert.Equal(t, "Certificate signed by unknown authority.", actualMsg)
+	assert.Equal(t, 4, actualCode)
+
+	// unknown
+	err = errors.New("Get https://example.com: this error in unknown")
+	actualMsg, actualCode = r.getErrorMsgAndCode(err)
+	assert.Equal(t, "Request error.", actualMsg)
+	assert.Equal(t, 1, actualCode)
 }
