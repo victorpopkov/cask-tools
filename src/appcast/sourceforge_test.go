@@ -10,15 +10,15 @@ import (
 )
 
 var testCases = map[string]map[string][]string{
-	"sourceforge_empty.xml": map[string][]string{},
-	"sourceforge_single.xml": map[string][]string{
-		"2.0.0": []string{"https://sourceforge.net/projects/example/files/app/2.0.0.dmg/download", "10.10"},
-	},
-	"sourceforge.xml": map[string][]string{
+	"sourceforge_default.xml": map[string][]string{
 		"2.0.0": []string{"https://sourceforge.net/projects/example/files/app/2.0.0.dmg/download", "10.10"},
 		"1.1.0": []string{"https://sourceforge.net/projects/example/files/app/1.1.0.dmg/download", "10.9"},
 		"1.0.1": []string{"https://sourceforge.net/projects/example/files/app/1.0.1.dmg/download", "10.9"},
 		"1.0.0": []string{"https://sourceforge.net/projects/example/files/app/1.0.0.dmg/download", "10.9"},
+	},
+	"sourceforge_empty.xml": map[string][]string{},
+	"sourceforge_single.xml": map[string][]string{
+		"2.0.0": []string{"https://sourceforge.net/projects/example/files/app/2.0.0.dmg/download", "10.10"},
 	},
 }
 

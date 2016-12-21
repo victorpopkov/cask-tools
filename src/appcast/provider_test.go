@@ -12,7 +12,9 @@ import (
 func TestGuessByContent(t *testing.T) {
 	testCases := map[string]Provider{
 		"github_default.xml":                 GitHubAtom,
-		"sourceforge.xml":                    SourceForge,
+		"sourceforge_default.xml":            SourceForge,
+		"sourceforge_empty.xml":              SourceForge,
+		"sourceforge_single.xml":             SourceForge,
 		"sparkle_attributes_as_elements.xml": Sparkle,
 		"sparkle_default_asc.xml":            Sparkle,
 		"sparkle_default.xml":                Sparkle,
@@ -39,12 +41,15 @@ func TestGuessByContent(t *testing.T) {
 func TestGuessByUrl(t *testing.T) {
 	p := new(Provider)
 
-	// GitHub
+	// before
+	assert.Equal(t, Unknown, *p)
+
+	// after (GitHub)
 	actualProvider, actualUrl := p.GuessByUrl("https://github.com/atom/atom/releases.atom")
 	assert.Equal(t, GitHubAtom, actualProvider)
 	assert.Equal(t, "https://api.github.com/repos/atom/atom/releases", actualUrl)
 
-	// Unknown
+	// after (Unknown)
 	actualProvider, actualUrl = p.GuessByUrl("https://example.com/")
 	assert.Equal(t, Unknown, actualProvider)
 	assert.Equal(t, "https://example.com/", actualUrl)
