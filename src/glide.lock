@@ -1,5 +1,5 @@
-hash: f52b8d5142055522374d17a973223d835bc90df766140f91131a5b0ee763656c
-updated: 2016-12-19T12:17:37.226252037+02:00
+hash: a10c292905d4e1b0d1eebdc8deb613ca6b063abe02bfb8739fe1490fc6d64bc9
+updated: 2016-12-21T08:01:49.454078172+02:00
 imports:
 - name: github.com/alecthomas/template
   version: a0175ee3bccc567396460bf5acd36800cb10c49c
@@ -17,6 +17,8 @@ imports:
   version: d228849504861217f796da67fae4f6e347643f15
 - name: github.com/mattn/go-isatty
   version: 30a891c33c7cde7b02a981314b4228ec99380cca
+- name: github.com/tcnksm/go-gitconfig
+  version: d154598bacbf4501c095a309753c5d4af66caa81
 - name: golang.org/x/sys
   version: d75a52659825e75fff6158388dddc6a5b04f9ba5
   subpackages:
