@@ -15,6 +15,7 @@ type Request struct {
 	Headers            []Header
 	Error              Error
 	InsecureSkipVerify bool
+	Timeout            time.Duration
 }
 
 type Header struct {
@@ -34,7 +35,11 @@ func (self *Request) LoadContent() (content []byte, err error) {
 
 	// prepare client
 	client := http.DefaultClient
-	client.Timeout = time.Duration(10 * time.Second)
+	if self.Timeout > 0 {
+		client.Timeout = self.Timeout
+	} else {
+		client.Timeout = time.Duration(10 * time.Second)
+	}
 
 	if self.InsecureSkipVerify {
 		tr := &http.Transport{

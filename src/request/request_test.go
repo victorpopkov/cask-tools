@@ -3,6 +3,7 @@ package request
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	httpmock "gopkg.in/jarcoal/httpmock.v1"
@@ -38,9 +39,16 @@ func TestLoadContent(t *testing.T) {
 	assert.Equal(t, `Get invalid: no responder found`, actualErr.Error())
 
 	// InsecureSkipVerify
+	assert.False(t, r.InsecureSkipVerify)
 	r.InsecureSkipVerify = true
 	_, actualErr = r.LoadContent()
 	assert.Equal(t, `Get invalid: unsupported protocol scheme ""`, actualErr.Error())
+
+	// Timeout
+	assert.Equal(t, time.Duration(0), r.Timeout)
+	r.Timeout = 10
+	r.LoadContent()
+	assert.Equal(t, time.Duration(10), r.Timeout)
 }
 
 func TestAddHeader(t *testing.T) {
