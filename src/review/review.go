@@ -17,7 +17,7 @@ type Review struct {
 // New returns a new Review instance. By default the spacing between is "0".
 func New(a ...interface{}) *Review {
 	spacing := 0
-	if len(a) >= 1 {
+	if len(a) > 0 {
 		spacing = a[0].(int)
 	}
 
