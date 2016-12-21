@@ -2,7 +2,9 @@
 package appcast
 
 import (
-	"log"
+	"bufio"
+	"general"
+	"os"
 	"regexp"
 
 	"request"
@@ -19,6 +21,7 @@ type Appcast interface {
 	PrepareContent()
 	LoadContent() *BaseAppcast
 	Parse()
+	AddItem()
 	SortItemsByVersions() []Item
 }
 
@@ -46,36 +49,12 @@ type Item struct {
 
 // New returns a new BaseAppcast instance with provided URL and User-Agent. By
 // default the content loading is enabled.
-func New(url string, userAgent string, a ...interface{}) *BaseAppcast {
-	urlOriginal := url
-	appcast := new(BaseAppcast)
-	provider := new(Provider)
+func New(url string) *BaseAppcast {
+	a := new(BaseAppcast)
+	a.Url = url
+	a.GuessProviderByUrl()
 
-	// content loading is enabled by default
-	load := true
-	if len(a) > 0 {
-		load = a[0].(bool)
-	}
-
-	// set the filter if available
-	if len(a) > 1 {
-		appcast.Filter = a[1].(*regexp.Regexp)
-	}
-
-	// guess provider by URL and replace current URL with new one if needed
-	appcast.Provider, url = provider.GuessByUrl(url)
-
-	// request
-	appcast.Url = urlOriginal
-	appcast.Request.Url = url
-	appcast.Request.AddHeader("User-Agent", userAgent)
-
-	// load content and guess provider
-	if load {
-		appcast = appcast.LoadContent()
-	}
-
-	return appcast
+	return a
 }
 
 // GetUrl gets appcast URL.
@@ -108,22 +87,17 @@ func (self BaseAppcast) GetItems() []Item {
 	return self.Items
 }
 
-// PrepareContent basically just copies Original content to Modified.
-// Implemented in provider specific appcasts this functions can have different
-// purposes for content preparations.
-func (self *BaseAppcast) PrepareContent() {
-	if self.Content.Original == "" {
-		return
-	}
-
-	self.Content.Modified = self.Content.Original
+// GuessProviderByUrl guesses the provider by URL and replaces current URL with
+// new one if needed.
+func (self *BaseAppcast) GuessProviderByUrl() {
+	p := new(Provider)
+	self.Provider, self.Request.Url = p.GuessByUrl(self.Url)
 }
 
 // LoadContent loads content in the Request, generates checkpoints, sets the
 // guessed provider and return the new BaseAppcast instance.
 func (self *BaseAppcast) LoadContent() *BaseAppcast {
 	self.Request.LoadContent()
-
 	self.Content.Original = string(self.Request.Content)
 
 	// guess provider by content if guessing by URL failed
@@ -159,17 +133,64 @@ func (self *BaseAppcast) LoadContent() *BaseAppcast {
 	return self
 }
 
+// PrepareContent basically just copies Original content to Modified.
+// Implemented in provider specific appcasts this functions can have different
+// purposes for content preparations.
+func (self *BaseAppcast) PrepareContent() {
+	if self.Content.Original == "" {
+		return
+	}
+
+	self.Content.Modified = self.Content.Original
+}
+
 // Parse should be implemented by provider specific appcasts in order to parse
 // loaded content to retrieve the versions.
-func (self *BaseAppcast) Parse() {
-	log.Fatal("Parse() not implemented")
+func (self *BaseAppcast) Parse(a ...interface{}) {
+	exiter := general.DefaultExit()
+	writer := bufio.NewWriter(os.Stdout)
+
+	if len(a) > 0 {
+		exiter = a[0].(*general.Exit)
+	}
+
+	if len(a) > 1 {
+		writer = a[1].(*bufio.Writer)
+	}
+
+	general.Error("Parse() not implemented", exiter, writer)
+}
+
+// AddItem adds a new Item to the appcast items array based on provided version
+// and build. The Urls and MinimumSystemVersion are optional.
+func (self *BaseAppcast) AddItem(version version.Version, build version.Version, a ...interface{}) {
+	urls := []string{}
+	if len(a) > 0 {
+		urls = a[0].([]string)
+	}
+
+	minimumSystemVersion := ""
+	if len(a) > 1 {
+		minimumSystemVersion = a[1].(string)
+	}
+
+	item := Item{
+		Version:              version,
+		Build:                build,
+		Urls:                 urls,
+		MinimumSystemVersion: minimumSystemVersion,
+	}
+
+	self.Items = append(self.Items, item)
 }
 
 // SortItemsByVersions sorts Item array by versions. Can be useful if the
 // versions order in the content is inconsistent.
-func (self *BaseAppcast) SortItemsByVersions(items []Item) []Item {
+func (self *BaseAppcast) SortItemsByVersions() {
 	var v1 *version.Version
 	var v2 *version.Version
+
+	items := self.Items
 
 	// comparison priorities
 	priorities := [][]string{
@@ -193,10 +214,8 @@ func (self *BaseAppcast) SortItemsByVersions(items []Item) []Item {
 					newItems[i], newItems[j] = items[j], items[i]
 				}
 
-				return newItems
+				self.Items = newItems
 			}
 		}
 	}
-
-	return items
 }

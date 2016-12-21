@@ -68,9 +68,8 @@ func (self *SparkleAppcast) Parse() {
 		}
 	}
 
+	self.Items = items
 	if len(items) > 1 {
-		self.Items = self.SortItemsByVersions(items)
-	} else {
-		self.Items = items
+		self.SortItemsByVersions()
 	}
 }
