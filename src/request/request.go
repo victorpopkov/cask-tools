@@ -3,9 +3,12 @@ package request
 
 import (
 	"crypto/tls"
+	"encoding/base64"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -85,4 +88,21 @@ func (self Request) getErrorMsgAndCode(err error) (msg string, code int) {
 	}
 
 	return "Request error.", 1
+}
+
+// AddGitHubAuth adds an authorization header for GitHub API. The githubAuth
+// parameter needs to have both username and token separated by ':':
+// AddGitHubAuth("<username>:<token>").
+//
+// Returns the provided username and token.
+func (self *Request) AddGitHubAuth(githubAuth string) (githubUser string, githubToken string) {
+	auth := strings.Split(githubAuth, ":")
+	if len(auth) == 2 {
+		githubUser = auth[0]
+		githubToken = auth[1]
+		encoded := base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", auth[0], auth[1])))
+		self.AddHeader("Authorization", fmt.Sprintf("Basic %s", encoded))
+	}
+
+	return githubUser, githubToken
 }

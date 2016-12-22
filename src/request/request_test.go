@@ -86,3 +86,16 @@ func TestGetErrorMsg(t *testing.T) {
 	assert.Equal(t, "Request error.", actualMsg)
 	assert.Equal(t, 1, actualCode)
 }
+
+func TestAddGitHubAuth(t *testing.T) {
+	r := new(Request)
+
+	assert.Empty(t, r.Headers)
+
+	// passed as argument
+	user, token := r.AddGitHubAuth("user:token")
+
+	assert.Len(t, r.Headers, 1)
+	assert.Equal(t, "user", user)
+	assert.Equal(t, "token", token)
+}
