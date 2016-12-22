@@ -4,7 +4,6 @@ package review
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strconv"
 )
@@ -115,10 +114,6 @@ func (self *Review) AddPipeItems(name string, pluralSuffix string, groups ...int
 		group := g.([]string)
 		if groupsSize == 0 {
 			groupsSize = len(group)
-		}
-
-		if len(group) != groupsSize {
-			log.Fatal("Passed groups to AddPipeItems() are not equal size")
 		}
 	}
 

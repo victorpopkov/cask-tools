@@ -1,9 +1,8 @@
 package review
 
 import (
-	"bufio"
 	"bytes"
-	"strings"
+	"general"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,17 +34,6 @@ func createTestCaseReview() *Review {
 	}
 
 	return r
-}
-
-func getLinesFromBuffer(b bytes.Buffer) (lines []string) {
-	content := b.String()
-
-	scanner := bufio.NewScanner(strings.NewReader(content))
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-
-	return lines
 }
 
 func TestNew(t *testing.T) {
@@ -140,7 +128,7 @@ func TestFprint(t *testing.T) {
 
 	r := createTestCaseReview()
 	r.Fprint(&buffer)
-	lines := getLinesFromBuffer(buffer)
+	lines := general.GetLinesFromBuffer(buffer)
 
 	assert.Equal(t, 7, len(lines))
 	assert.Equal(t, "First:           value one", lines[0])
@@ -163,7 +151,7 @@ func TestFprint(t *testing.T) {
 
 	buffer = bytes.Buffer{}
 	r.Fprint(&buffer)
-	lines = getLinesFromBuffer(buffer)
+	lines = general.GetLinesFromBuffer(buffer)
 
 	assert.Equal(t, 1, len(lines))
 	assert.Equal(t, "First:   -", lines[0])
