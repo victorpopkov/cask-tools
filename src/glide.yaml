@@ -9,6 +9,7 @@ import:
 - package: gopkg.in/jarcoal/httpmock.v1
 - package: github.com/tcnksm/go-gitconfig
   version: ~0.1.2
+- package: github.com/gocarina/gocsv
 testImport:
 - package: github.com/stretchr/testify
   version: ~1.1.4
