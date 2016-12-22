@@ -43,6 +43,32 @@ func createTestAppcast() BaseAppcast {
 			Latest:  "3587cb776ce0e4e8237f215800b7dffba0f25865cb84550e87ea8bbac838c423",
 		},
 		Provider: Unknown,
+		Items: []Item{
+			Item{
+				Version: version.Version{Value: "2.0.0", Weight: 0},
+				Build:   version.Version{Value: "200", Weight: 0},
+				Urls: []string{
+					"https://example.com/app_2.0.0.dmg",
+					"https://example.com/app_2.0.0.pkg",
+					"https://example.com/app_2.0.0.deb",
+				},
+			},
+			Item{
+				Version: version.Version{Value: "1.1.0", Weight: 0},
+				Build:   version.Version{Value: "110", Weight: 0},
+				Urls:    []string{"https://example.com/app_1.1.0.dmg"},
+			},
+			Item{
+				Version: version.Version{Value: "1.0.1", Weight: 0},
+				Build:   version.Version{Value: "101", Weight: 0},
+				Urls:    []string{"https://example.com/app_1.0.1.dmg"},
+			},
+			Item{
+				Version: version.Version{Value: "1.0.0", Weight: 0},
+				Build:   version.Version{Value: "101", Weight: 0},
+				Urls:    []string{"https://example.com/app_1.0.1.dmg"},
+			},
+		},
 	}
 
 	return a
@@ -360,4 +386,64 @@ func TestSortItemsByVersions(t *testing.T) {
 	a.Items = itemsAsc
 	a.SortItemsByVersions()
 	assert.EqualValues(t, a.Items, itemsCorrect)
+}
+
+func TestFprintSingleVersionAndBuild(t *testing.T) {
+	var buffer bytes.Buffer
+
+	// default
+	a := createTestAppcast()
+	a.FprintSingleVersionAndBuild(&buffer)
+	lines := general.GetLinesFromBuffer(buffer)
+
+	assert.Len(t, lines, 1)
+	assert.Equal(t, lines[0], "2.0.0 200")
+
+	// when item is specified
+	buffer = *bytes.NewBuffer([]byte{})
+	a.FprintSingleVersionAndBuild(&buffer, 1)
+	lines = general.GetLinesFromBuffer(buffer)
+
+	assert.Len(t, lines, 1)
+	assert.Equal(t, lines[0], "1.1.0 110")
+
+	// no items
+	buffer = *bytes.NewBuffer([]byte{})
+	a.Items = []Item{}
+	a.FprintSingleVersionAndBuild(&buffer)
+	lines = general.GetLinesFromBuffer(buffer)
+
+	assert.Len(t, lines, 1)
+	assert.Equal(t, lines[0], "-")
+}
+
+func TestFprintSingleDownloads(t *testing.T) {
+	var buffer bytes.Buffer
+
+	// default
+	a := createTestAppcast()
+	a.FprintSingleDownloads(&buffer)
+	lines := general.GetLinesFromBuffer(buffer)
+
+	assert.Len(t, lines, 3)
+	assert.Equal(t, lines[0], "https://example.com/app_2.0.0.dmg")
+	assert.Equal(t, lines[1], "https://example.com/app_2.0.0.pkg")
+	assert.Equal(t, lines[2], "https://example.com/app_2.0.0.deb")
+
+	// when item is specified
+	buffer = *bytes.NewBuffer([]byte{})
+	a.FprintSingleDownloads(&buffer, 1)
+	lines = general.GetLinesFromBuffer(buffer)
+
+	assert.Len(t, lines, 1)
+	assert.Equal(t, lines[0], "https://example.com/app_1.1.0.dmg")
+
+	// no items
+	buffer = *bytes.NewBuffer([]byte{})
+	a.Items = []Item{}
+	a.FprintSingleDownloads(&buffer)
+	lines = general.GetLinesFromBuffer(buffer)
+
+	assert.Len(t, lines, 1)
+	assert.Equal(t, lines[0], "-")
 }

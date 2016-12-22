@@ -3,7 +3,9 @@ package appcast
 
 import (
 	"bufio"
+	"fmt"
 	"general"
+	"io"
 	"os"
 	"regexp"
 
@@ -218,4 +220,43 @@ func (self *BaseAppcast) SortItemsByVersions() {
 			}
 		}
 	}
+}
+
+// FprintSingleVersionAndBuild prints only the version and/or build of the first
+// item. By default it only uses first Item from the Items array, but it can be
+// changed.
+func (self BaseAppcast) FprintSingleVersionAndBuild(w io.Writer, a ...interface{}) {
+	i := 0
+	if len(a) > 0 {
+		i = a[0].(int)
+	}
+
+	if len(self.Items) > 0 {
+		fmt.Fprint(w, self.Items[i].Version.Value)
+		if self.Items[i].Build.Value != "" {
+			fmt.Fprintf(w, " %s", self.Items[i].Build.Value)
+		}
+		fmt.Fprint(w, "\n")
+		return
+	}
+
+	fmt.Fprintln(w, "-")
+}
+
+// FprintSingleDownloads prints only the download URLs of the first item. By
+// default only uses first Item from the Items array, but it can be changed.
+func (self BaseAppcast) FprintSingleDownloads(w io.Writer, a ...interface{}) {
+	i := 0
+	if len(a) > 0 {
+		i = a[0].(int)
+	}
+
+	if len(self.Items) > 0 {
+		for _, url := range self.Items[i].Urls {
+			fmt.Fprintln(w, url)
+		}
+		return
+	}
+
+	fmt.Fprintln(w, "-")
 }
