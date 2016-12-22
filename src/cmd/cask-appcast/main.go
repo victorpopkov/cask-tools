@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 
 	"appcast"
 	"review"
@@ -17,7 +16,7 @@ import (
 )
 
 var (
-	version          = "1.0.0-alpha.1"
+	version          = "1.0.0-alpha.2"
 	defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36"
 	githubUser       = ""
 
@@ -55,15 +54,9 @@ func main() {
 	a.Request.Timeout = *timeout
 	a.Filter = *filter
 
-	// if githubAuth has beed passed as arguments, use it instead
 	if *githubAuth != "" {
-		// add authorization to request
-		auth := strings.Split(*githubAuth, ":")
-		if len(auth) == 2 {
-			githubUser = auth[0]
-			encoded := base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", auth[0], auth[1])))
-			a.Request.AddHeader("Authorization", fmt.Sprintf("Basic %s", encoded))
-		}
+		// githubAuth has beed passed as arguments
+		githubUser, _ = a.Request.AddGitHubAuth(*githubAuth)
 	} else {
 		// check if `git config` has required parameters set
 		gu, guErr := gitconfig.Global("github.user")
@@ -185,17 +178,11 @@ func reviewGitHubAtom(a *appcast.BaseAppcast, r *review.Review) {
 	}
 
 	if len(a.Items) > 0 {
-		release := a.Items[0]
+		release, _ := a.GetFirstPrerelease()
 
 		// if only latest versions, then skip prereleases
 		if *githubLatest == true {
-			// get next stable version
-			for _, item := range a.Items {
-				if !item.Version.Prerelease {
-					release = item
-					break
-				}
-			}
+			release, _ = a.GetFirstStable()
 		}
 
 		// there are some releases
