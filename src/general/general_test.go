@@ -138,3 +138,16 @@ line 3
 
 	assert.Equal(t, expected, actual)
 }
+
+func TestGetLinesFromBuffer(t *testing.T) {
+	var buffer bytes.Buffer
+
+	buffer.Write([]byte("first line\nsecond line\nthird line"))
+
+	lines := GetLinesFromBuffer(buffer)
+
+	assert.Len(t, lines, 3)
+	assert.Equal(t, "first line", lines[0])
+	assert.Equal(t, "second line", lines[1])
+	assert.Equal(t, "third line", lines[2])
+}

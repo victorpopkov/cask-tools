@@ -183,3 +183,15 @@ func GetLineFromString(lineNum int, content string) (line string, lastLine int, 
 
 	return ReadLine(r, lineNum)
 }
+
+// GetLinesFromBuffer returns all lines from specific bytes.Buffer.
+func GetLinesFromBuffer(buffer bytes.Buffer) (lines []string) {
+	content := buffer.String()
+
+	scanner := bufio.NewScanner(strings.NewReader(content))
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	return lines
+}
