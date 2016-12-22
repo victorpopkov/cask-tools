@@ -45,8 +45,8 @@ func createTestAppcast() BaseAppcast {
 		Provider: Unknown,
 		Items: []Item{
 			Item{
-				Version: version.Version{Value: "2.0.0", Weight: 0},
-				Build:   version.Version{Value: "200", Weight: 0},
+				Version: version.Version{Value: "2.0.0", Weight: 0, Prerelease: true},
+				Build:   version.Version{Value: "200", Weight: 0, Prerelease: true},
 				Urls: []string{
 					"https://example.com/app_2.0.0.dmg",
 					"https://example.com/app_2.0.0.pkg",
@@ -54,18 +54,18 @@ func createTestAppcast() BaseAppcast {
 				},
 			},
 			Item{
-				Version: version.Version{Value: "1.1.0", Weight: 0},
-				Build:   version.Version{Value: "110", Weight: 0},
+				Version: version.Version{Value: "1.1.0", Weight: 0, Prerelease: false},
+				Build:   version.Version{Value: "110", Weight: 0, Prerelease: false},
 				Urls:    []string{"https://example.com/app_1.1.0.dmg"},
 			},
 			Item{
-				Version: version.Version{Value: "1.0.1", Weight: 0},
-				Build:   version.Version{Value: "101", Weight: 0},
+				Version: version.Version{Value: "1.0.1", Weight: 0, Prerelease: false},
+				Build:   version.Version{Value: "101", Weight: 0, Prerelease: false},
 				Urls:    []string{"https://example.com/app_1.0.1.dmg"},
 			},
 			Item{
-				Version: version.Version{Value: "1.0.0", Weight: 0},
-				Build:   version.Version{Value: "101", Weight: 0},
+				Version: version.Version{Value: "1.0.0", Weight: 0, Prerelease: false},
+				Build:   version.Version{Value: "101", Weight: 0, Prerelease: false},
 				Urls:    []string{"https://example.com/app_1.0.1.dmg"},
 			},
 		},
@@ -446,4 +446,76 @@ func TestFprintSingleDownloads(t *testing.T) {
 
 	assert.Len(t, lines, 1)
 	assert.Equal(t, lines[0], "-")
+}
+
+func TestRemoveAllPrereleases(t *testing.T) {
+	a := createTestAppcast()
+
+	// before
+	assert.Len(t, a.Items, 4)
+
+	a.RemoveAllPrereleases()
+
+	// after
+	assert.Len(t, a.Items, 3)
+	for _, item := range a.Items {
+		assert.False(t, item.Version.Prerelease)
+	}
+}
+
+func TestRemoveAllStable(t *testing.T) {
+	a := createTestAppcast()
+
+	// before
+	assert.Len(t, a.Items, 4)
+
+	a.RemoveAllStable()
+
+	// after
+	assert.Len(t, a.Items, 1)
+	for _, item := range a.Items {
+		assert.True(t, item.Version.Prerelease)
+	}
+}
+
+func TestGetFirstPrerelease(t *testing.T) {
+	a := createTestAppcast()
+
+	// default
+	release, err := a.GetFirstPrerelease()
+	assert.Nil(t, err)
+	assert.Equal(t, "2.0.0", release.Version.Value)
+
+	// when no pre-releases (should return first stable)
+	a.RemoveAllPrereleases()
+	release, err = a.GetFirstPrerelease()
+	assert.Nil(t, err)
+	assert.Equal(t, "1.1.0", release.Version.Value)
+
+	// when no releases
+	a.Items = []Item{}
+	release, err = a.GetFirstPrerelease()
+	assert.Nil(t, release)
+	assert.Equal(t, "No releases found", err.Error())
+}
+
+func TestGetFirstStable(t *testing.T) {
+	a := createTestAppcast()
+
+	// default
+	release, err := a.GetFirstStable()
+	assert.Nil(t, err)
+	assert.Equal(t, "1.1.0", release.Version.Value)
+
+	// when no stable releases (should return first pre-release)
+	a.RemoveAllStable()
+	release, err = a.GetFirstStable()
+	assert.Nil(t, err)
+	assert.Equal(t, "2.0.0", release.Version.Value)
+
+	// when no releases
+	a.Items = []Item{}
+	release, err = a.GetFirstStable()
+	assert.Nil(t, release)
+	assert.Equal(t, "No releases found", err.Error())
 }

@@ -3,6 +3,7 @@ package appcast
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"general"
 	"io"
@@ -259,4 +260,64 @@ func (self BaseAppcast) FprintSingleDownloads(w io.Writer, a ...interface{}) {
 	}
 
 	fmt.Fprintln(w, "-")
+}
+
+// RemoveAllPrereleases removes all Items that have Prerelease status.
+func (self *BaseAppcast) RemoveAllPrereleases() {
+	var result []Item
+
+	for _, item := range self.Items {
+		if !item.Version.Prerelease {
+			result = append(result, item)
+		}
+	}
+
+	self.Items = result
+}
+
+// RemoveAllStable removes all Items that don't have Prerelease status.
+func (self *BaseAppcast) RemoveAllStable() {
+	var result []Item
+
+	for _, item := range self.Items {
+		if item.Version.Prerelease {
+			result = append(result, item)
+		}
+	}
+
+	self.Items = result
+}
+
+// GetFirstPrerelease gets the first Item with Pre-release status. If only
+// stable releases, then returns first stable.
+func (self *BaseAppcast) GetFirstPrerelease() (*Item, error) {
+	if len(self.Items) > 0 {
+		// find next pre-release, if available
+		for _, item := range self.Items {
+			if item.Version.Prerelease {
+				return &item, nil
+			}
+		}
+
+		return &self.Items[0], nil // return first
+	}
+
+	return nil, errors.New("No releases found")
+}
+
+// GetFirstStable gets the first Item that doesn't have Pre-release status. If
+// no stable releases, then returns first pre-release.
+func (self *BaseAppcast) GetFirstStable() (*Item, error) {
+	if len(self.Items) > 0 {
+		// find next stable, if available
+		for _, item := range self.Items {
+			if !item.Version.Prerelease {
+				return &item, nil
+			}
+		}
+
+		return &self.Items[0], nil // return first
+	}
+
+	return nil, errors.New("No releases found")
 }
