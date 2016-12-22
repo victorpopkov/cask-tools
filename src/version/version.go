@@ -47,12 +47,18 @@ func NewGroup(a ...interface{}) *Group {
 	return g
 }
 
-// NewVersion returns a new Version instance. By default the weight is not set.
+// NewVersion returns a new Version instance. By default the Weight and
+// Prerelease are not set.
 func NewVersion(version string, a ...interface{}) *Version {
 	v := new(Version)
 	v.Value = version
-	if len(a) >= 1 {
+
+	if len(a) > 0 {
 		v.Weight = a[0].(int)
+	}
+
+	if len(a) > 1 {
+		v.Prerelease = a[1].(bool)
 	}
 
 	return v

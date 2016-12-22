@@ -96,13 +96,19 @@ func TestNewVersion(t *testing.T) {
 	assert.IsType(t, Version{}, *v)
 	assert.Equal(t, v.Value, version)
 	assert.Equal(t, v.Weight, 0)
+	assert.False(t, v.Prerelease)
 
 	// with weight
-	weight := 10
-	v = NewVersion(version, weight)
+	v = NewVersion(version, 10)
 	assert.IsType(t, Version{}, *v)
 	assert.Equal(t, v.Value, version)
-	assert.Equal(t, v.Weight, weight)
+	assert.False(t, v.Prerelease)
+
+	// with pre-release
+	v = NewVersion(version, 10, true)
+	assert.IsType(t, Version{}, *v)
+	assert.Equal(t, v.Value, version)
+	assert.True(t, v.Prerelease)
 }
 
 //
