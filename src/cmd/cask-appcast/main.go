@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"appcast"
@@ -16,7 +17,7 @@ import (
 )
 
 var (
-	version          = "1.0.0-alpha"
+	version          = "1.0.0-alpha.1"
 	defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36"
 	githubUser       = ""
 
@@ -52,6 +53,7 @@ func main() {
 	a.Request.AddHeader("User-Agent", *userAgent)
 	a.Request.InsecureSkipVerify = *insecureSkipVerify
 	a.Request.Timeout = *timeout
+	a.Filter = *filter
 
 	// if githubAuth has beed passed as arguments, use it instead
 	if *githubAuth != "" {
@@ -93,25 +95,11 @@ func main() {
 	}
 
 	if *appVersion {
-		if len(a.Items) > 0 {
-			fmt.Print(a.Items[0].Version.Value)
-			if a.Items[0].Build.Value != "" {
-				fmt.Printf(" %s", a.Items[0].Build.Value)
-			}
-			fmt.Print("\n")
-		} else {
-			fmt.Println("-")
-		}
+		a.FprintSingleVersionAndBuild(os.Stdout)
 	}
 
 	if *downloads {
-		if len(a.Items) > 0 {
-			for _, url := range a.Items[0].Urls {
-				fmt.Println(url)
-			}
-		} else {
-			fmt.Println("-")
-		}
+		a.FprintSingleDownloads(os.Stdout)
 	}
 
 	os.Exit(0)
@@ -157,27 +145,32 @@ func reviewAppcast(a *appcast.BaseAppcast, r *review.Review) {
 
 // reviewGitHubAtom reviews only GitHub Atom provider.
 func reviewGitHubAtom(a *appcast.BaseAppcast, r *review.Review) {
-	optionsStatuses := []string{}
-	optionsValues := []string{}
-
+	authorized := false
 	for _, header := range a.Request.Headers {
 		if header.Name == "Authorization" {
-			if a.Request.StatusCode.Int == 401 {
-				optionsStatuses = append(optionsStatuses, color.RedString("unauthorized"))
-				optionsValues = append(optionsValues, githubUser)
-			} else {
-				optionsStatuses = append(optionsStatuses, color.GreenString("authorized"))
-				optionsValues = append(optionsValues, githubUser)
+			if a.Request.StatusCode.Int != 401 {
+				authorized = true
+				break
 			}
 		}
 	}
 
-	if *filter != nil {
-		optionsStatuses = append(optionsStatuses, color.GreenString("filtered"))
-		optionsValues = append(optionsValues, (*filter).String())
+	if authorized {
+		r.AddItem("Authorization", fmt.Sprintf("%s | %s", color.GreenString("authorized"), githubUser))
+	} else {
+		r.AddItem("Authorization", fmt.Sprintf("%s | %s", color.RedString("unauthorized"), "-"))
 	}
 
-	r.AddPipeItems("Options", "", optionsStatuses, optionsValues)
+	if *filter != nil {
+		spacing := 21
+		if authorized {
+			spacing = 19
+		}
+
+		r.AddItem("Filtering", fmt.Sprintf("%-"+strconv.Itoa(spacing)+"s | %s", color.GreenString("enabled"), (*filter).String()))
+	}
+
+	// r.AddPipeItems("Options", "", optionsStatuses, optionsValues)
 
 	if a.Request.StatusCode.Int == 403 {
 		r.AddItem("Status", color.RedString("GitHub API rate limit exceeded."))
