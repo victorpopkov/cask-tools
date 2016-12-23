@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"regexp"
 	"time"
-
-	"version"
 )
 
 type GitHubAppcast struct {
@@ -43,7 +41,7 @@ func (self *GitHubAppcast) Parse() {
 	)
 	json.Unmarshal([]byte(self.Content.Modified), &j)
 
-	groups := version.NewGroups()
+	groups := NewGroups()
 
 	for _, item := range j {
 		for _, asset := range item.Assets {
@@ -57,7 +55,7 @@ func (self *GitHubAppcast) Parse() {
 			v := re.ReplaceAllString(item.TagName, "")
 
 			// create a version group with single version
-			g := version.NewGroup()
+			g := NewGroup()
 			g.AddVersion(v, 0, item.Prerelease)
 			g.AddUrl(asset.BrowserDownloadURL)
 

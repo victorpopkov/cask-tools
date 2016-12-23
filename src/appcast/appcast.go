@@ -5,13 +5,12 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"general"
 	"io"
 	"os"
 	"regexp"
 
+	"general"
 	"request"
-	"version"
 )
 
 type Appcast interface {
@@ -44,8 +43,8 @@ type Content struct {
 }
 
 type Item struct {
-	Version              version.Version
-	Build                version.Version
+	Version              Version
+	Build                Version
 	Urls                 []string
 	MinimumSystemVersion string
 }
@@ -166,7 +165,7 @@ func (self *BaseAppcast) Parse(a ...interface{}) {
 
 // AddItem adds a new Item to the appcast items array based on provided version
 // and build. The Urls and MinimumSystemVersion are optional.
-func (self *BaseAppcast) AddItem(version version.Version, build version.Version, a ...interface{}) {
+func (self *BaseAppcast) AddItem(version Version, build Version, a ...interface{}) {
 	urls := []string{}
 	if len(a) > 0 {
 		urls = a[0].([]string)
@@ -190,8 +189,8 @@ func (self *BaseAppcast) AddItem(version version.Version, build version.Version,
 // SortItemsByVersions sorts Item array by versions. Can be useful if the
 // versions order in the content is inconsistent.
 func (self *BaseAppcast) SortItemsByVersions() {
-	var v1 *version.Version
-	var v2 *version.Version
+	var v1 *Version
+	var v2 *Version
 
 	items := self.Items
 
@@ -205,8 +204,8 @@ func (self *BaseAppcast) SortItemsByVersions() {
 	// create versions for comparison
 	for _, priority := range priorities {
 		if priority[0] != "" && priority[1] != "" {
-			v1 = version.NewVersion(priority[0])
-			v2 = version.NewVersion(priority[1])
+			v1 = NewVersion(priority[0])
+			v2 = NewVersion(priority[1])
 
 			// compare
 			firstLess, err := v1.LessThan(v2)

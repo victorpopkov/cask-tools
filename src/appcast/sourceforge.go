@@ -3,7 +3,7 @@ package appcast
 import (
 	"encoding/xml"
 
-	"version"
+	version "github.com/hashicorp/go-version"
 )
 
 type SourceForgeAppcast struct {
@@ -46,11 +46,11 @@ func (self *SourceForgeAppcast) Parse() {
 	)
 	xml.Unmarshal([]byte(self.Content.Modified), &x)
 
-	groups := version.NewGroups()
+	groups := NewGroups()
 
 	for _, item := range x.Items {
 		// create a version group with single or multiple versions
-		g := version.NewGroup()
+		g := NewGroup()
 		g.ExtractAll(item.Title.Chardata)
 		g.AddUrl(item.Content.Url)
 

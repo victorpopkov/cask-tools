@@ -8,7 +8,6 @@ import (
 
 	"general"
 	"request"
-	"version"
 
 	"github.com/stretchr/testify/assert"
 	httpmock "gopkg.in/jarcoal/httpmock.v1"
@@ -45,8 +44,8 @@ func createTestAppcast() BaseAppcast {
 		Provider: Unknown,
 		Items: []Item{
 			Item{
-				Version: version.Version{Value: "2.0.0", Weight: 0, Prerelease: true},
-				Build:   version.Version{Value: "200", Weight: 0, Prerelease: true},
+				Version: Version{Value: "2.0.0", Weight: 0, Prerelease: true},
+				Build:   Version{Value: "200", Weight: 0, Prerelease: true},
 				Urls: []string{
 					"https://example.com/app_2.0.0.dmg",
 					"https://example.com/app_2.0.0.pkg",
@@ -54,18 +53,18 @@ func createTestAppcast() BaseAppcast {
 				},
 			},
 			Item{
-				Version: version.Version{Value: "1.1.0", Weight: 0, Prerelease: false},
-				Build:   version.Version{Value: "110", Weight: 0, Prerelease: false},
+				Version: Version{Value: "1.1.0", Weight: 0, Prerelease: false},
+				Build:   Version{Value: "110", Weight: 0, Prerelease: false},
 				Urls:    []string{"https://example.com/app_1.1.0.dmg"},
 			},
 			Item{
-				Version: version.Version{Value: "1.0.1", Weight: 0, Prerelease: false},
-				Build:   version.Version{Value: "101", Weight: 0, Prerelease: false},
+				Version: Version{Value: "1.0.1", Weight: 0, Prerelease: false},
+				Build:   Version{Value: "101", Weight: 0, Prerelease: false},
 				Urls:    []string{"https://example.com/app_1.0.1.dmg"},
 			},
 			Item{
-				Version: version.Version{Value: "1.0.0", Weight: 0, Prerelease: false},
-				Build:   version.Version{Value: "101", Weight: 0, Prerelease: false},
+				Version: Version{Value: "1.0.0", Weight: 0, Prerelease: false},
+				Build:   Version{Value: "101", Weight: 0, Prerelease: false},
 				Urls:    []string{"https://example.com/app_1.0.1.dmg"},
 			},
 		},
@@ -315,9 +314,9 @@ func TestAddItem(t *testing.T) {
 	assert.Len(t, a.Items, 0)
 
 	// add versions
-	a.AddItem(*version.NewVersion(testCases[0][0]), *version.NewVersion(testCases[0][1]), []string{testCases[0][2]}, testCases[0][3])
-	a.AddItem(*version.NewVersion(testCases[1][0]), *version.NewVersion(testCases[1][1]), []string{testCases[1][2]})
-	a.AddItem(*version.NewVersion(testCases[2][0]), *version.NewVersion(testCases[2][1]))
+	a.AddItem(*NewVersion(testCases[0][0]), *NewVersion(testCases[0][1]), []string{testCases[0][2]}, testCases[0][3])
+	a.AddItem(*NewVersion(testCases[1][0]), *NewVersion(testCases[1][1]), []string{testCases[1][2]})
+	a.AddItem(*NewVersion(testCases[2][0]), *NewVersion(testCases[2][1]))
 
 	// after
 	assert.Len(t, a.Items, len(testCases))
@@ -339,39 +338,39 @@ func TestSortItemsByVersions(t *testing.T) {
 	// this will be the result of reordering (if needed)
 	var itemsCorrect = []Item{
 		Item{
-			Version: version.Version{Value: "2.0.0", Weight: 0},
-			Build:   version.Version{Value: "200", Weight: 0},
+			Version: Version{Value: "2.0.0", Weight: 0},
+			Build:   Version{Value: "200", Weight: 0},
 		},
 		Item{
-			Version: version.Version{Value: "1.1.0", Weight: 0},
-			Build:   version.Version{Value: "110", Weight: 0},
+			Version: Version{Value: "1.1.0", Weight: 0},
+			Build:   Version{Value: "110", Weight: 0},
 		},
 		Item{
-			Version: version.Version{Value: "1.0.1", Weight: 0},
-			Build:   version.Version{Value: "101", Weight: 0},
+			Version: Version{Value: "1.0.1", Weight: 0},
+			Build:   Version{Value: "101", Weight: 0},
 		},
 		Item{
-			Version: version.Version{Value: "1.0.0", Weight: 0},
-			Build:   version.Version{Value: "101", Weight: 0},
+			Version: Version{Value: "1.0.0", Weight: 0},
+			Build:   Version{Value: "101", Weight: 0},
 		},
 	}
 
 	var itemsAsc = []Item{
 		Item{
-			Version: version.Version{Value: "1.0.0", Weight: 0, Prerelease: false},
-			Build:   version.Version{Value: "101", Weight: 0, Prerelease: false},
+			Version: Version{Value: "1.0.0", Weight: 0, Prerelease: false},
+			Build:   Version{Value: "101", Weight: 0, Prerelease: false},
 		},
 		Item{
-			Version: version.Version{Value: "1.0.1", Weight: 0, Prerelease: false},
-			Build:   version.Version{Value: "101", Weight: 0, Prerelease: false},
+			Version: Version{Value: "1.0.1", Weight: 0, Prerelease: false},
+			Build:   Version{Value: "101", Weight: 0, Prerelease: false},
 		},
 		Item{
-			Version: version.Version{Value: "1.1.0", Weight: 0, Prerelease: false},
-			Build:   version.Version{Value: "110", Weight: 0, Prerelease: false},
+			Version: Version{Value: "1.1.0", Weight: 0, Prerelease: false},
+			Build:   Version{Value: "110", Weight: 0, Prerelease: false},
 		},
 		Item{
-			Version: version.Version{Value: "2.0.0", Weight: 0, Prerelease: false},
-			Build:   version.Version{Value: "200", Weight: 0, Prerelease: false},
+			Version: Version{Value: "2.0.0", Weight: 0, Prerelease: false},
+			Build:   Version{Value: "200", Weight: 0, Prerelease: false},
 		},
 	}
 

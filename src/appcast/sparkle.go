@@ -3,8 +3,6 @@ package appcast
 import (
 	"encoding/xml"
 	"regexp"
-
-	"version"
 )
 
 type SparkleAppcast struct {
@@ -53,12 +51,12 @@ func (self *SparkleAppcast) Parse() {
 	items := make([]Item, len(x.Items))
 	for i, item := range x.Items {
 		items[i] = Item{
-			Version: version.Version{
+			Version: Version{
 				Value:      item.Enclosure.ShortVersionString,
 				Weight:     0,
 				Prerelease: false,
 			},
-			Build: version.Version{
+			Build: Version{
 				Value:      item.Enclosure.Version,
 				Weight:     0,
 				Prerelease: false,
