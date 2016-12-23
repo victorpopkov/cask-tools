@@ -48,11 +48,6 @@ func TestNew(t *testing.T) {
 	assert.Equal(t, 20, r.Spacing)
 }
 
-func TestDashify(t *testing.T) {
-	assert.Equal(t, "-", dashify(""))
-	assert.Equal(t, "test", dashify("test"))
-}
-
 func TestGetValuesMaxLength(t *testing.T) {
 	testCases := []string{"one", "two", "three", "four"}
 

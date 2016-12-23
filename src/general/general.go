@@ -195,3 +195,12 @@ func GetLinesFromBuffer(buffer bytes.Buffer) (lines []string) {
 
 	return lines
 }
+
+// dashify returns a dash ("-") string if the passed value is empty.
+func Dashify(value string) string {
+	if value == "" {
+		value = "-"
+	}
+
+	return value
+}

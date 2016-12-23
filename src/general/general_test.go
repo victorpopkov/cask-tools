@@ -151,3 +151,8 @@ func TestGetLinesFromBuffer(t *testing.T) {
 	assert.Equal(t, "second line", lines[1])
 	assert.Equal(t, "third line", lines[2])
 }
+
+func TestDashify(t *testing.T) {
+	assert.Equal(t, "-", Dashify(""))
+	assert.Equal(t, "test", Dashify("test"))
+}

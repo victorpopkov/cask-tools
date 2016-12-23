@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"strconv"
+
+	"general"
 )
 
 type Review struct {
@@ -13,7 +15,8 @@ type Review struct {
 	Spacing int
 }
 
-// New returns a new Review instance. By default the spacing between is "0".
+// New creates a new Review instance and returns its pointer. By default the
+// spacing is set to "0".
 func New(a ...interface{}) *Review {
 	spacing := 0
 	if len(a) > 0 {
@@ -24,15 +27,6 @@ func New(a ...interface{}) *Review {
 	r.Spacing = spacing
 
 	return r
-}
-
-// dashify returns a dash ("-") if the passed value is empty.
-func dashify(value string) string {
-	if value == "" {
-		value = "-"
-	}
-
-	return value
 }
 
 // getValuesMaxLength returns the maximum length of a strings in the string
@@ -123,7 +117,7 @@ func (self *Review) AddPipeItems(name string, pluralSuffix string, groups ...int
 		line := ""
 		for x := 0; x < len(groups); x++ {
 			group := groups[x].([]string)
-			current := dashify(group[y])
+			current := general.Dashify(group[y])
 
 			if (x + 1) == len(groups) {
 				line = line + current
@@ -149,18 +143,18 @@ func (self Review) Fprint(w io.Writer) {
 			for i, value := range item.Values {
 				if i == 0 {
 					if value == "" {
-						value = dashify(value)
+						value = general.Dashify(value)
 					}
 					fmt.Fprintln(w, value)
 				} else {
 					if value == "" {
-						value = dashify(value)
+						value = general.Dashify(value)
 					}
 					fmt.Fprintf(w, "%-"+spacing+"s %s\n", "", value)
 				}
 			}
 		} else {
-			fmt.Fprintf(w, dashify(""))
+			fmt.Fprintf(w, general.Dashify(""))
 		}
 	}
 }
