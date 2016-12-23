@@ -10,8 +10,8 @@ type Name struct {
 	PluralSuffix string
 }
 
-// NewItem returns a new Item instance with a name from provided value. By
-// default, the name plural suffix is empty.
+// NewItem returns a new Item instance with a provided name. By default, the
+// plural suffix is empty.
 func NewItem(name string, a ...interface{}) Item {
 	suffix := ""
 	if len(a) >= 1 {
@@ -25,7 +25,7 @@ func NewItem(name string, a ...interface{}) Item {
 	return *item
 }
 
-// AddValue adds a new value to the Item.
+// AddValue adds a new value of the Item struct.
 func (self *Item) AddValue(value string) {
 	self.Values = append(self.Values, value)
 }

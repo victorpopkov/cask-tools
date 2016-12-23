@@ -10,10 +10,10 @@ import (
 type Provider int
 
 const (
-	Unknown Provider = iota
-	GitHubAtom
-	SourceForge
-	Sparkle
+	Unknown     Provider = iota // 0
+	GitHubAtom                  // 1
+	SourceForge                 // 2
+	Sparkle                     // 3
 )
 
 var providers = [...]string{

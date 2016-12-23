@@ -27,8 +27,8 @@ type Header struct {
 	Value string
 }
 
-// LoadContent create a new GET request to the URL specified in Request struct
-// and loads content. The response content alongside with the code status is
+// LoadContent creates a new GET request to the URL in a Request struct and
+// loads content. The loaded response content alongside with the status code is
 // saved in the Request struct.
 func (self *Request) LoadContent() (content []byte, err error) {
 	// prepare request
@@ -76,7 +76,8 @@ func (self *Request) AddHeader(name string, value string) {
 	self.Headers = append(self.Headers, Header{name, value})
 }
 
-// getErrorMsgAndCode return
+// getErrorMsgAndCode returns a custom error message alongside with the custom
+// code based on the provided request error.
 func (self Request) getErrorMsgAndCode(err error) (msg string, code int) {
 	regexTimeout := regexp.MustCompile(`Client.Timeout`)
 	regexUnknownAuthority := regexp.MustCompile(`certificate signed by unknown authority`)
@@ -91,7 +92,7 @@ func (self Request) getErrorMsgAndCode(err error) (msg string, code int) {
 }
 
 // AddGitHubAuth adds an authorization header for GitHub API. The githubAuth
-// parameter needs to have both username and token separated by ':':
+// parameter needs to have both username and token separated by semicolon:
 // AddGitHubAuth("<username>:<token>").
 //
 // Returns the provided username and token.

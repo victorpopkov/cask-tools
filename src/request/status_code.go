@@ -17,7 +17,7 @@ func (self StatusCode) String() string {
 
 // Colorized returns the colorized representation of the StatusCode. The color
 // is based on the status code: green (200), yellow (>= 300 < 400) and red
-// (>= 400)
+// (>= 400).
 func (self StatusCode) Colorized() string {
 	result := self.String()
 	if self.Int == 200 {
