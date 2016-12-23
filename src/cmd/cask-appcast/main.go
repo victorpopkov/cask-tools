@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	version          = "1.0.0-alpha.2"
+	version          = "1.0.0-alpha.3"
 	defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36"
 	githubUser       = ""
 
