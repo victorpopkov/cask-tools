@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	version          = "1.0.0-alpha"
+	version          = "1.0.0-alpha.1"
 	defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36"
 	nameSpacing      = 11
 	githubUser       = ""
@@ -266,25 +266,25 @@ func reviewCask(c *cask.Cask, r *review.Review, a ...interface{}) {
 // latest and statuses.
 func prepareVersions(versions []cask.Version) (current []string, latest []string, statuses []string) {
 	for _, v := range versions {
-		currentVersion := v.Current.Value
-		latestVersion := v.Latest.Version.Value // by default the latest version is without build
+		currentVersion := v.Current
+		latestVersion := v.Latest.Version // by default the latest version is without build
 		status := "unknown"
 
 		if v.Appcast.Request.StatusCode.Int == 0 || v.Appcast.Request.StatusCode.Int >= 400 {
 			status = "error"
 		}
 
-		if v.Latest.Version.Value != "" && v.Latest.Build.Value != "" && v.Latest.Version.Value != v.Latest.Build.Value {
+		if v.Latest.Version != "" && v.Latest.Build != "" && v.Latest.Version != v.Latest.Build {
 			// when both latest version and build available
-			latestVersion = fmt.Sprintf("%s,%s", v.Latest.Version.Value, v.Latest.Build.Value)
-		} else if v.Latest.Version.Value == "" && v.Latest.Build.Value != "" {
+			latestVersion = fmt.Sprintf("%s,%s", v.Latest.Version, v.Latest.Build)
+		} else if v.Latest.Version == "" && v.Latest.Build != "" {
 			// when only build available
-			latestVersion = v.Latest.Build.Value
+			latestVersion = v.Latest.Build
 		}
 
 		if latestVersion != "" && v.Appcast.Checkpoint.Current != v.Appcast.Checkpoint.Latest {
 			// when latest version is available and checkpoints mismatch
-			if currentVersion != v.Latest.Version.Value && currentVersion != v.Latest.Build.Value {
+			if currentVersion != v.Latest.Version && currentVersion != v.Latest.Build {
 				latestVersion = color.GreenString(latestVersion)
 				status = "outdated"
 			} else {

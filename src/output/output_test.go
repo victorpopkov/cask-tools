@@ -6,23 +6,15 @@ import (
 
 	"appcast"
 	"cask"
-	"version"
 
 	"github.com/stretchr/testify/assert"
 )
 
 var testVersion = cask.Version{
-	Current: version.Version{
-		Value:      "1.0.0",
-		Weight:     0,
-		Prerelease: false,
-	},
+	Current: "1.1.0",
 	Latest: cask.Latest{
-		Version: version.Version{
-			Value:      "2.0.0-beta",
-			Weight:     0,
-			Prerelease: true,
-		},
+		Version: "2.0.0-beta",
+		Build:   "200",
 	},
 	Appcast: *(appcast.New("https://example.com/")),
 }

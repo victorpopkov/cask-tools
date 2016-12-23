@@ -21,12 +21,12 @@ func NewOutdated(name string, status string, v cask.Version) *Outdated {
 	o := new(Outdated)
 
 	o.Name = name
-	o.Appcast = v.Appcast.Url
+	o.Appcast = general.Dashify(v.Appcast.Url)
 	o.StatusCode = v.Appcast.Request.StatusCode.String()
-	o.CurrentVersion = v.Current.Value
+	o.CurrentVersion = v.Current
 	o.Status = status
-	o.LatestVersion = general.Dashify(v.Latest.Version.Value)
-	o.SuggestedLatestVersion = general.Dashify(v.Latest.Version.Value)
+	o.LatestVersion = general.Dashify(v.Latest.Version)
+	o.SuggestedLatestVersion = general.Dashify(v.Latest.Version)
 
 	return o
 }

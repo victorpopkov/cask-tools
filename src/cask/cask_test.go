@@ -7,9 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	httpmock "gopkg.in/jarcoal/httpmock.v1"
-
 	"github.com/stretchr/testify/assert"
+	httpmock "gopkg.in/jarcoal/httpmock.v1"
 )
 
 var (
@@ -178,20 +177,20 @@ func TestExtractVersionsWithAppcasts(t *testing.T) {
 		// check each cask version
 		for _, version := range c.Versions {
 			// latest should have empty values
-			assert.Empty(t, version.Latest.Version.Value)
-			assert.Empty(t, version.Latest.Build.Value)
+			assert.Empty(t, version.Latest.Version)
+			assert.Empty(t, version.Latest.Build)
 
 			// verify that the version match the one mentioned in test cases
-			assert.NotEmpty(t, versions[version.Current.Value])
+			assert.NotEmpty(t, versions[version.Current])
 
 			// compare appcast and current checkpoint with values in test cases
-			expected := versions[version.Current.Value][0]
+			expected := versions[version.Current][0]
 			actual := version.Appcast.Url
 			assert.Equal(t, expected, actual, fmt.Sprintf("Cask %s versions mismatch", c.Name))
 
-			expected = versions[version.Current.Value][1]
+			expected = versions[version.Current][1]
 			actual = version.Appcast.Checkpoint.Current
-			assert.Equal(t, expected, actual, fmt.Sprintf("Cask %s version %s checkpoints mismatch", c.Name, version.Current.Value))
+			assert.Equal(t, expected, actual, fmt.Sprintf("Cask %s version %s checkpoints mismatch", c.Name, version.Current))
 		}
 	}
 }
@@ -203,15 +202,15 @@ func TestLoadAppcasts(t *testing.T) {
 
 	// before
 	for _, version := range c.Versions {
-		assert.Empty(t, version.Latest.Version.Value)
-		assert.Empty(t, version.Latest.Build.Value)
+		assert.Empty(t, version.Latest.Version)
+		assert.Empty(t, version.Latest.Build)
 	}
 
 	c.LoadAppcasts()
 
 	// after
 	for _, version := range c.Versions {
-		assert.NotEmpty(t, version.Latest.Version.Value)
-		assert.NotEmpty(t, version.Latest.Build.Value)
+		assert.NotEmpty(t, version.Latest.Version)
+		assert.NotEmpty(t, version.Latest.Build)
 	}
 }
