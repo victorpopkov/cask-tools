@@ -13,7 +13,7 @@ import (
 
 var (
 	testCaskname    = "default"
-	testdataDirname = "testdata/"
+	testdataDirname = "testdata"
 )
 
 var testCases = map[string]map[string][]string{
@@ -148,7 +148,7 @@ func TestIsOutdated(t *testing.T) {
 	assert.True(t, c.IsOutdated())
 }
 
-func TestGetStanzaValues(t *testing.T) {
+func TestStanzaValues(t *testing.T) {
 	for cask, versions := range testCases {
 		// preparations
 		c := new(Cask)
@@ -156,7 +156,7 @@ func TestGetStanzaValues(t *testing.T) {
 		c.Content, _ = readCask(testdataDirname, c.Name)
 
 		// check
-		actual, _ := c.GetStanzaValues("version")
+		actual, _ := c.StanzaValues("version")
 		assert.Len(t, actual, len(versions))
 	}
 }

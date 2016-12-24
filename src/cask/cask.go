@@ -70,10 +70,10 @@ func (self *Cask) AddVersion(version Version) {
 	self.Versions = append(self.Versions, version)
 }
 
-// GetStanzaValues gets cask stanza values as a string array. Also checks if the
+// StanzaValues gets cask stanza values as a string array. Also checks if the
 // stanza is global (belongs to all versions in the cask). Returns string array
 // of stanza values and bool array of global statuses.
-func (self Cask) GetStanzaValues(stanza string) ([]string, []bool) {
+func (self Cask) StanzaValues(stanza string) ([]string, []bool) {
 	re := regexp.MustCompile(fmt.Sprintf(`.*%s ['|"](?P<value>.*)['|"]`, stanza))
 	matches := re.FindAllStringSubmatch(self.Content, -1)
 
@@ -108,9 +108,9 @@ func (self *Cask) ExtractVersionsWithAppcasts() {
 	self.Versions = nil
 
 	// extract stanza values
-	versions, _ := self.GetStanzaValues("version")
-	appcasts, appcastsGlobal := self.GetStanzaValues("appcast")
-	checkpoints, _ := self.GetStanzaValues("checkpoint:")
+	versions, _ := self.StanzaValues("version")
+	appcasts, appcastsGlobal := self.StanzaValues("appcast")
+	checkpoints, _ := self.StanzaValues("checkpoint:")
 
 	var keys []string
 	versionsAppcasts := map[string][]string{}
