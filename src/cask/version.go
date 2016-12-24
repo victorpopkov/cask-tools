@@ -9,19 +9,26 @@ import (
 	"appcast"
 )
 
+// Version holds current version string, Latest and Appcast structs. The Latest
+// alongside with the Appcast are optional and are dependent from each other.
+// Latest should be set after making an appcast request and retrieving the
+// latest version.
 type Version struct {
 	Current string
 	Latest  Latest
 	Appcast appcast.BaseAppcast
 }
 
+// Latest holds both version and build strings. Usually only version can be
+// provided since build is not always available.
 type Latest struct {
 	Version string
 	Build   string
 }
 
 // NewVersion returns a new Version instance with provided current value and
-// returns its pointer. By default the appcast is not specified.
+// returns its pointer. By default the appcast is not needed but can be passed
+// as a second parameter.
 func NewVersion(current string, a ...interface{}) *Version {
 	v := new(Version)
 	v.Current = current
@@ -35,7 +42,8 @@ func NewVersion(current string, a ...interface{}) *Version {
 }
 
 // interpolateVersionIntoAppcast interpolates an existing current version value
-// into the appcast and then tries to guess the provider by URL again.
+// into the appcast and then tries to guess the appcast provider by the URL
+// again.
 func (self *Version) interpolateVersionIntoAppcast() {
 	url := NewVersion(self.Current).InterpolateIntoString(self.Appcast.Url)
 	self.Appcast.Url = url

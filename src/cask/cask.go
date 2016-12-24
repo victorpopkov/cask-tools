@@ -7,28 +7,39 @@ import (
 	"strings"
 
 	"appcast"
-	"general"
 )
 
+// Cask holds cask name and content as strings. The Versions slice represents
+// all found versions in cask.
 type Cask struct {
 	Name     string
-	Versions []Version
 	Content  string
+	Versions []Version
 }
 
 // New creates a new Cask instance based on provided parameters and returns its
-// pointer. Support cask names with and without extension.
+// pointer. Supports cask names with and without extension. By default gets the
+// cask content by reading the file from current working directory. However, the
+// directory name can be overridden using second string parameter.
+//
+// It calls the ExtractVersionsWithAppcasts() function to find all the version
+// and appcast groups to populate the Versions slice in a Cask struct.
 func New(name string, a ...interface{}) *Cask {
 	name = strings.TrimSuffix(name, filepath.Ext(name)) // remove file extension
 
 	c := new(Cask)
 	c.Name = name
 
+	// set the path to look for casks
+	dirname, _ := getWorkingDir()
 	if len(a) > 0 {
-		path := a[0].(string)
-		c.ReadCaskFile(path)
-	} else {
-		c.ReadCaskFile()
+		dirname = a[0].(string)
+	}
+
+	// get the cask content
+	content, err := readCask(dirname, c.Name)
+	if err == nil {
+		c.Content = content
 	}
 
 	c.ExtractVersionsWithAppcasts()
@@ -36,7 +47,8 @@ func New(name string, a ...interface{}) *Cask {
 	return c
 }
 
-// String returns a string representation of the Cask.
+// String returns a string representation of the Cask struct which is the cask
+// name.
 func (self Cask) String() string {
 	return self.Name
 }
@@ -53,20 +65,9 @@ func (self Cask) IsOutdated() (result bool) {
 	return false
 }
 
-// AddVersion adds a provided Version to the cask Versions.
+// AddVersion adds a provided Version struct to the Versions slice.
 func (self *Cask) AddVersion(version Version) {
 	self.Versions = append(self.Versions, version)
-}
-
-// ReadCaskFile reads cask file and save its content into Content struct.
-// By default uses current working directory (pwd) for reading.
-func (self *Cask) ReadCaskFile(a ...interface{}) {
-	path := fmt.Sprintf("%s.rb", self.Name)
-	if len(a) > 0 {
-		path = a[0].(string)
-	}
-
-	self.Content = string(general.GetFileContent(path))
 }
 
 // GetStanzaValues gets cask stanza values as a string array. Also checks if the

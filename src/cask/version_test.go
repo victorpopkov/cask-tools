@@ -2,8 +2,6 @@ package cask
 
 import (
 	"errors"
-	"fmt"
-	"general"
 	"testing"
 
 	"appcast"
@@ -84,13 +82,13 @@ func TestLoadAppcast(t *testing.T) {
 	url := "https://example.com/sparkle/appcast.xml"
 
 	// mock the request
+	content, _ := readTestdata("appcast.xml")
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-
 	httpmock.RegisterResponder(
 		"GET",
 		url,
-		httpmock.NewStringResponder(200, string(general.GetFileContent(fmt.Sprintf(appcastsTestdataPath, "sparkle_default.xml")))),
+		httpmock.NewStringResponder(200, content),
 	)
 
 	a := appcast.New(url)

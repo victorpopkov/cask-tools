@@ -2,7 +2,7 @@ package cask
 
 import (
 	"fmt"
-	"general"
+	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -12,9 +12,8 @@ import (
 )
 
 var (
-	testCask             = "default.rb"
-	appcastsTestdataPath = "../appcast/testdata/%s"
-	casksTestdataPath    = "../cask/testdata/%s"
+	testCaskname    = "default"
+	testdataDirname = "testdata/"
 )
 
 var testCases = map[string]map[string][]string{
@@ -89,24 +88,37 @@ var testCases = map[string]map[string][]string{
 }
 
 func createTestCask() *Cask {
+	pwd, _ := getWorkingDir()
+
 	c := new(Cask)
-	c.Name = strings.TrimSuffix(testCask, filepath.Ext(testCask))
-	c.ReadCaskFile(fmt.Sprintf(casksTestdataPath, testCask))
+	c.Name = testCaskname
+	c.Content, _ = readCask(filepath.Join(pwd, testdataDirname), c.Name)
 
 	// mock the request
+	content, _ := readTestdata("appcast.xml")
 	httpmock.Activate()
 	httpmock.RegisterResponder(
 		"GET",
 		"https://example.com/sparkle/1/appcast.xml",
-		httpmock.NewStringResponder(200, string(general.GetFileContent(fmt.Sprintf(appcastsTestdataPath, "sparkle_default.xml")))),
+		httpmock.NewStringResponder(200, content),
 	)
 
 	return c
 }
 
+func readTestdata(filename string) (string, error) {
+	pwd, _ := getWorkingDir()
+	content, err := ioutil.ReadFile(filepath.Join(pwd, testdataDirname, filename))
+	if err != nil {
+		return "", nil
+	}
+
+	return string(content), nil
+}
+
 func TestNew(t *testing.T) {
 	for cask, versions := range testCases {
-		c := New(cask, fmt.Sprintf(casksTestdataPath, cask))
+		c := New(cask, testdataDirname)
 
 		assert.IsType(t, Cask{}, *c)
 		if len(c.Versions) > 0 {
@@ -136,24 +148,12 @@ func TestIsOutdated(t *testing.T) {
 	assert.True(t, c.IsOutdated())
 }
 
-func TestReadCaskFile(t *testing.T) {
-	c := new(Cask)
-
-	// before
-	assert.Empty(t, c.Content)
-
-	c.ReadCaskFile(fmt.Sprintf(casksTestdataPath, testCask))
-
-	// after
-	assert.NotEmpty(t, c.Content)
-}
-
 func TestGetStanzaValues(t *testing.T) {
 	for cask, versions := range testCases {
 		// preparations
 		c := new(Cask)
-		c.Name = strings.TrimSuffix(testCask, filepath.Ext(testCask))
-		c.ReadCaskFile(fmt.Sprintf(casksTestdataPath, cask))
+		c.Name = strings.TrimSuffix(cask, filepath.Ext(cask))
+		c.Content, _ = readCask(testdataDirname, c.Name)
 
 		// check
 		actual, _ := c.GetStanzaValues("version")
@@ -165,8 +165,8 @@ func TestExtractVersionsWithAppcasts(t *testing.T) {
 	for cask, versions := range testCases {
 		// preparations
 		c := new(Cask)
-		c.Name = strings.TrimSuffix(testCask, filepath.Ext(testCask))
-		c.ReadCaskFile(fmt.Sprintf(casksTestdataPath, cask))
+		c.Name = strings.TrimSuffix(cask, filepath.Ext(cask))
+		c.Content, _ = readCask(testdataDirname, c.Name)
 
 		c.ExtractVersionsWithAppcasts() // extract
 
