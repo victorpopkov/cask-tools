@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	version          = "1.0.0-alpha.4"
+	version          = "1.0.0-alpha.5"
 	defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36"
 	nameSpacing      = 11
 	githubUser       = ""
@@ -266,18 +266,16 @@ func reviewCask(c *cask.Cask, r *review.Review, a ...interface{}) {
 // latest and statuses.
 func prepareVersions(versions []cask.Version) (current []string, latest []string, statuses []string) {
 	for _, v := range versions {
-		currentVersion := v.Current
-		latestVersion := v.Latest.Version // by default the latest version is without build
-		suggestedVersion := v.Latest.Suggested
-		status := "unknown"
+		var (
+			statusCode       = v.Appcast.Request.StatusCode.Code
+			currentVersion   = v.Current
+			latestVersion    = v.Latest.Version // by default the latest version is without build
+			suggestedVersion = v.Latest.Suggested
+			status           = "unknown" // by default the status is unknown
+		)
 
-		// request code statuses checking
-		if v.Appcast.Request.StatusCode.Code == 0 || v.Appcast.Request.StatusCode.Code >= 400 {
-			status = "error"
-		}
-
-		// string still missing few interpolations
-		if cask.StringHasInterpolation(v.Appcast.Request.Url) {
+		// should return error status for any condition
+		if statusCode == 0 || statusCode >= 400 || cask.StringHasInterpolation(v.Appcast.Request.Url) {
 			status = "error"
 		}
 
@@ -289,22 +287,18 @@ func prepareVersions(versions []cask.Version) (current []string, latest []string
 			latestVersion = v.Latest.Build
 		}
 
-		if latestVersion != "" && v.Appcast.Checkpoint.Current != v.Appcast.Checkpoint.Latest {
+		if latestVersion != "" && v.Appcast.Checkpoint.Current != v.Appcast.Checkpoint.Latest && currentVersion != suggestedVersion {
 			// when latest version is available and checkpoints mismatch
-			if currentVersion != v.Latest.Version && currentVersion != v.Latest.Build {
-				status = "outdated"
-				if latestVersion != suggestedVersion {
-					latestVersion = fmt.Sprintf("%s \u2192 %s", color.GreenString(latestVersion), color.WhiteString(suggestedVersion))
-				} else {
-					latestVersion = color.GreenString(latestVersion)
-				}
+			status = "outdated"
+			if latestVersion != suggestedVersion {
+				latestVersion = fmt.Sprintf("%s \u2192 %s", color.GreenString(latestVersion), color.WhiteString(suggestedVersion))
 			} else {
-				status = "updated"
-				if latestVersion != suggestedVersion {
-					latestVersion = fmt.Sprintf("%s \u2192 %s", latestVersion, color.WhiteString(suggestedVersion))
-				} else {
-					latestVersion = color.GreenString(latestVersion)
-				}
+				latestVersion = color.GreenString(latestVersion)
+			}
+		} else {
+			status = "updated"
+			if latestVersion != suggestedVersion {
+				latestVersion = fmt.Sprintf("%s \u2192 %s", latestVersion, color.WhiteString(suggestedVersion))
 			}
 		}
 
