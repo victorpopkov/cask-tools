@@ -1,4 +1,4 @@
-package request
+package appcast
 
 import (
 	"errors"
@@ -25,12 +25,12 @@ func TestLoadContent(t *testing.T) {
 	})
 
 	// before
-	assert.Empty(t, r.StatusCode.Int)
+	assert.Empty(t, r.StatusCode.Code)
 	assert.Empty(t, r.Content)
 
 	// default
 	r.LoadContent()
-	assert.Equal(t, 200, r.StatusCode.Int)
+	assert.Equal(t, 200, r.StatusCode.Code)
 	assert.Equal(t, "Test", string(r.Content))
 
 	// invalid Url

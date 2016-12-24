@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"general"
-	"request"
 
 	"github.com/stretchr/testify/assert"
 	httpmock "gopkg.in/jarcoal/httpmock.v1"
@@ -31,7 +30,7 @@ var (
 func createTestAppcast() BaseAppcast {
 	a := BaseAppcast{
 		Url: urlUnknown,
-		Request: request.Request{
+		Request: Request{
 			Url: urlUnknown,
 		},
 		Content: Content{
@@ -92,7 +91,7 @@ func TestNew(t *testing.T) {
 	assert.Empty(t, a.Request.Content)
 	assert.Empty(t, a.Request.Headers)
 	assert.False(t, a.Request.InsecureSkipVerify)
-	assert.Equal(t, 0, a.Request.StatusCode.Int)
+	assert.Equal(t, 0, a.Request.StatusCode.Code)
 }
 
 func TestGuessProviderByUrl(t *testing.T) {
@@ -165,7 +164,7 @@ func TestGitHubAtomLoadContent(t *testing.T) {
 
 	// request content and status should be set
 	assert.NotEmpty(t, a.Request.Content)
-	assert.Equal(t, 200, a.Request.StatusCode.Int)
+	assert.Equal(t, 200, a.Request.StatusCode.Code)
 }
 
 func TestSourceForgeLoadContent(t *testing.T) {
@@ -201,7 +200,7 @@ func TestSourceForgeLoadContent(t *testing.T) {
 
 	// request content and status should be set
 	assert.NotEmpty(t, a.Request.Content)
-	assert.Equal(t, 200, a.Request.StatusCode.Int)
+	assert.Equal(t, 200, a.Request.StatusCode.Code)
 }
 
 func TestSparkleLoadContent(t *testing.T) {
@@ -237,7 +236,7 @@ func TestSparkleLoadContent(t *testing.T) {
 
 	// request content and status should be set
 	assert.NotEmpty(t, a.Request.Content)
-	assert.Equal(t, 200, a.Request.StatusCode.Int)
+	assert.Equal(t, 200, a.Request.StatusCode.Code)
 }
 
 func TestPrepareContent(t *testing.T) {

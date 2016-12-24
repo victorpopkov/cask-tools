@@ -1,5 +1,4 @@
-// Package request implements project specific request features.
-package request
+package appcast
 
 import (
 	"crypto/tls"
@@ -65,7 +64,7 @@ func (self *Request) LoadContent() (content []byte, err error) {
 	body, err := ioutil.ReadAll(resp.Body)
 
 	self.Content = body
-	self.StatusCode.Int = resp.StatusCode
+	self.StatusCode.Code = resp.StatusCode
 
 	return self.Content, err
 }

@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	version          = "1.0.0-alpha.2"
+	version          = "1.0.0-alpha.3"
 	defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36"
 	nameSpacing      = 11
 	githubUser       = ""
@@ -271,7 +271,7 @@ func prepareVersions(versions []cask.Version) (current []string, latest []string
 		status := "unknown"
 
 		// request code statuses checking
-		if v.Appcast.Request.StatusCode.Int == 0 || v.Appcast.Request.StatusCode.Int >= 400 {
+		if v.Appcast.Request.StatusCode.Code == 0 || v.Appcast.Request.StatusCode.Code >= 400 {
 			status = "error"
 		}
 
@@ -318,7 +318,7 @@ func prepareAppcasts(versions []cask.Version) (appcasts []string, providers []st
 		if url != "" && encountered[url] != true {
 			encountered[url] = true
 
-			if v.Appcast.Request.StatusCode.Int == 0 || v.Appcast.Request.StatusCode.Int == 200 {
+			if v.Appcast.Request.StatusCode.Code == 0 || v.Appcast.Request.StatusCode.Code == 200 {
 				// don't show status code for timed out and successful requests
 				appcasts = append(appcasts, v.Appcast.Url)
 			} else {

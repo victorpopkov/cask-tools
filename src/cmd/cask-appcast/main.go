@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	version          = "1.0.0-alpha.3"
+	version          = "1.0.0-alpha.4"
 	defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36"
 	githubUser       = ""
 
@@ -100,7 +100,7 @@ func main() {
 
 // reviewAppcast reviews the provided appcast into the Review struct.
 func reviewAppcast(a *appcast.BaseAppcast, r *review.Review) {
-	if a.Request.StatusCode.Int == 0 {
+	if a.Request.StatusCode.Code == 0 {
 		r.AddItem("Appcast", a.Url)
 	} else {
 		r.AddItem("Appcast", fmt.Sprintf("%s [%s]", a.Url, a.Request.StatusCode.Colorized()))
@@ -109,7 +109,7 @@ func reviewAppcast(a *appcast.BaseAppcast, r *review.Review) {
 	r.AddItem("Checkpoint", a.Checkpoint.Latest)
 	r.AddItem("Provider", a.Provider.Colorized())
 
-	if a.Request.StatusCode.Int == 0 {
+	if a.Request.StatusCode.Code == 0 {
 		r.AddItem("Status", a.Request.Error.Colorized())
 		r.Print()
 
@@ -141,7 +141,7 @@ func reviewGitHubAtom(a *appcast.BaseAppcast, r *review.Review) {
 	authorized := false
 	for _, header := range a.Request.Headers {
 		if header.Name == "Authorization" {
-			if a.Request.StatusCode.Int != 401 {
+			if a.Request.StatusCode.Code != 401 {
 				authorized = true
 				break
 			}
@@ -165,7 +165,7 @@ func reviewGitHubAtom(a *appcast.BaseAppcast, r *review.Review) {
 
 	// r.AddPipeItems("Options", "", optionsStatuses, optionsValues)
 
-	if a.Request.StatusCode.Int == 403 {
+	if a.Request.StatusCode.Code == 403 {
 		r.AddItem("Status", color.RedString("GitHub API rate limit exceeded."))
 		r.Print()
 

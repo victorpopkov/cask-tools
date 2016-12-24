@@ -1,4 +1,4 @@
-package request
+package appcast
 
 import (
 	"strconv"
@@ -7,12 +7,12 @@ import (
 )
 
 type StatusCode struct {
-	Int int
+	Code int
 }
 
 // String returns the string representation of the StatusCode.
 func (self StatusCode) String() string {
-	return strconv.Itoa(self.Int)
+	return strconv.Itoa(self.Code)
 }
 
 // Colorized returns the colorized representation of the StatusCode. The color
@@ -20,11 +20,11 @@ func (self StatusCode) String() string {
 // (>= 400).
 func (self StatusCode) Colorized() string {
 	result := self.String()
-	if self.Int == 200 {
+	if self.Code == 200 {
 		result = color.GreenString(result)
-	} else if self.Int >= 300 && self.Int < 400 {
+	} else if self.Code >= 300 && self.Code < 400 {
 		result = color.YellowString(result)
-	} else if self.Int >= 400 {
+	} else if self.Code >= 400 {
 		result = color.RedString(result)
 	}
 

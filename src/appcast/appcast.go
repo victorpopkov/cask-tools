@@ -10,7 +10,6 @@ import (
 	"regexp"
 
 	"general"
-	"request"
 )
 
 type Appcast interface {
@@ -23,7 +22,7 @@ type Appcast interface {
 
 type BaseAppcast struct {
 	Url        string
-	Request    request.Request
+	Request    Request
 	Content    Content
 	Checkpoint Checkpoint
 	Provider   Provider
