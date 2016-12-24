@@ -1,6 +1,7 @@
 package cask
 
 import (
+	"errors"
 	"fmt"
 	"general"
 	"testing"
@@ -10,6 +11,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	httpmock "gopkg.in/jarcoal/httpmock.v1"
 )
+
+func createTestVersion() *Version {
+	v := new(Version)
+	v.Current = "1.2.3,1000:400"
+
+	return v
+}
+
+func createTestVersionInvalid() *Version {
+	v := new(Version)
+	v.Current = ""
+
+	return v
+}
 
 func TestNewVersion(t *testing.T) {
 	version := "1.0.0"
@@ -97,8 +112,200 @@ func TestLoadAppcast(t *testing.T) {
 	assert.NotEmpty(t, "200", v.Latest.Build)
 }
 
+func TestMajor(t *testing.T) {
+	v := createTestVersion()
+	vErr := createTestVersionInvalid()
+
+	// default
+	expected := "1"
+	actual, err := v.Major()
+	assert.Equal(t, expected, actual)
+	assert.Nil(t, err)
+
+	// invalid (should return error)
+	actual, err = vErr.Major()
+	assert.Empty(t, actual)
+	assert.Error(t, errors.New("No Major() match in version"))
+}
+
+func TestMinor(t *testing.T) {
+	v := createTestVersion()
+	vErr := createTestVersionInvalid()
+
+	// default
+	expected := "2"
+	actual, err := v.Minor()
+	assert.Equal(t, expected, actual)
+	assert.Nil(t, err)
+
+	// invalid (should return error)
+	actual, err = vErr.Minor()
+	assert.Empty(t, actual)
+	assert.Error(t, errors.New("No Minor() match in version"))
+}
+
+func TestPatch(t *testing.T) {
+	v := createTestVersion()
+	vErr := createTestVersionInvalid()
+
+	// default
+	expected := "3"
+	actual, err := v.Patch()
+	assert.Equal(t, expected, actual)
+	assert.Nil(t, err)
+
+	// invalid (should return error)
+	actual, err = vErr.Patch()
+	assert.Empty(t, actual)
+	assert.Error(t, errors.New("No Patch() match in version"))
+}
+
+func TestMajorMinor(t *testing.T) {
+	v := createTestVersion()
+	vErr := createTestVersionInvalid()
+
+	// default
+	expected := "1.2"
+	actual, err := v.MajorMinor()
+	assert.Equal(t, expected, actual)
+	assert.Nil(t, err)
+
+	// invalid (should return error)
+	actual, err = vErr.MajorMinor()
+	assert.Empty(t, actual)
+	assert.Error(t, errors.New("No MajorMinor() match in version"))
+}
+
+func TestMajorMinorPatch(t *testing.T) {
+	v := createTestVersion()
+	vErr := createTestVersionInvalid()
+
+	// default
+	expected := "1.2.3"
+	actual, err := v.MajorMinorPatch()
+	assert.Equal(t, expected, actual)
+	assert.Nil(t, err)
+
+	// invalid (should return error)
+	actual, err = vErr.MajorMinorPatch()
+	assert.Empty(t, actual)
+	assert.Error(t, errors.New("No MajorMinorPatch() match in version"))
+}
+
+func TestBeforeComma(t *testing.T) {
+	v := createTestVersion()
+	vErr := createTestVersionInvalid()
+
+	// default
+	expected := "1.2.3"
+	actual, err := v.BeforeComma()
+	assert.Equal(t, expected, actual)
+	assert.Nil(t, err)
+
+	// invalid (should return error)
+	actual, err = vErr.BeforeComma()
+	assert.Empty(t, actual)
+	assert.Error(t, errors.New("No BeforeComma() match in version"))
+}
+
+func TestAfterComma(t *testing.T) {
+	v := createTestVersion()
+	vErr := createTestVersionInvalid()
+
+	// default
+	expected := "1000:400"
+	actual, err := v.AfterComma()
+	assert.Equal(t, expected, actual)
+	assert.Nil(t, err)
+
+	// invalid (should return error)
+	actual, err = vErr.AfterComma()
+	assert.Empty(t, actual)
+	assert.Error(t, errors.New("No AfterComma() match in version"))
+}
+
+func TestBeforeColon(t *testing.T) {
+	v := createTestVersion()
+	vErr := createTestVersionInvalid()
+
+	// default
+	expected := "1.2.3,1000"
+	actual, err := v.BeforeColon()
+	assert.Equal(t, expected, actual)
+	assert.Nil(t, err)
+
+	// invalid (should return error)
+	actual, err = vErr.BeforeColon()
+	assert.Empty(t, actual)
+	assert.Error(t, errors.New("No BeforeColon() match in version"))
+}
+
+func TestAfterColon(t *testing.T) {
+	v := createTestVersion()
+	vErr := createTestVersionInvalid()
+
+	// default
+	expected := "400"
+	actual, err := v.AfterColon()
+	assert.Equal(t, expected, actual)
+	assert.Nil(t, err)
+
+	// invalid (should return error)
+	actual, err = vErr.AfterColon()
+	assert.Empty(t, actual)
+	assert.Error(t, errors.New("No AfterColon() match in version"))
+}
+
+func TestNoDots(t *testing.T) {
+	v := createTestVersion()
+	vErr := createTestVersionInvalid()
+
+	// default
+	expected := "123,1000:400"
+	actual, err := v.NoDots()
+	assert.Equal(t, expected, actual)
+	assert.Nil(t, err)
+
+	// invalid (should return error)
+	actual, err = vErr.NoDots()
+	assert.Empty(t, actual)
+	assert.Error(t, errors.New("No NoDots() match in version"))
+}
+
+func TestDotsToUnderscores(t *testing.T) {
+	v := createTestVersion()
+	vErr := createTestVersionInvalid()
+
+	// default
+	expected := "1_2_3,1000:400"
+	actual, err := v.DotsToUnderscores()
+	assert.Equal(t, expected, actual)
+	assert.Nil(t, err)
+
+	// invalid (should return error)
+	actual, err = vErr.DotsToUnderscores()
+	assert.Empty(t, actual)
+	assert.Error(t, errors.New("No NoDots() match in version"))
+}
+
+func TestDotsToHyphens(t *testing.T) {
+	v := createTestVersion()
+	vErr := createTestVersionInvalid()
+
+	// default
+	expected := "1-2-3,1000:400"
+	actual, err := v.DotsToHyphens()
+	assert.Equal(t, expected, actual)
+	assert.Nil(t, err)
+
+	// invalid (should return error)
+	actual, err = vErr.DotsToHyphens()
+	assert.Empty(t, actual)
+	assert.Error(t, errors.New("No DotsToHyphens() match in version"))
+}
+
 func TestInterpolateIntoString(t *testing.T) {
-	v := NewVersion("1.2.3,1000:400")
+	v := createTestVersion()
 
 	testCases := map[string]string{
 		"#{version}": "1.2.3,1000:400",

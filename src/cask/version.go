@@ -1,6 +1,8 @@
 package cask
 
 import (
+	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -51,75 +53,111 @@ func (self *Version) LoadAppcast() {
 }
 
 // Major extracts the major semantic version part.
-func (self Version) Major() string {
+func (self Version) Major() (string, error) {
 	re := regexp.MustCompile(`^\d`)
-	return re.FindAllString(self.Current, -1)[0]
+	if re.MatchString(self.Current) {
+		return re.FindAllString(self.Current, -1)[0], nil
+	}
+	return "", errors.New(fmt.Sprintf(`No Major() match in version "%s"`, self.Current))
 }
 
 // Minor extracts the minor semantic version part.
-func (self Version) Minor() string {
+func (self Version) Minor() (string, error) {
 	re := regexp.MustCompile(`^(?:\d)\.(\d)`)
-	return re.FindAllStringSubmatch(self.Current, -1)[0][1]
+	if re.MatchString(self.Current) {
+		return re.FindAllStringSubmatch(self.Current, -1)[0][1], nil
+	}
+	return "", errors.New(fmt.Sprintf(`No Minor() match in version "%s"`, self.Current))
 }
 
 // Patch extracts the patch semantic version part.
-func (self Version) Patch() string {
+func (self Version) Patch() (string, error) {
 	re := regexp.MustCompile(`^(?:\d)\.(?:\d)\.(\d)`)
-	return re.FindAllStringSubmatch(self.Current, -1)[0][1]
+	if re.MatchString(self.Current) {
+		return re.FindAllStringSubmatch(self.Current, -1)[0][1], nil
+	}
+	return "", errors.New(fmt.Sprintf(`No Patch() match in version "%s"`, self.Current))
 }
 
 // MajorMinor extracts the major and minor semantic version parts.
-func (self Version) MajorMinor() string {
+func (self Version) MajorMinor() (string, error) {
 	re := regexp.MustCompile(`^((?:\d)\.(?:\d))`)
-	return re.FindAllString(self.Current, -1)[0]
+	if re.MatchString(self.Current) {
+		return re.FindAllString(self.Current, -1)[0], nil
+	}
+	return "", errors.New(fmt.Sprintf(`No MajorMinor() match in version "%s"`, self.Current))
 }
 
 // MajorMinorPatch extracts the major, minor and patch semantic version parts.
-func (self Version) MajorMinorPatch() string {
+func (self Version) MajorMinorPatch() (string, error) {
 	re := regexp.MustCompile(`^((?:\d)\.(?:\d)\.(?:\d))`)
-	return re.FindAllString(self.Current, -1)[0]
+	if re.MatchString(self.Current) {
+		return re.FindAllString(self.Current, -1)[0], nil
+	}
+	return "", errors.New(fmt.Sprintf(`No MajorMinorPatch() match in version "%s"`, self.Current))
 }
 
 // BeforeComma extract the part before comma.
-func (self Version) BeforeComma() string {
+func (self Version) BeforeComma() (string, error) {
 	re := regexp.MustCompile(`(^.*)\,`)
-	return re.FindAllStringSubmatch(self.Current, -1)[0][1]
+	if re.MatchString(self.Current) {
+		return re.FindAllStringSubmatch(self.Current, -1)[0][1], nil
+	}
+	return "", errors.New(fmt.Sprintf(`No BeforeComma() match in version "%s"`, self.Current))
 }
 
 // AfterComma extract the part after comma.
-func (self Version) AfterComma() string {
+func (self Version) AfterComma() (string, error) {
 	re := regexp.MustCompile(`\,(.*$)`)
-	return re.FindAllStringSubmatch(self.Current, -1)[0][1]
+	if re.MatchString(self.Current) {
+		return re.FindAllStringSubmatch(self.Current, -1)[0][1], nil
+	}
+	return "", errors.New(fmt.Sprintf(`No AfterComma() match in version "%s"`, self.Current))
 }
 
 // BeforeColon extract the part before colon.
-func (self Version) BeforeColon() string {
+func (self Version) BeforeColon() (string, error) {
 	re := regexp.MustCompile(`(^.*)\:`)
-	return re.FindAllStringSubmatch(self.Current, -1)[0][1]
+	if re.MatchString(self.Current) {
+		return re.FindAllStringSubmatch(self.Current, -1)[0][1], nil
+	}
+	return "", errors.New(fmt.Sprintf(`No BeforeColon() match in version "%s"`, self.Current))
 }
 
 // AfterColon extract the part after colon.
-func (self Version) AfterColon() string {
+func (self Version) AfterColon() (string, error) {
 	re := regexp.MustCompile(`\:(.*$)`)
-	return re.FindAllStringSubmatch(self.Current, -1)[0][1]
+	if re.MatchString(self.Current) {
+		return re.FindAllStringSubmatch(self.Current, -1)[0][1], nil
+	}
+	return "", errors.New(fmt.Sprintf(`No AfterColon() match in version "%s"`, self.Current))
 }
 
 // NoDots removes all dots from version.
-func (self Version) NoDots() string {
+func (self Version) NoDots() (string, error) {
 	re := regexp.MustCompile(`\.`)
-	return re.ReplaceAllString(self.Current, "")
+	if re.MatchString(self.Current) {
+		return re.ReplaceAllString(self.Current, ""), nil
+	}
+	return "", errors.New(fmt.Sprintf(`No NoDots() match in version "%s"`, self.Current))
 }
 
 // DotsToUnderscores convert all dots to underscores.
-func (self Version) DotsToUnderscores() string {
+func (self Version) DotsToUnderscores() (string, error) {
 	re := regexp.MustCompile(`\.`)
-	return re.ReplaceAllString(self.Current, "_")
+	if re.MatchString(self.Current) {
+		return re.ReplaceAllString(self.Current, "_"), nil
+	}
+	return "", errors.New(fmt.Sprintf(`No DotsToUnderscores() match in version "%s"`, self.Current))
 }
 
 // DotsToHyphens convert all dots to hyphens.
-func (self Version) DotsToHyphens() string {
+func (self Version) DotsToHyphens() (string, error) {
 	re := regexp.MustCompile(`\.`)
-	return re.ReplaceAllString(self.Current, "-")
+	if re.MatchString(self.Current) {
+		return re.ReplaceAllString(self.Current, "-"), nil
+	}
+	return "", errors.New(fmt.Sprintf(`No DotsToHyphens() match in version "%s"`, self.Current))
 }
 
 // InterpolateIntoString interpolates existing version into the provided string
@@ -153,40 +191,76 @@ func (self Version) InterpolateIntoString(content string) (result string) {
 		for _, method := range methods {
 			switch method {
 			case "major":
-				part = NewVersion(part).Major()
+				r, err := NewVersion(part).Major()
+				if err == nil {
+					part = r
+				}
 				break
 			case "minor":
-				part = NewVersion(part).Minor()
+				r, err := NewVersion(part).Minor()
+				if err == nil {
+					part = r
+				}
 				break
 			case "patch":
-				part = NewVersion(part).Patch()
+				r, err := NewVersion(part).Patch()
+				if err == nil {
+					part = r
+				}
 				break
 			case "major_minor":
-				part = NewVersion(part).MajorMinor()
+				r, err := NewVersion(part).MajorMinor()
+				if err == nil {
+					part = r
+				}
 				break
 			case "major_minor_patch":
-				part = NewVersion(part).MajorMinorPatch()
+				r, err := NewVersion(part).MajorMinorPatch()
+				if err == nil {
+					part = r
+				}
 				break
 			case "before_comma":
-				part = NewVersion(part).BeforeComma()
+				r, err := NewVersion(part).BeforeComma()
+				if err == nil {
+					part = r
+				}
 				break
 			case "after_comma":
-				part = NewVersion(part).AfterComma()
+				r, err := NewVersion(part).AfterComma()
+				if err == nil {
+					part = r
+				}
 				break
 			case "before_colon":
-				part = NewVersion(part).BeforeColon()
+				r, err := NewVersion(part).BeforeColon()
+				if err == nil {
+					part = r
+				}
 				break
 			case "after_colon":
-				part = NewVersion(part).AfterColon()
+				r, err := NewVersion(part).AfterColon()
+				if err == nil {
+					part = r
+				}
 				break
 			case "no_dots":
-				part = NewVersion(part).NoDots()
+				r, err := NewVersion(part).NoDots()
+				if err == nil {
+					part = r
+				}
 				break
 			case "dots_to_underscores":
-				part = NewVersion(part).DotsToUnderscores()
+				r, err := NewVersion(part).DotsToUnderscores()
+				if err == nil {
+					part = r
+				}
 				break
 			case "dots_to_hyphens":
-				part = NewVersion(part).DotsToHyphens()
+				r, err := NewVersion(part).DotsToHyphens()
+				if err == nil {
+					part = r
+				}
 				break
 			default:
 				// if one of the methods is unknown, then return full string without any replacements
