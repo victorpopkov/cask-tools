@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	version          = "1.0.0-alpha.3"
+	version          = "1.0.0-alpha.4"
 	defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36"
 	nameSpacing      = 11
 	githubUser       = ""
@@ -268,6 +268,7 @@ func prepareVersions(versions []cask.Version) (current []string, latest []string
 	for _, v := range versions {
 		currentVersion := v.Current
 		latestVersion := v.Latest.Version // by default the latest version is without build
+		suggestedVersion := v.Latest.Suggested
 		status := "unknown"
 
 		// request code statuses checking
@@ -291,10 +292,19 @@ func prepareVersions(versions []cask.Version) (current []string, latest []string
 		if latestVersion != "" && v.Appcast.Checkpoint.Current != v.Appcast.Checkpoint.Latest {
 			// when latest version is available and checkpoints mismatch
 			if currentVersion != v.Latest.Version && currentVersion != v.Latest.Build {
-				latestVersion = color.GreenString(latestVersion)
 				status = "outdated"
+				if latestVersion != suggestedVersion {
+					latestVersion = fmt.Sprintf("%s \u2192 %s", color.GreenString(latestVersion), color.WhiteString(suggestedVersion))
+				} else {
+					latestVersion = color.GreenString(latestVersion)
+				}
 			} else {
 				status = "updated"
+				if latestVersion != suggestedVersion {
+					latestVersion = fmt.Sprintf("%s \u2192 %s", latestVersion, color.WhiteString(suggestedVersion))
+				} else {
+					latestVersion = color.GreenString(latestVersion)
+				}
 			}
 		}
 
