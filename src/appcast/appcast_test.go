@@ -95,36 +95,6 @@ func TestNew(t *testing.T) {
 	assert.Equal(t, 0, a.Request.StatusCode.Int)
 }
 
-func TestGetUrl(t *testing.T) {
-	a := createTestAppcast()
-	assert.Equal(t, a.Url, a.GetUrl())
-}
-
-func TestGetRequest(t *testing.T) {
-	a := createTestAppcast()
-	assert.Equal(t, a.Request, a.GetRequest())
-}
-
-func TestGetContent(t *testing.T) {
-	a := createTestAppcast()
-	assert.Equal(t, a.Request, a.GetRequest())
-}
-
-func TestGetCheckpoint(t *testing.T) {
-	a := createTestAppcast()
-	assert.Equal(t, a.Checkpoint, a.GetCheckpoint())
-}
-
-func TestGetProvider(t *testing.T) {
-	a := createTestAppcast()
-	assert.Equal(t, a.Provider, a.GetProvider())
-}
-
-func TestGetItems(t *testing.T) {
-	a := createTestAppcast()
-	assert.Equal(t, a.Items, a.GetItems())
-}
-
 func TestGuessProviderByUrl(t *testing.T) {
 	// Unknown
 	a := new(BaseAppcast)
@@ -274,20 +244,20 @@ func TestPrepareContent(t *testing.T) {
 	a := createTestAppcast()
 
 	// before
-	assert.NotEmpty(t, a.GetContent().Original)
-	assert.Empty(t, a.GetContent().Modified)
+	assert.NotEmpty(t, a.Content.Original)
+	assert.Empty(t, a.Content.Modified)
 
 	a.PrepareContent()
 
 	// after
-	assert.NotEmpty(t, a.GetContent().Original)
-	assert.NotEmpty(t, a.GetContent().Modified)
+	assert.NotEmpty(t, a.Content.Original)
+	assert.NotEmpty(t, a.Content.Modified)
 
 	// when original content is empty
 	a.Content.Original = ""
 	a.PrepareContent()
 
-	assert.NotEmpty(t, a.GetContent().Modified)
+	assert.NotEmpty(t, a.Content.Modified)
 }
 
 func TestParse(t *testing.T) {

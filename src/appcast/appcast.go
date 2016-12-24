@@ -14,12 +14,6 @@ import (
 )
 
 type Appcast interface {
-	GetUrl() string
-	GetRequest() request.Request
-	GetContent() string
-	GetCheckpoint() Checkpoint
-	GetProvider() Provider
-	GetItems() []Item
 	PrepareContent()
 	LoadContent() *BaseAppcast
 	Parse()
@@ -57,36 +51,6 @@ func New(url string) *BaseAppcast {
 	a.GuessProviderByUrl()
 
 	return a
-}
-
-// GetUrl gets appcast URL.
-func (self BaseAppcast) GetUrl() string {
-	return self.Url
-}
-
-// GetRequest gets Request struct.
-func (self BaseAppcast) GetRequest() request.Request {
-	return self.Request
-}
-
-// GetContent gets appcast Content struct.
-func (self BaseAppcast) GetContent() Content {
-	return self.Content
-}
-
-// GetCheckpoint gets appcast Checkpoint struct.
-func (self BaseAppcast) GetCheckpoint() Checkpoint {
-	return self.Checkpoint
-}
-
-// GetProvider gets appcast Provider const.
-func (self BaseAppcast) GetProvider() Provider {
-	return self.Provider
-}
-
-// GetItems gets appcast array of items as Item structs.
-func (self BaseAppcast) GetItems() []Item {
-	return self.Items
 }
 
 // GuessProviderByUrl guesses the provider by URL and replaces current URL with
