@@ -291,3 +291,59 @@ func (self *BaseAppcast) FirstStable() (*Item, error) {
 
 	return nil, errors.New("No releases found")
 }
+
+// SuggestedVersion suggests how the resulting version string for provided Item
+// struct should look like based on the provided version value currently in use.
+// It tries to predict if only Version struct value should be used, Build or
+// even a combination of both.
+func (self *BaseAppcast) SuggestedVersion(item Item, current string) (result string) {
+	// only one is available: version or build
+	if item.Build.Value == "" {
+		return item.Version.Value
+	}
+
+	if item.Version.Value == "" {
+		return item.Build.Value
+	}
+
+	// by default both version and build are used, separated by comma
+	result = fmt.Sprintf("%s,%s", item.Version.Value, item.Build.Value)
+
+	// just version
+	for _, i := range self.Items {
+		if current == i.Version.Value {
+			return item.Version.Value
+		}
+	}
+
+	// just build
+	for _, i := range self.Items {
+		if current == i.Build.Value {
+			return item.Build.Value
+		}
+	}
+
+	// with delimiter (version + delimiter + build)
+	for _, i := range self.Items {
+		re := regexp.MustCompile(fmt.Sprintf("%s(.*)%s", i.Version.Value, i.Build.Value))
+		if re.MatchString(current) {
+			matches := re.FindAllStringSubmatch(current, -1)
+			if len(matches[0]) >= 1 {
+				return fmt.Sprintf("%s%s%s", item.Version.Value, matches[0][1], item.Build.Value)
+			}
+		}
+	}
+
+	// with delimiter reversed (version + delimiter + build)
+	for _, i := range self.Items {
+		re := regexp.MustCompile(fmt.Sprintf("%s(.*)%s", i.Build.Value, i.Version.Value))
+		if re.MatchString(current) {
+			matches := re.FindAllStringSubmatch(current, -1)
+			if len(matches[0]) >= 1 {
+				return fmt.Sprintf("%s%s%s", item.Build.Value, matches[0][1], item.Version.Value)
+			}
+		}
+	}
+
+	return result
+}

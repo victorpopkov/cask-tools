@@ -487,3 +487,68 @@ func TestFirstStable(t *testing.T) {
 	assert.Nil(t, release)
 	assert.Equal(t, "No releases found", err.Error())
 }
+
+func TestSuggestedVersion(t *testing.T) {
+	var testCases = map[string]string{
+		"":      "2.0.0,200", // default
+		"1.1.0": "2.0.0",     // only version
+		"110":   "200",       // only build
+
+		// with delimiter
+		"1.1.0_110":         "2.0.0_200",
+		"1.1.0.110":         "2.0.0.200",
+		"1.1.0-110":         "2.0.0-200",
+		"1.1.0-release-110": "2.0.0-release-200",
+
+		// with delimiter (reversed)
+		"110_1.1.0":         "200_2.0.0",
+		"110.1.1.0":         "200.2.0.0",
+		"110-1.1.0":         "200-2.0.0",
+		"110-release-1.1.0": "200-release-2.0.0",
+	}
+
+	a := createTestAppcast()
+	item := a.Items[0]
+
+	for current, expected := range testCases {
+		assert.Equal(t, expected, a.SuggestedVersion(item, current))
+	}
+
+	// no builds
+	a.Items = []Item{
+		Item{
+			Version: Version{"2.0.0", 0, true},
+		},
+		Item{
+			Version: Version{"1.1.0", 0, false},
+		},
+		Item{
+			Version: Version{"1.0.1", 0, false},
+		},
+		Item{
+			Version: Version{"1.0.0", 0, false},
+		},
+	}
+
+	item = a.Items[0]
+	assert.Equal(t, "2.0.0", a.SuggestedVersion(item, "1.1.0,110"))
+
+	// no versions
+	a.Items = []Item{
+		Item{
+			Build: Version{"200", 0, true},
+		},
+		Item{
+			Build: Version{"110", 0, false},
+		},
+		Item{
+			Build: Version{"101", 0, false},
+		},
+		Item{
+			Build: Version{"100", 0, false},
+		},
+	}
+
+	item = a.Items[0]
+	assert.Equal(t, "200", a.SuggestedVersion(item, "1.1.0,110"))
+}
