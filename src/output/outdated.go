@@ -12,6 +12,7 @@ type Outdated struct {
 	CurrentVersion         string `csv:"Current version"`
 	Status                 string `csv:"Status"`
 	LatestVersion          string `csv:"Latest version"`
+	LatestBuild            string `csv:"Latest build"`
 	SuggestedLatestVersion string `csv:"Suggested latest version"`
 }
 
@@ -26,7 +27,8 @@ func NewOutdated(name string, status string, v cask.Version) *Outdated {
 	o.CurrentVersion = v.Current
 	o.Status = status
 	o.LatestVersion = general.Dashify(v.Latest.Version)
-	o.SuggestedLatestVersion = general.Dashify(v.Latest.Version)
+	o.LatestBuild = general.Dashify(v.Latest.Build)
+	o.SuggestedLatestVersion = general.Dashify(v.Latest.Suggested)
 
 	return o
 }

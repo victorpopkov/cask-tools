@@ -19,11 +19,13 @@ type Version struct {
 	Appcast appcast.BaseAppcast
 }
 
-// Latest holds both version and build strings. Usually only version can be
-// provided since build is not always available.
+// Latest holds both version, build and suggested versions strings. Usually only
+// version can be provided since build is not always available. The suggested
+// should have value close to current version.
 type Latest struct {
-	Version string
-	Build   string
+	Version   string
+	Build     string
+	Suggested string
 }
 
 // NewVersion returns a new Version instance with provided current value and
@@ -55,8 +57,10 @@ func (self *Version) LoadAppcast() {
 	self.Appcast = *self.Appcast.LoadContent()
 
 	if len(self.Appcast.Items) > 0 {
-		self.Latest.Version = self.Appcast.Items[0].Version.Value
-		self.Latest.Build = self.Appcast.Items[0].Build.Value
+		item := self.Appcast.Items[0]
+		self.Latest.Version = item.Version.Value
+		self.Latest.Build = item.Build.Value
+		self.Latest.Suggested = self.Appcast.SuggestedVersion(item, self.Current)
 	}
 }
 

@@ -13,8 +13,9 @@ import (
 var testVersion = cask.Version{
 	Current: "1.1.0",
 	Latest: cask.Latest{
-		Version: "2.0.0-beta",
-		Build:   "200",
+		Version:   "2.0.0-beta",
+		Build:     "200",
+		Suggested: "2.0.0,200",
 	},
 	Appcast: *(appcast.New("https://example.com/")),
 }

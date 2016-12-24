@@ -16,5 +16,6 @@ func TestNewOutdated(t *testing.T) {
 	assert.Equal(t, testVersion.Current, o.CurrentVersion)
 	assert.Equal(t, "outdated", o.Status)
 	assert.Equal(t, testVersion.Latest.Version, o.LatestVersion)
-	assert.Equal(t, testVersion.Latest.Version, o.SuggestedLatestVersion)
+	assert.Equal(t, testVersion.Latest.Build, o.LatestBuild)
+	assert.Equal(t, testVersion.Latest.Suggested, o.SuggestedLatestVersion)
 }

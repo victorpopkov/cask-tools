@@ -36,6 +36,7 @@ func TestNewVersion(t *testing.T) {
 	assert.Equal(t, version, v.Current)
 	assert.Empty(t, v.Latest.Build)
 	assert.Empty(t, v.Latest.Version)
+	assert.Empty(t, v.Latest.Suggested)
 	assert.Empty(t, v.Appcast.Url)
 
 	// with appcast
@@ -46,6 +47,7 @@ func TestNewVersion(t *testing.T) {
 	assert.Equal(t, version, v.Current)
 	assert.Empty(t, v.Latest.Build)
 	assert.Empty(t, v.Latest.Version)
+	assert.Empty(t, v.Latest.Suggested)
 	assert.Equal(t, urlMod, v.Appcast.Url) // version should be interpolated in constructor
 }
 
@@ -100,14 +102,16 @@ func TestLoadAppcast(t *testing.T) {
 	assert.Empty(t, v.Appcast.Content.Modified)
 	assert.Empty(t, v.Latest.Build)
 	assert.Empty(t, v.Latest.Version)
+	assert.Empty(t, v.Latest.Suggested)
 
 	v.LoadAppcast()
 
 	// after
 	assert.NotEmpty(t, v.Appcast.Content.Original)
 	assert.NotEmpty(t, v.Appcast.Content.Modified)
-	assert.NotEmpty(t, "2.0.0", v.Latest.Version)
-	assert.NotEmpty(t, "200", v.Latest.Build)
+	assert.Equal(t, "2.0.0", v.Latest.Version)
+	assert.Equal(t, "200", v.Latest.Build)
+	assert.Equal(t, "2.0.0", v.Latest.Suggested)
 }
 
 func TestMajor(t *testing.T) {
