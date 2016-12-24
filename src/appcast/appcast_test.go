@@ -446,44 +446,44 @@ func TestRemoveAllStable(t *testing.T) {
 	}
 }
 
-func TestGetFirstPrerelease(t *testing.T) {
+func TestFirstPrerelease(t *testing.T) {
 	a := createTestAppcast()
 
 	// default
-	release, err := a.GetFirstPrerelease()
+	release, err := a.FirstPrerelease()
 	assert.Nil(t, err)
 	assert.Equal(t, "2.0.0", release.Version.Value)
 
 	// when no pre-releases (should return first stable)
 	a.RemoveAllPrereleases()
-	release, err = a.GetFirstPrerelease()
+	release, err = a.FirstPrerelease()
 	assert.Nil(t, err)
 	assert.Equal(t, "1.1.0", release.Version.Value)
 
 	// when no releases
 	a.Items = []Item{}
-	release, err = a.GetFirstPrerelease()
+	release, err = a.FirstPrerelease()
 	assert.Nil(t, release)
 	assert.Equal(t, "No releases found", err.Error())
 }
 
-func TestGetFirstStable(t *testing.T) {
+func TestFirstStable(t *testing.T) {
 	a := createTestAppcast()
 
 	// default
-	release, err := a.GetFirstStable()
+	release, err := a.FirstStable()
 	assert.Nil(t, err)
 	assert.Equal(t, "1.1.0", release.Version.Value)
 
 	// when no stable releases (should return first pre-release)
 	a.RemoveAllStable()
-	release, err = a.GetFirstStable()
+	release, err = a.FirstStable()
 	assert.Nil(t, err)
 	assert.Equal(t, "2.0.0", release.Version.Value)
 
 	// when no releases
 	a.Items = []Item{}
-	release, err = a.GetFirstStable()
+	release, err = a.FirstStable()
 	assert.Nil(t, release)
 	assert.Equal(t, "No releases found", err.Error())
 }

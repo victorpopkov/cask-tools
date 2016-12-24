@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	version          = "1.0.0-alpha.4"
+	version          = "1.0.0-alpha.5"
 	defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36"
 	githubUser       = ""
 
@@ -178,11 +178,11 @@ func reviewGitHubAtom(a *appcast.BaseAppcast, r *review.Review) {
 	}
 
 	if len(a.Items) > 0 {
-		release, _ := a.GetFirstPrerelease()
+		release, _ := a.FirstPrerelease()
 
 		// if only latest versions, then skip prereleases
 		if *githubLatest == true {
-			release, _ = a.GetFirstStable()
+			release, _ = a.FirstStable()
 		}
 
 		// there are some releases

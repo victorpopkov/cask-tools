@@ -18,6 +18,12 @@ type Appcast interface {
 	Parse()
 	AddItem()
 	SortItemsByVersions() []Item
+	FprintSingleVersionAndBuild()
+	FprintSingleDownloads()
+	RemoveAllPrereleases()
+	RemoveAllStable()
+	FirstPrerelease() (*Item, error)
+	FirstStable() (*Item, error)
 }
 
 type BaseAppcast struct {
@@ -250,9 +256,10 @@ func (self *BaseAppcast) RemoveAllStable() {
 	self.Items = result
 }
 
-// GetFirstPrerelease gets the first Item with Pre-release status. If only
-// stable releases, then returns first stable.
-func (self *BaseAppcast) GetFirstPrerelease() (*Item, error) {
+// FirstPrerelease gets the first Item (release) with Pre-release status (not
+// stable). If no such release, then uses the first stable. Returns error if no
+// releases available.
+func (self *BaseAppcast) FirstPrerelease() (*Item, error) {
 	if len(self.Items) > 0 {
 		// find next pre-release, if available
 		for _, item := range self.Items {
@@ -267,9 +274,10 @@ func (self *BaseAppcast) GetFirstPrerelease() (*Item, error) {
 	return nil, errors.New("No releases found")
 }
 
-// GetFirstStable gets the first Item that doesn't have Pre-release status. If
-// no stable releases, then returns first pre-release.
-func (self *BaseAppcast) GetFirstStable() (*Item, error) {
+// FirstStable gets the first Item (release) that doesn't have Pre-release
+// status (is considered stable). If no such release, then uses the first
+// pre-release. Returns error if no releases available.
+func (self *BaseAppcast) FirstStable() (*Item, error) {
 	if len(self.Items) > 0 {
 		// find next stable, if available
 		for _, item := range self.Items {
