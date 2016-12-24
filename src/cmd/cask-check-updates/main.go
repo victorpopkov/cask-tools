@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	version          = "1.0.0-alpha.1"
+	version          = "1.0.0-alpha.2"
 	defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36"
 	nameSpacing      = 11
 	githubUser       = ""
@@ -222,11 +222,11 @@ func reviewCask(c *cask.Cask, r *review.Review, a ...interface{}) {
 		}
 	}
 
-	if len(c.Versions) > 0 && c.IsOutdated() && (hasOutdatedVersion || hasUnknownVersion || hasErrorVersion) {
+	if len(c.Versions) > 0 && (hasOutdatedVersion || hasUnknownVersion || hasErrorVersion) {
 		if hasErrorVersion {
 			status = "error"
 			r.AddItem("Status", color.RedString(status))
-		} else {
+		} else if c.IsOutdated() {
 			status = "outdated"
 			r.AddItem("Status", color.YellowString(status))
 		}
@@ -270,7 +270,13 @@ func prepareVersions(versions []cask.Version) (current []string, latest []string
 		latestVersion := v.Latest.Version // by default the latest version is without build
 		status := "unknown"
 
+		// request code statuses checking
 		if v.Appcast.Request.StatusCode.Int == 0 || v.Appcast.Request.StatusCode.Int >= 400 {
+			status = "error"
+		}
+
+		// string still missing few interpolations
+		if cask.StringHasInterpolation(v.Appcast.Request.Url) {
 			status = "error"
 		}
 
