@@ -126,7 +126,9 @@ func (self *Cask) ExtractVersionsWithAppcasts() {
 				re := regexp.MustCompile(fmt.Sprintf(`(?s)(%s).*(?:%s)`, version, appcast))
 				matches := re.FindAllStringSubmatch(self.Content, -1)
 
-				versionsMatches[version] = matches[0][0]
+				if len(matches) > 0 {
+					versionsMatches[version] = matches[0][0]
+				}
 			}
 
 			encountered := map[string]bool{}
@@ -177,7 +179,9 @@ func (self *Cask) ExtractVersionsWithAppcasts() {
 // LoadAppcasts gets new releases for each version from appcasts.
 func (self *Cask) LoadAppcasts() {
 	for i, version := range self.Versions {
-		version.LoadAppcast()
-		self.Versions[i] = version
+		if StringHasInterpolation(version.Appcast.Request.Url) == false {
+			version.LoadAppcast()
+			self.Versions[i] = version
+		}
 	}
 }
