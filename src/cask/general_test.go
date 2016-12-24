@@ -27,3 +27,19 @@ func TestReadCask(t *testing.T) {
 	assert.Error(t, err)
 	assert.Regexp(t, "no such file or directory$", err.Error())
 }
+
+func TestStringHasInterpolation(t *testing.T) {
+	var testCases = map[string]bool{
+		"#{version}":     true,
+		"#{any}":         true,
+		"#{any.chained}": true,
+
+		"any":   false,
+		"#{any": false,
+		"#any":  false,
+	}
+
+	for testCase, expected := range testCases {
+		assert.Equal(t, expected, StringHasInterpolation(testCase))
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 )
 
 // getWorkingDir returns a current working directory. If it's not available for
@@ -29,4 +30,15 @@ func readCask(dirname string, caskname string) (string, error) {
 	}
 
 	return string(content), nil
+}
+
+// StringHasInterpolation check whether a provided string has Ruby syntax
+// string interpolation or not.
+func StringHasInterpolation(content string) bool {
+	re := regexp.MustCompile(`#{.*}`)
+	if re.MatchString(content) {
+		return true
+	}
+
+	return false
 }
