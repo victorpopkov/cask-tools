@@ -74,7 +74,7 @@ func (self *Cask) AddVersion(version Version) {
 // stanza is global (belongs to all versions in the cask). Returns string array
 // of stanza values and bool array of global statuses.
 func (self Cask) StanzaValues(stanza string) ([]string, []bool) {
-	re := regexp.MustCompile(fmt.Sprintf(`.*%s ['|"](?P<value>.*)['|"]`, stanza))
+	re := regexp.MustCompile(fmt.Sprintf(`.*%s (?:(?P<latest>:latest)|(?:['|"](?P<value>.*)['|"]))`, stanza))
 	matches := re.FindAllStringSubmatch(self.Content, -1)
 
 	result := make([]string, len(matches))
@@ -87,9 +87,13 @@ func (self Cask) StanzaValues(stanza string) ([]string, []bool) {
 	}
 
 	for i, match := range matches {
-		result[i] = match[1]
+		if match[2] != "" {
+			result[i] = match[2]
+		} else {
+			result[i] = match[1]
+		}
 
-		re := regexp.MustCompile(match[1])
+		re := regexp.MustCompile(result[i])
 		if regexIfElseEndContent == "" || !re.MatchString(regexIfElseEndContent) {
 			global[i] = true
 		} else {
