@@ -12,7 +12,7 @@ Get the latest available version, checkpoint and download URL(s) from appcast.
 
 ## Description
 
-<img src="http://caskroom.victorpopkov.com/cask-tools/cask-appcast.gif" data-canonical-src="http://caskroom.victorpopkov.com/cask-tools/cask-appcast.gif" width="700" />
+![gif](http://caskroom.victorpopkov.com/cask-tools/cask-appcast.gif)
 
 The purpose of `cask-appcast` is to get the latest available version, checkpoint
 and download URL(s) from appcast by detecting which of supported providers is
