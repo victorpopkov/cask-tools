@@ -57,14 +57,14 @@ func TestGuessByUrl(t *testing.T) {
 
 func TestString(t *testing.T) {
 	assert.Equal(t, "-", Unknown.String())
-	assert.Equal(t, "GitHub Atom", GitHubAtom.String())
-	assert.Equal(t, "SourceForge", SourceForge.String())
-	assert.Equal(t, "Sparkle", Sparkle.String())
+	assert.Regexp(t, "GitHub Atom", GitHubAtom.String())
+	assert.Regexp(t, "SourceForge", SourceForge.String())
+	assert.Regexp(t, "Sparkle", Sparkle.String())
 }
 
 func TestColorized(t *testing.T) {
 	assert.Equal(t, "-", Unknown.Colorized())
-	assert.Equal(t, "GitHub Atom", GitHubAtom.Colorized())
-	assert.Equal(t, "SourceForge", SourceForge.Colorized())
-	assert.Equal(t, "Sparkle", Sparkle.Colorized())
+	assert.Regexp(t, "GitHub Atom", GitHubAtom.Colorized())
+	assert.Regexp(t, "SourceForge", SourceForge.Colorized())
+	assert.Regexp(t, "Sparkle", Sparkle.Colorized())
 }
