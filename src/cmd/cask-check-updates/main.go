@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	version          = "1.0.0-alpha.5"
+	version          = "1.0.0-alpha.6"
 	defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36"
 	nameSpacing      = 11
 	githubUser       = ""
@@ -314,24 +314,25 @@ func prepareVersions(versions []cask.Version) (current []string, latest []string
 // appcast specific data into 3 equal arrays for Review AddPipeItems():
 // appcasts, providers and codes.
 func prepareAppcasts(versions []cask.Version) (appcasts []string, providers []string, codes []string) {
-	encountered := map[string]bool{}
+	var encountered = map[string]bool{}
 
 	for _, v := range versions {
 		url := v.Appcast.Url
+		statusCode := v.Appcast.Request.StatusCode
 
 		if url != "" && encountered[url] != true {
 			encountered[url] = true
 
-			if v.Appcast.Request.StatusCode.Code == 0 || v.Appcast.Request.StatusCode.Code == 200 {
+			if statusCode.Code == 0 || statusCode.Code == 200 {
 				// don't show status code for timed out and successful requests
-				appcasts = append(appcasts, v.Appcast.Url)
+				appcasts = append(appcasts, url)
 			} else {
 				// show for others
-				appcasts = append(appcasts, fmt.Sprintf("%s [%s]", v.Appcast.Url, v.Appcast.Request.StatusCode.Colorized()))
+				appcasts = append(appcasts, fmt.Sprintf("%s [%s]", url, statusCode.Colorized()))
 			}
 
 			providers = append(providers, v.Appcast.Provider.String())
-			codes = append(codes, v.Appcast.Request.StatusCode.String())
+			codes = append(codes, statusCode.String())
 		}
 	}
 
