@@ -191,7 +191,7 @@ func (self Version) InterpolateIntoString(content string) (result string) {
 		methodsAll := regexAllMethods.FindAllStringSubmatch(match, -1)
 		if len(methodsAll) < 1 {
 			// when no methods, then it's just a version replace
-			re := regexp.MustCompile(match)
+			re := regexp.MustCompile(regexp.QuoteMeta(match))
 			result = re.ReplaceAllString(result, self.Current)
 			continue
 		}
@@ -280,7 +280,7 @@ func (self Version) InterpolateIntoString(content string) (result string) {
 			}
 		}
 
-		re := regexp.MustCompile(match)
+		re := regexp.MustCompile(regexp.QuoteMeta(match))
 		result = re.ReplaceAllString(result, part)
 	}
 

@@ -74,7 +74,7 @@ func (self *Cask) AddVersion(version Version) {
 // stanza is global (belongs to all versions in the cask). Returns string array
 // of stanza values and bool array of global statuses.
 func (self Cask) StanzaValues(stanza string) ([]string, []bool) {
-	re := regexp.MustCompile(fmt.Sprintf(`.*%s (?:(?P<latest>:latest)|(?:['|"](?P<value>.*)['|"]))`, stanza))
+	re := regexp.MustCompile(fmt.Sprintf(`.*%s (?:(?P<latest>:latest)|(?:['|"](?P<value>.*)['|"]))`, regexp.QuoteMeta(stanza)))
 	matches := re.FindAllStringSubmatch(self.Content, -1)
 
 	result := make([]string, len(matches))
@@ -93,7 +93,7 @@ func (self Cask) StanzaValues(stanza string) ([]string, []bool) {
 			result[i] = match[1]
 		}
 
-		re := regexp.MustCompile(result[i])
+		re := regexp.MustCompile(regexp.QuoteMeta(result[i]))
 		if regexIfElseEndContent == "" || !re.MatchString(regexIfElseEndContent) {
 			global[i] = true
 		} else {
@@ -127,7 +127,7 @@ func (self *Cask) ExtractVersionsWithAppcasts() {
 			for _, version := range versions {
 				keys = append(keys, version)
 				versionsAppcasts[version] = []string{}
-				re := regexp.MustCompile(fmt.Sprintf(`(?s)(%s).*(?:%s)`, version, appcast))
+				re := regexp.MustCompile(fmt.Sprintf(`(?s)(%s).*(?:%s)`, regexp.QuoteMeta(version), regexp.QuoteMeta(appcast)))
 				matches := re.FindAllStringSubmatch(self.Content, -1)
 
 				if len(matches) > 0 {
@@ -143,7 +143,7 @@ func (self *Cask) ExtractVersionsWithAppcasts() {
 					for l, k := range keys {
 						if key != k && l > j {
 							match := versionsMatches[k]
-							re := regexp.MustCompile(match)
+							re := regexp.MustCompile(regexp.QuoteMeta(match))
 							if re.MatchString(match) {
 								encountered[key] = true
 								continue
