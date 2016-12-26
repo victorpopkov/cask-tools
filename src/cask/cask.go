@@ -189,3 +189,41 @@ func (self *Cask) LoadAppcasts() {
 		}
 	}
 }
+
+func (self *Cask) RemoveAllPrereleases() {
+	var result []Version
+
+	for _, version := range self.Versions {
+		if len(version.Appcast.Items) > 0 {
+			version.Appcast.RemoveAllPrereleases()
+
+			item := version.Appcast.Items[0]
+			version.Latest.Version = item.Version.Value
+			version.Latest.Build = item.Build.Value
+			version.Latest.Suggested = version.Appcast.SuggestedVersion(item, version.Current)
+		}
+
+		result = append(result, version)
+	}
+
+	self.Versions = result
+}
+
+func (self *Cask) RemoveAllStable() {
+	var result []Version
+
+	for _, version := range self.Versions {
+		if len(version.Appcast.Items) > 0 {
+			version.Appcast.RemoveAllStable()
+
+			item := version.Appcast.Items[0]
+			version.Latest.Version = item.Version.Value
+			version.Latest.Build = item.Build.Value
+			version.Latest.Suggested = version.Appcast.SuggestedVersion(item, version.Current)
+		}
+
+		result = append(result, version)
+	}
+
+	self.Versions = result
+}

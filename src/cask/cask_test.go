@@ -229,3 +229,40 @@ func TestLoadAppcasts(t *testing.T) {
 		assert.NotEmpty(t, version.Latest.Build)
 	}
 }
+
+func TestRemoveAllPrereleases(t *testing.T) {
+	c := createTestCask()
+	defer httpmock.DeactivateAndReset()
+	c.ExtractVersionsWithAppcasts()
+	c.LoadAppcasts()
+
+	c.Versions[0].Appcast.Items[0].Version.Prerelease = true
+	c.Versions[0].Appcast.Items[0].Build.Prerelease = true
+
+	// before
+	assert.Len(t, c.Versions[0].Appcast.Items, 4)
+
+	c.RemoveAllPrereleases()
+
+	// after
+	assert.Len(t, c.Versions[0].Appcast.Items, 3)
+}
+
+func TestRemoveAllStable(t *testing.T) {
+	c := createTestCask()
+	defer httpmock.DeactivateAndReset()
+
+	c.ExtractVersionsWithAppcasts()
+	c.LoadAppcasts()
+
+	c.Versions[0].Appcast.Items[0].Version.Prerelease = true
+	c.Versions[0].Appcast.Items[0].Build.Prerelease = true
+
+	// before
+	assert.Len(t, c.Versions[0].Appcast.Items, 4)
+
+	c.RemoveAllStable()
+
+	// after
+	assert.Len(t, c.Versions[0].Appcast.Items, 1)
+}
