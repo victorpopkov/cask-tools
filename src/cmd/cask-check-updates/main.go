@@ -22,17 +22,17 @@ import (
 )
 
 var (
-	version          = "1.0.0-alpha.6"
+	version          = "1.0.0-alpha.7"
 	defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36"
 	nameSpacing      = 11
 	githubUser       = ""
 	out              = output.Output{}
 
-	userAgent  = kingpin.Flag("user-agent", "Set 'User-Agent' header value.").Short('u').PlaceHolder("USER-AGENT").Default(defaultUserAgent).String()
-	timeout    = kingpin.Flag("timeout", "Set custom request timeout (default is 10s).").Short('t').Default("10s").Duration()
-	githubAuth = kingpin.Flag("github-auth", "GitHub username and personal token.").PlaceHolder("USER:TOKEN").String()
-	// githubLatest = kingpin.Flag("github-latest", "Try to get only stable GitHub releases.").Bool()
-	outputPath = kingpin.Flag("output-path", "Output the results as CSV into a file.").Short('o').PlaceHolder("FILEPATH").String()
+	userAgent    = kingpin.Flag("user-agent", "Set 'User-Agent' header value.").Short('u').PlaceHolder("USER-AGENT").Default(defaultUserAgent).String()
+	timeout      = kingpin.Flag("timeout", "Set custom request timeout (default is 10s).").Short('t').Default("10s").Duration()
+	githubAuth   = kingpin.Flag("github-auth", "GitHub username and personal token.").PlaceHolder("USER:TOKEN").String()
+	githubLatest = kingpin.Flag("github-latest", "Try to get only stable GitHub releases.").Bool()
+	outputPath   = kingpin.Flag("output-path", "Output the results as CSV into a file.").Short('o').PlaceHolder("FILEPATH").String()
 	// configPath         = kingpin.Flag("config-path", "Custom configuration file location.").Short('c').PlaceHolder("FILEPATH").File()
 	// configAudit        = kingpin.Flag("config-audit", "Audit configuration file.").Bool()
 	all                = kingpin.Flag("all", "Show and output all casks even updated ones.").Short('a').Bool()
@@ -173,7 +173,7 @@ func hasAppcast(caskname string) bool {
 
 // reviewCaskLoading reviews provided cask without loaded appcasts.
 func reviewCaskLoading(c *cask.Cask, r *review.Review, a ...interface{}) {
-	current, _, _ := prepareVersions(c.Versions)
+	current, _, _ := prepareVersions(c)
 	latest := make([]string, len(current))
 	for i := range current {
 		latest[i] = "Loading..."
@@ -198,7 +198,7 @@ func reviewCaskLoading(c *cask.Cask, r *review.Review, a ...interface{}) {
 // reviewCask reviews provided cask with loaded and checked appcasts.
 func reviewCask(c *cask.Cask, r *review.Review, a ...interface{}) {
 	status := "error"
-	current, latest, statuses := prepareVersions(c.Versions)
+	current, latest, statuses := prepareVersions(c)
 	appcasts, providers, _ := prepareAppcasts(c.Versions)
 
 	r.AddItem("Name", color.WhiteString(c.Name))
@@ -261,11 +261,15 @@ func reviewCask(c *cask.Cask, r *review.Review, a ...interface{}) {
 	}
 }
 
-// prepareVersions prepares versions to be consumed by review. It separates
+// prepareVersions prepares cask versions to be consumed by review. It separates
 // version specific data into 3 equal arrays for Review AddPipeItems(): current,
 // latest and statuses.
-func prepareVersions(versions []cask.Version) (current []string, latest []string, statuses []string) {
-	for _, v := range versions {
+func prepareVersions(c *cask.Cask) (current []string, latest []string, statuses []string) {
+	if *githubLatest {
+		c.RemoveAllPrereleases()
+	}
+
+	for _, v := range c.Versions {
 		var (
 			statusCode       = v.Appcast.Request.StatusCode.Code
 			currentVersion   = v.Current
