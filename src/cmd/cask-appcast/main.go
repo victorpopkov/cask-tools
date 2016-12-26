@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	version          = "1.0.0-alpha.5"
+	version          = "1.0.0-alpha.6"
 	defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36"
 	githubUser       = ""
 
@@ -107,6 +107,7 @@ func reviewAppcast(a *appcast.BaseAppcast, r *review.Review) {
 	}
 
 	r.AddItem("Checkpoint", a.Checkpoint.Latest)
+	r.AddItem("User-Agent", *userAgent)
 	r.AddItem("Provider", a.Provider.Colorized())
 
 	if a.Request.StatusCode.Code == 0 {
