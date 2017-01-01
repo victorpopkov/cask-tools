@@ -10,6 +10,7 @@ import (
 	"general"
 )
 
+// Review holds items (Item struct array) and spacing value.
 type Review struct {
 	Items   []Item
 	Spacing int
@@ -133,11 +134,36 @@ func (self *Review) AddPipeItems(name string, pluralSuffix string, groups ...int
 	self.AddItems(name, result, pluralSuffix)
 }
 
-// Fprint prints the Review to the provided Writer.
+// Space adds an item with "<space>" name to the Review. During printing those
+// are transformed into a single space between an item.
+func (self *Review) Space() {
+	self.AddItem("<space>", "")
+}
+
+// Hr adds an item with "<hr>" name to the Review. During printing those are
+// transformed into a full width terminal separators. The value represents a
+// character that will be used in a separator.
+func (self *Review) Hr(char byte) {
+	self.AddItem("<hr>", string(char))
+}
+
+// Fprint prints the Review to the provided Writer. All items with "<space>"
+// name are transformed into the single space between items. The items with
+// "<hr>" name are transformed into the full width terminal separators.
 func (self Review) Fprint(w io.Writer) {
 	spacing := strconv.Itoa(self.getNameSpacing())
 
 	for _, item := range self.Items {
+		if item.Name.Value == "<space>" {
+			fmt.Fprintf(w, "\n")
+			continue
+		}
+
+		if item.Name.Value == "<hr>" {
+			fmt.Fprintf(w, "%s\n", general.TerminalHr([]byte(item.Values[0])[0]))
+			continue
+		}
+
 		fmt.Fprintf(w, "%-"+spacing+"s ", item.Name.String()+":")
 		if len(item.Values) > 0 {
 			for i, value := range item.Values {

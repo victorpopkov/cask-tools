@@ -1,10 +1,13 @@
 package review
 
+// Item holds the Name struct that represents the name and array of values
+// (strings).
 type Item struct {
 	Name   Name
 	Values []string
 }
 
+// Name holds value and plural suffix strings.
 type Name struct {
 	Value        string
 	PluralSuffix string

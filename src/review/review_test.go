@@ -118,6 +118,20 @@ func TestAddPipeItems(t *testing.T) {
 	assert.Equal(t, "three | six  | nine", r.Items[0].Values[2])
 }
 
+func TestSpace(t *testing.T) {
+	r := new(Review)
+	r.Space()
+	assert.Equal(t, r.Items[0].Name.Value, "<space>")
+	assert.Empty(t, r.Items[0].Values[0])
+}
+
+func TestHr(t *testing.T) {
+	r := new(Review)
+	r.Hr('-')
+	assert.Equal(t, r.Items[0].Name.Value, "<hr>")
+	assert.Equal(t, "-", r.Items[0].Values[0])
+}
+
 func TestFprint(t *testing.T) {
 	var buffer bytes.Buffer
 
@@ -150,4 +164,26 @@ func TestFprint(t *testing.T) {
 
 	assert.Equal(t, 1, len(lines))
 	assert.Equal(t, "First:   -", lines[0])
+
+	// <space>
+	r = new(Review)
+	r.Space()
+
+	buffer = bytes.Buffer{}
+	r.Fprint(&buffer)
+	lines = general.GetLinesFromBuffer(buffer)
+
+	assert.Equal(t, 1, len(lines))
+	assert.Equal(t, "", lines[0])
+
+	// <hr>
+	r = new(Review)
+	r.Hr('-')
+
+	buffer = bytes.Buffer{}
+	r.Fprint(&buffer)
+	lines = general.GetLinesFromBuffer(buffer)
+
+	assert.Equal(t, 1, len(lines))
+	assert.Equal(t, "-------------------------", lines[0])
 }
