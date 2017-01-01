@@ -38,6 +38,16 @@ func TestGetTerminalWidth(t *testing.T) {
 	assert.Regexp(t, `strconv.ParseInt: parsing "error": invalid syntax`, buffer.String())
 }
 
+func TestTerminalHr(t *testing.T) {
+	// default
+	actual := TerminalHr('-')
+	assert.Equal(t, "-------------------------", actual)
+
+	// when width is specified
+	actual = TerminalHr('-', 10)
+	assert.Equal(t, "----------", actual)
+}
+
 func TestTerminalPrintHr(t *testing.T) {
 	var buffer bytes.Buffer
 

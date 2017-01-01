@@ -54,6 +54,22 @@ func getTerminalWidth(a ...interface{}) int {
 	return 25
 }
 
+// TerminalHr returns a separator string that consists of provided character.
+// By default, the number of characters is the same as the terminal width. It
+// can be changed by passing the number as a second parameter.
+func TerminalHr(char byte, a ...interface{}) (result string) {
+	y := getTerminalWidth()
+	if len(a) > 0 {
+		y = a[0].(int)
+	}
+
+	for i := 0; i < y; i++ {
+		result += string(char)
+	}
+
+	return result
+}
+
 // TerminalPrintHr prints a separator that consists of provided character. By
 // default it outputs to os.Stdout but different io.Writer can be used.
 func TerminalPrintHr(char byte, a ...interface{}) {
@@ -62,11 +78,8 @@ func TerminalPrintHr(char byte, a ...interface{}) {
 		writer = a[0].(*bufio.Writer)
 	}
 
-	y := getTerminalWidth()
-	for i := 0; i < y; i++ {
-		fmt.Fprintf(writer, "%s", string(char))
-	}
-	fmt.Fprintf(writer, "\n")
+	hr := TerminalHr(char)
+	fmt.Fprintf(writer, "%s\n", hr)
 
 	writer.Flush()
 }
