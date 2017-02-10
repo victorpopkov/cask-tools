@@ -75,18 +75,10 @@ apt-get install jq xmlstarlet
 
 The easiest way to install these scripts on macOS is using my
 [homebrew-tap](https://github.com/victorpopkov/homebrew-tap)
-repository. You’ll need [Homebrew](http://brew.sh/) installed and then
-[Tap](https://github.com/Homebrew/brew/blob/master/docs/brew-tap.md) that
-repository by running:
+repository. You’ll need [Homebrew](http://brew.sh/) installed and then:
 
 ```bash
-brew tap victorpopkov/tap
-```
-
-Afterwards, you can install the scripts by running:
-
-```bash
-brew install cask-scripts
+brew install victorpopkov/tap/cask-scripts
 ```
 
 Alternatively, you can use install target of the provided Makefile the same way
