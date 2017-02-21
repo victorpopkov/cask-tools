@@ -1,5 +1,5 @@
 hash: b71fb90c374f7963632e3cd839a9e9216a6d28d096fe16ee7ecce029d3a0ba31
-updated: 2016-12-22T09:43:19.628339332+02:00
+updated: 2017-02-22T00:08:59.998798628+02:00
 imports:
 - name: github.com/alecthomas/template
   version: a0175ee3bccc567396460bf5acd36800cb10c49c
@@ -10,7 +10,7 @@ imports:
 - name: github.com/fatih/color
   version: dea9d3a26a087187530244679c1cfb3a42937794
 - name: github.com/gocarina/gocsv
-  version: 969d2591760342372bc3cc3e5c3596995c0c73a6
+  version: aa69be31b2d52ae06bb468354003683a1d267453
 - name: github.com/gosuri/uilive
   version: efb88ccd059957c48f24f9d351d33a0eb00ede41
 - name: github.com/hashicorp/go-version
