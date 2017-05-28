@@ -1,5 +1,5 @@
-hash: b71fb90c374f7963632e3cd839a9e9216a6d28d096fe16ee7ecce029d3a0ba31
-updated: 2017-02-22T00:08:59.998798628+02:00
+hash: 8b0afcee2822d2043f94196bc06593fabc974484ff64418ba6682b3a017238e8
+updated: 2017-05-28T15:39:14.44039601+03:00
 imports:
 - name: github.com/alecthomas/template
   version: a0175ee3bccc567396460bf5acd36800cb10c49c
@@ -10,25 +10,27 @@ imports:
 - name: github.com/fatih/color
   version: dea9d3a26a087187530244679c1cfb3a42937794
 - name: github.com/gocarina/gocsv
-  version: aa69be31b2d52ae06bb468354003683a1d267453
+  version: 911e4d95f88fba73eee965e7031bd52081607161
 - name: github.com/gosuri/uilive
-  version: efb88ccd059957c48f24f9d351d33a0eb00ede41
+  version: ac356e6e42cd31fcef8e6aec13ae9ed6fe87713e
 - name: github.com/hashicorp/go-version
-  version: e96d3840402619007766590ecea8dd7af1292276
+  version: 03c5bf6be031b6dd45afec16b1cf94fc8938bc77
 - name: github.com/mattn/go-colorable
-  version: d228849504861217f796da67fae4f6e347643f15
+  version: 5411d3eea5978e6cdc258b30de592b60df6aba96
 - name: github.com/mattn/go-isatty
-  version: 30a891c33c7cde7b02a981314b4228ec99380cca
+  version: 57fdcb988a5c543893cc61bce354a6e24ab70022
 - name: github.com/tcnksm/go-gitconfig
   version: d154598bacbf4501c095a309753c5d4af66caa81
+- name: github.com/victorpopkov/go-appcast
+  version: 9490997d04a91515fbfcc65b9fe9f0e2ccd793be
 - name: golang.org/x/sys
-  version: d75a52659825e75fff6158388dddc6a5b04f9ba5
+  version: a55a76086885b80f79961eacb876ebd8caf3868d
   subpackages:
   - unix
 - name: gopkg.in/alecthomas/kingpin.v2
-  version: e9044be3ab2a8e11d4e1f418d12f0790d57e8d70
+  version: 7f0871f2e17818990e4eed73f9b5c2f429501228
 - name: gopkg.in/jarcoal/httpmock.v1
-  version: 6aa33143427f6eb0bebcc0af42e8db85e39a42c0
+  version: cf52904a3cf0f78f199ecade6a6df8e245d5b25a
 testImports:
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
