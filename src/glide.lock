@@ -1,5 +1,5 @@
-hash: 747d0bb31271c9d644125787189c81a00288a09a848eb2eae8c46d426af7825f
-updated: 2017-09-28T14:54:23.666232404+03:00
+hash: 70276b90825cf2abb73c1ae789c28626da1c50123277831f765a59596c72827f
+updated: 2017-09-28T20:00:30.438581092+03:00
 imports:
 - name: github.com/alecthomas/template
   version: a0175ee3bccc567396460bf5acd36800cb10c49c
@@ -19,16 +19,25 @@ imports:
   version: 5411d3eea5978e6cdc258b30de592b60df6aba96
 - name: github.com/mattn/go-isatty
   version: 57fdcb988a5c543893cc61bce354a6e24ab70022
+- name: github.com/mgutz/ansi
+  version: 9520e82c474b0a04dd04f8a40959027271bab992
+- name: github.com/pkg/errors
+  version: 2b3a18b5f0fb6b4f9190549597d3f962c02bc5eb
 - name: github.com/tcnksm/go-gitconfig
   version: d154598bacbf4501c095a309753c5d4af66caa81
 - name: github.com/victorpopkov/go-appcast
   version: 885cc126db1e2bed2da086333fb46763d32a6d1a
 - name: github.com/victorpopkov/go-cask
-  version: fd667dfce44aff44b40451fd72cb4d8243474d39
+  version: 992a6b933fa9aac2d6920be77aebd5b0f221fa7c
 - name: golang.org/x/sys
   version: 314a259e304ff91bd6985da2a7149bbf91237993
   subpackages:
   - unix
+- name: gopkg.in/AlecAivazis/survey.v1
+  version: 9d910423e24aa6d7c7950160658c295e0734c7e0
+  subpackages:
+  - core
+  - terminal
 - name: gopkg.in/alecthomas/kingpin.v2
   version: 1087e65c9441605df944fb12c33f0fe7072d18ca
 - name: gopkg.in/jarcoal/httpmock.v1
