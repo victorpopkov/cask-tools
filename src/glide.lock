@@ -1,5 +1,5 @@
-hash: 70276b90825cf2abb73c1ae789c28626da1c50123277831f765a59596c72827f
-updated: 2017-09-28T20:00:30.438581092+03:00
+hash: 8b4772674e8263775512e70cb7b1bee79f50e6b15443e86228591221b5f9454f
+updated: 2017-09-28T21:25:41.722433314+03:00
 imports:
 - name: github.com/alecthomas/template
   version: a0175ee3bccc567396460bf5acd36800cb10c49c
@@ -13,12 +13,19 @@ imports:
   version: 7099e67763c29f812fa2ed7083f32e38be60125a
 - name: github.com/gosuri/uilive
   version: ac356e6e42cd31fcef8e6aec13ae9ed6fe87713e
+- name: github.com/gosuri/uitable
+  version: 36ee7e946282a3fb1cfecd476ddc9b35d8847e42
+  subpackages:
+  - util/strutil
+  - util/wordwrap
 - name: github.com/hashicorp/go-version
   version: fc61389e27c71d120f87031ca8c88a3428f372dd
 - name: github.com/mattn/go-colorable
   version: 5411d3eea5978e6cdc258b30de592b60df6aba96
 - name: github.com/mattn/go-isatty
   version: 57fdcb988a5c543893cc61bce354a6e24ab70022
+- name: github.com/mattn/go-runewidth
+  version: 9e777a8366cce605130a531d2cd6363d07ad7317
 - name: github.com/mgutz/ansi
   version: 9520e82c474b0a04dd04f8a40959027271bab992
 - name: github.com/pkg/errors
