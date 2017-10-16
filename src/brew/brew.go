@@ -1,10 +1,10 @@
+// Package brew is a simple Homebrew wrapper for running supported Homebrew
+// commands.
 package brew
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os/exec"
 	"path"
@@ -63,28 +63,23 @@ func LookForCaskroomTaps() (map[string]string, error) {
 	return taps, nil
 }
 
-// Update updates the Homebrew by running the `brew update` command.
-func Update() error {
+// Update updates the Homebrew by running the `brew update` command. Returns
+// Stdout as a successful result. Otherwise returns an error.
+func Update() (*bytes.Buffer, error) {
 	var out bytes.Buffer
 
 	_, err := LookForExecutable()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	fmt.Print("Running Homebrew update... ")
 	cmd := exec.Command("brew", "update")
 	cmd.Stdout = &out
 
 	err = cmd.Run()
 	if err != nil {
-		fmt.Println("Error")
-		return err
+		return nil, errors.New("`brew update` has returned an error")
 	}
 
-	scanner := bufio.NewScanner(&out)
-	scanner.Scan()
-	fmt.Printf("%s\n", scanner.Text())
-
-	return nil
+	return &out, nil
 }
