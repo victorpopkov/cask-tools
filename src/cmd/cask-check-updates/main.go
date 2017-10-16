@@ -1,344 +1,287 @@
 package main
 
 import (
-	"encoding/base64"
+	"bufio"
+	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"os"
+	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 
-	"cask"
-	"general"
-	"output"
-	"review"
+	"brew"
 
 	"github.com/fatih/color"
-	"github.com/gosuri/uilive"
-	gitconfig "github.com/tcnksm/go-gitconfig"
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
+	"github.com/victorpopkov/go-appcast"
+	"github.com/victorpopkov/go-cask"
+	"gopkg.in/AlecAivazis/survey.v1"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
-	version          = "1.0.0-alpha.8"
-	defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36"
-	nameSpacing      = 11
-	githubUser       = ""
-	out              = output.Output{}
+	version = "1.0.0-beta"
+	// defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10) http://caskroom.io"
 
-	userAgent    = kingpin.Flag("user-agent", "Set 'User-Agent' header value.").Short('u').PlaceHolder("USER-AGENT").Default(defaultUserAgent).String()
-	timeout      = kingpin.Flag("timeout", "Set custom request timeout (default is 10s).").Short('t').Default("10s").Duration()
-	githubAuth   = kingpin.Flag("github-auth", "GitHub username and personal token.").PlaceHolder("USER:TOKEN").String()
-	githubLatest = kingpin.Flag("github-latest", "Try to get only stable GitHub releases.").Bool()
-	outputPath   = kingpin.Flag("output-path", "Output the results as CSV into a file.").Short('o').PlaceHolder("FILEPATH").String()
-	// configPath         = kingpin.Flag("config-path", "Custom configuration file location.").Short('c').PlaceHolder("FILEPATH").File()
-	// configAudit        = kingpin.Flag("config-audit", "Audit configuration file.").Bool()
-	all                = kingpin.Flag("all", "Show and output all casks even updated ones.").Short('a').Bool()
-	insecureSkipVerify = kingpin.Flag("insecure-skip-verify", "Skip server certificate verification.").Short('i').Bool()
+	// userAgent = kingpin.Flag("user-agent", "Set 'User-Agent' header value.").Short('u').PlaceHolder("USER-AGENT").Default(defaultUserAgent).String()
 
-	casknames = kingpin.Arg("casks", "Cask names.").Strings()
+	// casknames = kingpin.Arg("casks", "Cask names.").Strings()
 )
 
 func init() {
 	kingpin.UsageTemplate(kingpin.CompactUsageTemplate).Version(version)
-	kingpin.CommandLine.Help = "Scan casks with appcasts for outdated ones and get the latest available version(s)."
+	kingpin.CommandLine.Help = "Find the latest available versions for casks in Homebrew-Cask Taps."
 	kingpin.CommandLine.VersionFlag.Short('v')
 	kingpin.CommandLine.HelpFlag.Short('h')
 	kingpin.Parse()
-
-	// if output is specified try to create a file or exit with error
-	if *outputPath != "" {
-		_, err := os.Create(*outputPath)
-		if err != nil {
-			general.Error(err.Error())
-			os.Exit(1)
-		}
-		out = *output.New()
-	}
-
-	// check if inside of the 'homebrew-*/Casks' directory
-	if !general.IsCasksDir() {
-		general.Error("You need to be inside a '/homebrew-*/Casks' directory")
-	}
 }
 
 func main() {
-	var found = []string{}
+	tapsKeys := []string{}
 
-	w := uilive.New()
-	w.Start()
+	// Homebrew
+	fmt.Print("Looking for Homebrew executable... ")
+	_, err := brew.LookForExecutable()
+	if err == nil {
+		// Homebrew executable is available
+		fmt.Println("Found")
 
-	if len(*casknames) > 0 {
-		// cask names were provided in arguments
-		for _, caskname := range *casknames {
-			caskname = strings.TrimSuffix(caskname, filepath.Ext(caskname)) // remove file extension
-
-			// check if file exists
-			if _, err := os.Stat(fmt.Sprintf("./%s.rb", caskname)); err == nil {
-				if hasAppcast(caskname) {
-					found = append(found, caskname) // add to found
-				}
-			}
+		// update Homebrew
+		fmt.Print("Running Homebrew update... ")
+		out, err := brew.Update()
+		if err == nil {
+			scanner := bufio.NewScanner(out)
+			scanner.Scan()
+			fmt.Printf("%s\n", scanner.Text())
 		}
-
-		fmt.Fprintf(w, "Checking %d of %d casks for updates...\n", len(found), len(*casknames))
 	} else {
-		// find casks with appcasts
-		fmt.Fprintln(w, "Searching...")
-		files, _ := ioutil.ReadDir("./")
-		casks := []string{}
-		for _, file := range files {
-			filename := file.Name()
-
-			// verify that this is the cask file
-			re := regexp.MustCompile(`.*\.rb$`)
-			if re.MatchString(filename) {
-				caskname := strings.TrimSuffix(filename, filepath.Ext(filename)) // remove file extension
-				casks = append(casks, caskname)                                  // add to casks
-
-				// check if cask has an appcast
-				if hasAppcast(caskname) {
-					found = append(found, caskname) // add to found
-				}
-			}
-		}
-
-		fmt.Fprintf(w, "Checking %d of %d casks for updates...\n", len(found), len(casks))
+		// Homebrew executable is not available
+		fmt.Println("Not found")
+		fmt.Println("Skipping Homebrew update...")
 	}
 
-	w.Stop()
-	general.TerminalPrintHr('-')
+	// choose available Caskroom taps
+	taps, _ := chooseCaskroomTaps()
+	for k := range taps {
+		tapsKeys = append(tapsKeys, k)
+	}
+	sort.Strings(tapsKeys)
 
-	// check each found cask for updates
-	for _, caskname := range found {
-		w = uilive.New()
-		w.Start()
+	// iterate over each chosen tap
+	if len(tapsKeys) > 0 {
+		for _, tapName := range tapsKeys {
+			// search for casks with appcast
+			fmt.Printf("Searching for casks with appcast in \"%s\" tap... ", color.CyanString(tapName))
+			pathCasks := path.Join(taps[tapName], "Casks")
+			casksTotal, casksWithAppcast := findCasks(pathCasks)
+			lengthCasksWithAppcast := len(casksWithAppcast)
 
-		// prepare new review and create cask
-		r := review.New(nameSpacing)
-		c := cask.New(caskname)
+			fmt.Printf("Found %d out of %d\n", lengthCasksWithAppcast, len(casksTotal))
 
-		reviewCaskLoading(c, r, w) // show cask data without loaded appcasts
+			if lengthCasksWithAppcast == 0 {
+				fmt.Print("Skipping...\n\n")
+				continue
+			}
 
-		// set parameters for each appcast, if specified in arguments
-		for i, version := range c.Versions {
-			version.Appcast.Request.AddHeader("User-Agent", *userAgent)
-			version.Appcast.Request.InsecureSkipVerify = *insecureSkipVerify
-			version.Appcast.Request.Timeout = *timeout
-
-			if *githubAuth != "" {
-				// githubAuth has beed passed as arguments
-				githubUser, _ = version.Appcast.Request.AddGitHubAuth(*githubAuth)
-			} else {
-				// check if `git config` has required parameters set
-				gu, guErr := gitconfig.Global("github.user")
-				gt, gtErr := gitconfig.Global("github.token")
-
-				if guErr == nil && gtErr == nil {
-					// "github.user" and "github.token" are set
-					githubUser = gu
-					encoded := base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", gu, gt)))
-					version.Appcast.Request.AddHeader("Authorization", fmt.Sprintf("Basic %s", encoded))
+			// get the longest cask name length for pretty printing
+			lengthLongestCaskname := 0
+			for _, caskname := range casksWithAppcast {
+				if lengthLongestCaskname < len(caskname) {
+					lengthLongestCaskname = len(caskname)
 				}
 			}
 
-			c.Versions[i] = version
+			casknameIndent := 3
+
+			// parse found casks with appcast
+			fmt.Print("Parsing casks... ")
+			casknames, versions, appcasts, checkpoints, errors := parseCasks(pathCasks, casksWithAppcast)
+
+			// count parseCasks errors
+			lengthErrors := 0
+			for _, err := range errors {
+				if err != nil {
+					lengthErrors++
+				}
+			}
+
+			fmt.Printf("Parsed successfully %d out of %d\n", (lengthCasksWithAppcast - lengthErrors), lengthCasksWithAppcast)
+			fmt.Print("Checking for updates...\n\n")
+
+			for i, caskname := range casknames {
+				currentVersion := versions[i]
+				currentAppcast := appcasts[i]
+				currentCheckpoint := checkpoints[i]
+				err := errors[i]
+
+				if err == nil {
+					// check appcast for updates
+					a := appcast.New()
+					a.LoadFromURL(currentAppcast)
+					a.GenerateChecksum(appcast.SHA256HomebrewCask)
+
+					if a.GetChecksum() != currentCheckpoint {
+						// outdated
+						a.ExtractReleases()
+
+						if len(a.Releases) > 0 {
+							newVersion := a.Releases[0].GetVersionOrBuildString()
+
+							if len(newVersion) > 0 && currentVersion != newVersion {
+								// outdated (current and new versions doesn't match)
+								fmt.Printf("%-"+strconv.Itoa(lengthLongestCaskname+casknameIndent)+"s", caskname)
+								fmt.Printf("%s \u2192 %s\n", currentVersion, color.GreenString(newVersion))
+							}
+						}
+					}
+				} else {
+					// error
+					fmt.Printf("%-"+strconv.Itoa(lengthLongestCaskname+casknameIndent)+"s", caskname)
+					fmt.Printf("%s\n", color.RedString("error: "+err.Error()))
+				}
+			}
+
+			if tapsKeys[len(tapsKeys)-1] != tapName {
+				fmt.Print("\n")
+			}
 		}
-
-		c.LoadAppcasts() // check for updates
-
-		// override the previous review
-		r = review.New(nameSpacing)
-
-		reviewCask(c, r, w) // show data with loaded appcasts
-
-		w.Stop()
 	}
 }
 
-// hasAppcast checks if cask with provided caskname has an appcast.
-func hasAppcast(caskname string) bool {
-	content := string(general.GetFileContent(fmt.Sprintf("./%s.rb", caskname))) // read file
+func chooseCaskroomTaps() (map[string]string, error) {
+	fmt.Print("Searching for Caskroom taps... ")
+	taps, err := brew.LookForCaskroomTaps()
+
+	if err != nil {
+		fmt.Println("Not found")
+		return nil, err
+	}
+
+	tapsLen := len(taps)
+	if tapsLen > 0 {
+		fmt.Printf("Found %d tap", tapsLen)
+		if tapsLen != 1 {
+			fmt.Print("s")
+		}
+		fmt.Print("\n\n")
+
+		keys := []string{}
+		for k := range taps {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		chosen := []string{}
+		prompt := &survey.MultiSelect{
+			Message: "Choose in which taps to look updates for:",
+			Options: keys,
+			Default: []string{"homebrew-cask", "homebrew-versions"},
+		}
+		survey.AskOne(prompt, &chosen, nil)
+
+		result := map[string]string{}
+		for _, choice := range chosen {
+			result[choice] = taps[choice]
+		}
+
+		fmt.Print("\n")
+
+		return result, nil
+	}
+
+	fmt.Println("Not found")
+	return nil, errors.New("No Caskroom taps found")
+}
+
+func findCasks(p string) (t []string, a []string) {
+	files, _ := ioutil.ReadDir(p)
+	for _, file := range files {
+		filename := file.Name()
+
+		// verify that this is the cask file
+		re := regexp.MustCompile(`.*\.rb$`)
+		if re.MatchString(filename) {
+			caskname := strings.TrimSuffix(filename, filepath.Ext(filename)) // remove file extension
+
+			// add to
+			t = append(t, caskname)
+
+			// check if cask has an appcast
+			hasAppcast, err := caskHasAppcast(p, filename)
+			if hasAppcast && err == nil {
+				a = append(a, caskname) // add to found
+			}
+		}
+	}
+
+	return t, a
+}
+
+// caskHasAppcast checks whether a cask has an appcast. Returns an error if the
+// cask hasn't been found.
+func caskHasAppcast(p string, cask string) (bool, error) {
+	caskname := strings.TrimSuffix(cask, filepath.Ext(cask))
+	content, err := getCaskContent(p, caskname)
+	if err != nil {
+		return false, errors.New("cask not found")
+	}
 
 	// check if appcast is available
 	re := regexp.MustCompile(`appcast [\'\"]`)
 	if re.MatchString(content) {
-		return true
+		return true, nil
 	}
 
-	return false
+	return false, nil
 }
 
-// reviewCaskLoading reviews provided cask without loaded appcasts.
-func reviewCaskLoading(c *cask.Cask, r *review.Review, a ...interface{}) {
-	current, _, _ := prepareVersions(c)
-	latest := make([]string, len(current))
-	for i := range current {
-		latest[i] = "Loading..."
-	}
+// parseCasks parses the casks by using the provided path and casknames. Returns
+// multiple slices: casknames, versions, checkpoints, appcasts and errors. All
+// returned slices have equal size.
+func parseCasks(casksPath string, casknames []string) (c []string, versions []string, appcasts []string, checkpoints []string, errs []error) {
+	for _, caskname := range casknames {
+		content, err := getCaskContent(casksPath, caskname)
+		if err == nil {
+			// parse the content
+			cask := cask.NewCask(content)
+			err = cask.Parse()
 
-	appcasts, _, _ := prepareAppcasts(c.Versions)
-	providers := make([]string, len(appcasts))
-	for i := range appcasts {
-		providers[i] = "Loading..."
-	}
-
-	r.AddItem("Name", color.WhiteString(c.Name))
-	r.AddItems("Version", current)
-	r.AddItem("Status", color.WhiteString("checking..."))
-	r.AddItems("Appcast", appcasts)
-
-	if len(a) > 0 {
-		r.Fprint(a[0].(io.Writer))
-	}
-}
-
-// reviewCask reviews provided cask with loaded and checked appcasts.
-func reviewCask(c *cask.Cask, r *review.Review, a ...interface{}) {
-	status := "error"
-	current, latest, statuses := prepareVersions(c)
-	appcasts, providers, _ := prepareAppcasts(c.Versions)
-
-	r.AddItem("Name", color.WhiteString(c.Name))
-	r.AddPipeItems("Version", "s", current, latest)
-
-	// check if one of the versions has an "outdated" status
-	hasOutdatedVersion := false
-	hasUnknownVersion := false
-	hasErrorVersion := false
-	for _, status := range statuses {
-		switch status {
-		case "outdated":
-			hasOutdatedVersion = true
-			break
-		case "unknown":
-			hasUnknownVersion = true
-			break
-		case "error":
-			hasErrorVersion = true
-			break
-		}
-	}
-
-	if len(c.Versions) > 0 && (hasOutdatedVersion || hasUnknownVersion || hasErrorVersion) {
-		if hasErrorVersion {
-			status = "error"
-			r.AddItem("Status", color.RedString(status))
-		} else if c.IsOutdated() {
-			status = "outdated"
-			r.AddItem("Status", color.YellowString(status))
-		}
-
-		r.AddPipeItems("Appcast", "s", appcasts, providers)
-
-		if len(a) > 0 {
-			r.Fprint(a[0].(io.Writer))
-			general.TerminalPrintHr('-')
-		}
-	} else {
-		status = "updated"
-		r.AddItem("Status", color.GreenString(status))
-		r.AddPipeItems("Appcast", "s", appcasts, providers)
-
-		if len(a) > 0 && *all == false {
-			fmt.Fprint(a[0].(io.Writer), "\r\r")
-		} else if len(a) > 0 {
-			r.Fprint(a[0].(io.Writer))
-			general.TerminalPrintHr('-')
-		}
-	}
-
-	// output the result to CSV file if enabled
-	if *outputPath != "" {
-		for _, v := range c.Versions {
-			if status != "updated" || *all {
-				out.AddOutdated(c.Name, status, v)
-			}
-		}
-		out.SaveOutdatedAsCSVToFile(*outputPath)
-	}
-}
-
-// prepareVersions prepares cask versions to be consumed by review. It separates
-// version specific data into 3 equal arrays for Review AddPipeItems(): current,
-// latest and statuses.
-func prepareVersions(c *cask.Cask) (current []string, latest []string, statuses []string) {
-	if *githubLatest {
-		c.RemoveAllPrereleases()
-	}
-
-	for _, v := range c.Versions {
-		var (
-			statusCode       = v.Appcast.Request.StatusCode.Code
-			currentVersion   = v.Current
-			latestVersion    = v.Latest.Version // by default the latest version is without build
-			suggestedVersion = v.Latest.Suggested
-			status           = "unknown" // by default the status is unknown
-		)
-
-		// should return error status for any condition
-		if statusCode == 0 || statusCode >= 400 || cask.StringHasInterpolation(v.Appcast.Request.Url) {
-			status = "error"
-		}
-
-		if v.Latest.Version != "" && v.Latest.Build != "" && v.Latest.Version != v.Latest.Build {
-			// when both latest version and build available
-			latestVersion = fmt.Sprintf("%s,%s", v.Latest.Version, v.Latest.Build)
-		} else if v.Latest.Version == "" && v.Latest.Build != "" {
-			// when only build available
-			latestVersion = v.Latest.Build
-		}
-
-		if latestVersion != "" && v.Appcast.Checkpoint.Current != v.Appcast.Checkpoint.Latest && currentVersion != suggestedVersion {
-			// when latest version is available and checkpoints mismatch
-			status = "outdated"
-			if latestVersion != suggestedVersion {
-				latestVersion = fmt.Sprintf("%s \u2192 %s", color.GreenString(latestVersion), color.WhiteString(suggestedVersion))
+			if err == nil {
+				for _, v := range cask.Variants {
+					c = append(c, caskname)
+					versions = append(versions, v.GetVersion().String())
+					appcasts = append(appcasts, v.GetAppcast().URL)
+					checkpoints = append(checkpoints, v.GetAppcast().Checkpoint)
+					errs = append(errs, nil)
+				}
 			} else {
-				latestVersion = color.GreenString(latestVersion)
+				// error: parsing failed
+				err = errors.New("parsing failed")
 			}
 		} else {
-			status = "updated"
-			if latestVersion != suggestedVersion {
-				latestVersion = fmt.Sprintf("%s \u2192 %s", latestVersion, color.WhiteString(suggestedVersion))
-			}
+			// error: cask not found
+			err = errors.New("cask not found")
 		}
 
-		current = append(current, currentVersion)
-		latest = append(latest, latestVersion)
-		statuses = append(statuses, status)
+		// error
+		c = append(c, caskname)
+		versions = append(versions, "")
+		appcasts = append(appcasts, "")
+		checkpoints = append(checkpoints, "")
+		errs = append(errs, err)
 	}
 
-	return current, latest, statuses
+	return c, versions, appcasts, checkpoints, errs
 }
 
-// prepareAppcasts prepares versions to be consumed by review. It separates
-// appcast specific data into 3 equal arrays for Review AddPipeItems():
-// appcasts, providers and codes.
-func prepareAppcasts(versions []cask.Version) (appcasts []string, providers []string, codes []string) {
-	var encountered = map[string]bool{}
-
-	for _, v := range versions {
-		url := v.Appcast.Url
-		statusCode := v.Appcast.Request.StatusCode
-
-		if url != "" && encountered[url] != true {
-			encountered[url] = true
-
-			if statusCode.Code == 0 || statusCode.Code == 200 {
-				// don't show status code for timed out and successful requests
-				appcasts = append(appcasts, url)
-			} else {
-				// show for others
-				appcasts = append(appcasts, fmt.Sprintf("%s [%s]", url, statusCode.Colorized()))
-			}
-
-			providers = append(providers, v.Appcast.Provider.String())
-			codes = append(codes, statusCode.String())
-		}
+// getCaskContent returns the cask content string by its path and name.
+func getCaskContent(p string, caskname string) (string, error) {
+	content, err := ioutil.ReadFile(path.Join(p, fmt.Sprintf("%s.rb", caskname)))
+	if err != nil {
+		return "", err
 	}
 
-	return appcasts, providers, codes
+	return string(content), nil
 }
