@@ -1,6 +1,4 @@
-# cask-scripts
-
-[![Build Status](https://travis-ci.org/victorpopkov/cask-scripts.svg?branch=master)](https://travis-ci.org/victorpopkov/cask-scripts)
+# cask-tools
 
 Collection of small scripts designed to help maintain the [Homebrew-Cask](https://github.com/caskroom/homebrew-cask)
 project. The main purpose, however, is to completely automate the process of
