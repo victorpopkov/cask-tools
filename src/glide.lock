@@ -1,5 +1,5 @@
 hash: 8b4772674e8263775512e70cb7b1bee79f50e6b15443e86228591221b5f9454f
-updated: 2017-09-28T21:25:41.722433314+03:00
+updated: 2017-10-16T06:32:22.019779+03:00
 imports:
 - name: github.com/alecthomas/template
   version: a0175ee3bccc567396460bf5acd36800cb10c49c
@@ -33,15 +33,15 @@ imports:
 - name: github.com/tcnksm/go-gitconfig
   version: d154598bacbf4501c095a309753c5d4af66caa81
 - name: github.com/victorpopkov/go-appcast
-  version: 885cc126db1e2bed2da086333fb46763d32a6d1a
+  version: 63e5435f41df4c7a10e607e9a6460adec0dd581b
 - name: github.com/victorpopkov/go-cask
-  version: 992a6b933fa9aac2d6920be77aebd5b0f221fa7c
+  version: 6e19609695d542a4139808300079bb2564e6fa61
 - name: golang.org/x/sys
-  version: 314a259e304ff91bd6985da2a7149bbf91237993
+  version: 686000749eaec0b8855b8eef5336cf63899fe51d
   subpackages:
   - unix
 - name: gopkg.in/AlecAivazis/survey.v1
-  version: 9d910423e24aa6d7c7950160658c295e0734c7e0
+  version: 18a4dbb1d9d05349aea1a2bf9c84028c36817c10
   subpackages:
   - core
   - terminal
