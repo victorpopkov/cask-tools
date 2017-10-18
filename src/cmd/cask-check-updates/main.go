@@ -17,7 +17,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/victorpopkov/go-appcast"
 	"github.com/victorpopkov/go-cask"
-	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -32,7 +31,7 @@ var (
 
 func init() {
 	kingpin.UsageTemplate(kingpin.CompactUsageTemplate).Version(version)
-	kingpin.CommandLine.Help = "Find the latest available versions for casks in Homebrew-Cask Taps."
+	kingpin.CommandLine.Help = "Find the latest available versions for casks in Homebrew-Cask taps."
 	kingpin.CommandLine.VersionFlag.Short('v')
 	kingpin.CommandLine.HelpFlag.Short('h')
 	kingpin.Parse()
@@ -63,7 +62,7 @@ func main() {
 	}
 
 	// choose available Caskroom taps
-	taps, _ := chooseCaskroomTaps()
+	taps, _ := brew.ChooseCaskroomTaps("Choose in which taps to look updates for:")
 	for k := range taps {
 		tapsKeys = append(tapsKeys, k)
 	}
@@ -148,51 +147,6 @@ func main() {
 			}
 		}
 	}
-}
-
-func chooseCaskroomTaps() (map[string]string, error) {
-	fmt.Print("Searching for Caskroom taps... ")
-	taps, err := brew.LookForCaskroomTaps()
-
-	if err != nil {
-		fmt.Println("Not found")
-		return nil, err
-	}
-
-	tapsLen := len(taps)
-	if tapsLen > 0 {
-		fmt.Printf("Found %d tap", tapsLen)
-		if tapsLen != 1 {
-			fmt.Print("s")
-		}
-		fmt.Print("\n\n")
-
-		keys := []string{}
-		for k := range taps {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-
-		chosen := []string{}
-		prompt := &survey.MultiSelect{
-			Message: "Choose in which taps to look updates for:",
-			Options: keys,
-			Default: []string{"homebrew-cask", "homebrew-versions"},
-		}
-		survey.AskOne(prompt, &chosen, nil)
-
-		result := map[string]string{}
-		for _, choice := range chosen {
-			result[choice] = taps[choice]
-		}
-
-		fmt.Print("\n")
-
-		return result, nil
-	}
-
-	fmt.Println("Not found")
-	return nil, errors.New("No Caskroom taps found")
 }
 
 func findCasks(p string) (t []string, a []string) {

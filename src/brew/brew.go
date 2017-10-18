@@ -5,10 +5,14 @@ package brew
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os/exec"
 	"path"
+	"sort"
 	"strings"
+
+	"gopkg.in/AlecAivazis/survey.v1"
 )
 
 // LookForExecutable searches for a Homebrew executable binary in the
@@ -61,6 +65,54 @@ func LookForCaskroomTaps() (map[string]string, error) {
 	}
 
 	return taps, nil
+}
+
+// ChooseCaskroomTaps searches for the Caskroom taps in the Homebrew directory
+// and asks the user to select single or multiple taps. The selected taps will
+// be returned as a map with a tap name as a key and a full tap path as a value.
+func ChooseCaskroomTaps(msg string) (map[string]string, error) {
+	fmt.Print("Searching for Caskroom taps... ")
+	taps, err := LookForCaskroomTaps()
+
+	if err != nil {
+		fmt.Println("Not found")
+		return nil, err
+	}
+
+	tapsLen := len(taps)
+	if tapsLen > 0 {
+		fmt.Printf("Found %d tap", tapsLen)
+		if tapsLen != 1 {
+			fmt.Print("s")
+		}
+		fmt.Print("\n\n")
+
+		keys := []string{}
+		for k := range taps {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		chosen := []string{}
+		prompt := &survey.MultiSelect{
+			Message: msg,
+			Options: keys,
+			Default: []string{"homebrew-cask", "homebrew-versions"},
+		}
+		survey.AskOne(prompt, &chosen, nil)
+
+		result := map[string]string{}
+		for _, choice := range chosen {
+			result[choice] = taps[choice]
+		}
+
+		fmt.Print("\n")
+
+		return result, nil
+	}
+
+	fmt.Println("Not found")
+	return nil, errors.New("No Caskroom taps found")
 }
 
 // Update updates the Homebrew by running the `brew update` command. Returns
