@@ -149,6 +149,9 @@ func main() {
 	}
 }
 
+// findCasks finds all casks with appcast in the provided path. Returns two
+// slices as a result: the list of all casks and the list of casks with
+// appcast.
 func findCasks(p string) (t []string, a []string) {
 	files, _ := ioutil.ReadDir(p)
 	for _, file := range files {
