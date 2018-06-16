@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"path"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -33,9 +34,9 @@ func LookForExecutable(a ...interface{}) (string, error) {
 	return "", errors.New("Homebrew executable not found")
 }
 
-// LookForCaskroomTaps searches for the Caskroom taps in the Homebrew directory
+// LookForCaskTaps searches for the Homebrew-Cask taps in the Homebrew directory
 // and returns a map with a tap name as a key and a full tap path as a value.
-func LookForCaskroomTaps() (map[string]string, error) {
+func LookForCaskTaps() (map[string]string, error) {
 	var out bytes.Buffer
 
 	_, err := LookForExecutable()
@@ -51,15 +52,16 @@ func LookForCaskroomTaps() (map[string]string, error) {
 		return nil, errors.New("`brew --repository` has returned an error")
 	}
 
-	tapsDir := path.Join(strings.TrimSpace(out.String()), "Library/Taps/caskroom")
+	tapsDir := path.Join(strings.TrimSpace(out.String()), "Library/Taps/homebrew")
 	files, err := ioutil.ReadDir(tapsDir)
 	if err != nil {
-		return nil, errors.New("No Caskroom taps found")
+		return nil, errors.New("No Homebrew-Cask taps found")
 	}
 
 	taps := map[string]string{}
 	for _, file := range files {
-		if file.IsDir() {
+		r := regexp.MustCompile(`homebrew-cask`)
+		if file.IsDir() && r.MatchString(file.Name()) {
 			taps[file.Name()] = path.Join(tapsDir, file.Name())
 		}
 	}
@@ -67,12 +69,12 @@ func LookForCaskroomTaps() (map[string]string, error) {
 	return taps, nil
 }
 
-// ChooseCaskroomTaps searches for the Caskroom taps in the Homebrew directory
+// ChooseCaskTaps searches for the Homebrew-Cask taps in the Homebrew directory
 // and asks the user to select single or multiple taps. The selected taps will
 // be returned as a map with a tap name as a key and a full tap path as a value.
-func ChooseCaskroomTaps(msg string) (map[string]string, error) {
-	fmt.Print("Searching for Caskroom taps... ")
-	taps, err := LookForCaskroomTaps()
+func ChooseCaskTaps(msg string) (map[string]string, error) {
+	fmt.Print("Searching for Homebrew-Cask taps... ")
+	taps, err := LookForCaskTaps()
 
 	if err != nil {
 		fmt.Println("Not found")
@@ -97,7 +99,7 @@ func ChooseCaskroomTaps(msg string) (map[string]string, error) {
 		prompt := &survey.MultiSelect{
 			Message: msg,
 			Options: keys,
-			Default: []string{"homebrew-cask", "homebrew-versions"},
+			Default: []string{"homebrew-cask", "homebrew-cask-versions"},
 		}
 		survey.AskOne(prompt, &chosen, nil)
 
@@ -112,7 +114,7 @@ func ChooseCaskroomTaps(msg string) (map[string]string, error) {
 	}
 
 	fmt.Println("Not found")
-	return nil, errors.New("No Caskroom taps found")
+	return nil, errors.New("No Homebrew-Cask taps found")
 }
 
 // Update updates the Homebrew by running the `brew update` command. Returns
