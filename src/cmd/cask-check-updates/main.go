@@ -61,8 +61,8 @@ func main() {
 		fmt.Println("Skipping Homebrew update...")
 	}
 
-	// choose available Caskroom taps
-	taps, _ := brew.ChooseCaskroomTaps("Choose in which taps to look updates for:")
+	// choose available Homebrew-Cask taps
+	taps, _ := brew.ChooseCaskTaps("Choose in which taps to look updates for:")
 	for k := range taps {
 		tapsKeys = append(tapsKeys, k)
 	}
@@ -96,7 +96,7 @@ func main() {
 
 			// parse found casks with appcast
 			fmt.Print("Parsing casks... ")
-			casknames, versions, appcasts, checkpoints, errors := parseCasks(pathCasks, casksWithAppcast)
+			casknames, versions, appcasts, errors := parseCasks(pathCasks, casksWithAppcast)
 
 			// count parseCasks errors
 			lengthErrors := 0
@@ -112,27 +112,21 @@ func main() {
 			for i, caskname := range casknames {
 				currentVersion := versions[i]
 				currentAppcast := appcasts[i]
-				currentCheckpoint := checkpoints[i]
 				err := errors[i]
 
 				if err == nil {
 					// check appcast for updates
 					a := appcast.New()
 					a.LoadFromURL(currentAppcast)
-					a.GenerateChecksum(appcast.SHA256HomebrewCask)
+					a.ExtractReleases()
 
-					if a.GetChecksum() != currentCheckpoint {
-						// outdated
-						a.ExtractReleases()
+					if len(a.Releases) > 0 {
+						newVersion := a.Releases[0].GetVersionOrBuildString()
 
-						if len(a.Releases) > 0 {
-							newVersion := a.Releases[0].GetVersionOrBuildString()
-
-							if len(newVersion) > 0 && currentVersion != newVersion {
-								// outdated (current and new versions doesn't match)
-								fmt.Printf("%-"+strconv.Itoa(lengthLongestCaskname+casknameIndent)+"s", caskname)
-								fmt.Printf("%s \u2192 %s\n", currentVersion, color.GreenString(newVersion))
-							}
+						if len(newVersion) > 0 && currentVersion != newVersion {
+							// outdated (current and new versions doesn't match)
+							fmt.Printf("%-"+strconv.Itoa(lengthLongestCaskname+casknameIndent)+"s", caskname)
+							fmt.Printf("%s \u2192 %s\n", currentVersion, color.GreenString(newVersion))
 						}
 					}
 				} else {
@@ -195,9 +189,9 @@ func caskHasAppcast(p string, cask string) (bool, error) {
 }
 
 // parseCasks parses the casks by using the provided path and casknames. Returns
-// multiple slices: casknames, versions, checkpoints, appcasts and errors. All
-// returned slices have equal size.
-func parseCasks(casksPath string, casknames []string) (c []string, versions []string, appcasts []string, checkpoints []string, errs []error) {
+// multiple slices: casknames, versions, appcasts and errors. All returned
+// slices have equal size.
+func parseCasks(casksPath string, casknames []string) (c []string, versions []string, appcasts []string, errs []error) {
 	for _, caskname := range casknames {
 		content, err := getCaskContent(casksPath, caskname)
 		if err == nil {
@@ -210,9 +204,10 @@ func parseCasks(casksPath string, casknames []string) (c []string, versions []st
 					c = append(c, caskname)
 					versions = append(versions, v.GetVersion().String())
 					appcasts = append(appcasts, v.GetAppcast().URL)
-					checkpoints = append(checkpoints, v.GetAppcast().Checkpoint)
 					errs = append(errs, nil)
 				}
+
+				continue
 			} else {
 				// error: parsing failed
 				err = errors.New("parsing failed")
@@ -226,11 +221,10 @@ func parseCasks(casksPath string, casknames []string) (c []string, versions []st
 		c = append(c, caskname)
 		versions = append(versions, "")
 		appcasts = append(appcasts, "")
-		checkpoints = append(checkpoints, "")
 		errs = append(errs, err)
 	}
 
-	return c, versions, appcasts, checkpoints, errs
+	return c, versions, appcasts, errs
 }
 
 // getCaskContent returns the cask content string by its path and name.
