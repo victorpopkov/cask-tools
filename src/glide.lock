@@ -1,5 +1,5 @@
 hash: 8b4772674e8263775512e70cb7b1bee79f50e6b15443e86228591221b5f9454f
-updated: 2017-10-16T06:32:22.019779+03:00
+updated: 2018-06-16T18:34:39.567269688+03:00
 imports:
 - name: github.com/alecthomas/template
   version: a0175ee3bccc567396460bf5acd36800cb10c49c
@@ -7,10 +7,12 @@ imports:
   - parse
 - name: github.com/alecthomas/units
   version: 2efee857e7cfd4f3d0138cc3cbb1b4966962b93a
+- name: github.com/codegangsta/cli
+  version: 8e01ec4cd3e2d84ab2fe90d8210528ffbb06d8ff
 - name: github.com/fatih/color
   version: dea9d3a26a087187530244679c1cfb3a42937794
 - name: github.com/gocarina/gocsv
-  version: 7099e67763c29f812fa2ed7083f32e38be60125a
+  version: a5c9099e2484f1551abb9433885e158610a25f4b
 - name: github.com/gosuri/uilive
   version: ac356e6e42cd31fcef8e6aec13ae9ed6fe87713e
 - name: github.com/gosuri/uitable
@@ -19,7 +21,11 @@ imports:
   - util/strutil
   - util/wordwrap
 - name: github.com/hashicorp/go-version
-  version: fc61389e27c71d120f87031ca8c88a3428f372dd
+  version: 23480c0665776210b5fbbac6eaaee40e3e6a96b7
+- name: github.com/Masterminds/semver
+  version: 3c560837130448941620d7694991d3ec440aefc0
+- name: github.com/Masterminds/vcs
+  version: df81cd881f84b6bd2ed4e35cd16d41a4ff9ece17
 - name: github.com/mattn/go-colorable
   version: 5411d3eea5978e6cdc258b30de592b60df6aba96
 - name: github.com/mattn/go-isatty
@@ -28,16 +34,18 @@ imports:
   version: 9e777a8366cce605130a531d2cd6363d07ad7317
 - name: github.com/mgutz/ansi
   version: 9520e82c474b0a04dd04f8a40959027271bab992
+- name: github.com/mitchellh/go-homedir
+  version: 3864e76763d94a6df2f9960b16a20a33da9f9a66
 - name: github.com/pkg/errors
-  version: 2b3a18b5f0fb6b4f9190549597d3f962c02bc5eb
+  version: 816c9085562cd7ee03e7f8188a1cfd942858cded
 - name: github.com/tcnksm/go-gitconfig
   version: d154598bacbf4501c095a309753c5d4af66caa81
 - name: github.com/victorpopkov/go-appcast
-  version: 63e5435f41df4c7a10e607e9a6460adec0dd581b
+  version: 476a8a3692480ac8807e07f281fd576d3a0a7d2d
 - name: github.com/victorpopkov/go-cask
-  version: 6e19609695d542a4139808300079bb2564e6fa61
+  version: 5a1beb29d7054e3c1f8c35654f777ab72d6eb07b
 - name: golang.org/x/sys
-  version: 686000749eaec0b8855b8eef5336cf63899fe51d
+  version: 56ede360ec1c541828fb88741b3f1049406d28f5
   subpackages:
   - unix
 - name: gopkg.in/AlecAivazis/survey.v1
@@ -46,9 +54,11 @@ imports:
   - core
   - terminal
 - name: gopkg.in/alecthomas/kingpin.v2
-  version: 1087e65c9441605df944fb12c33f0fe7072d18ca
+  version: 947dcec5ba9c011838740e680966fd7087a71d0d
 - name: gopkg.in/jarcoal/httpmock.v1
-  version: cf52904a3cf0f78f199ecade6a6df8e245d5b25a
+  version: d805e540cd37b8aa6e2ad7d94f06f6537493e710
+- name: gopkg.in/yaml.v2
+  version: 5420a8b6744d3b0345ab293f6fcba19c978f1183
 testImports:
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
