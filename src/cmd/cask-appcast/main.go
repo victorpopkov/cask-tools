@@ -16,7 +16,7 @@ var (
 
 	userAgent          = kingpin.Flag("user-agent", "Set 'User-Agent' header value.").Short('u').PlaceHolder("USER-AGENT").Default(defaultUserAgent).String()
 	timeout            = kingpin.Flag("timeout", "Set custom request timeout (default is 10s).").Short('t').Default("10s").Duration()
-	checkpoint         = kingpin.Flag("checkpoint", "Output appcast checkpoint.").Short('c').Bool()
+	checksum           = kingpin.Flag("checksum", "Output appcast SHA256 checksum.").Short('c').Bool()
 	provider           = kingpin.Flag("provider", "Output appcast provider.").Short('p').Bool()
 	appVersion         = kingpin.Flag("app-version", "Output app version and build (if available).").Short('V').Bool()
 	downloads          = kingpin.Flag("downloads", "Output download URL(s).").Short('d').Bool()
@@ -27,7 +27,7 @@ var (
 
 func init() {
 	kingpin.UsageTemplate(kingpin.CompactUsageTemplate).Version(version)
-	kingpin.CommandLine.Help = "Get the latest available version, checkpoint and download URL(s) from appcast."
+	kingpin.CommandLine.Help = "Get some useful information from remote appcast URL."
 	kingpin.CommandLine.VersionFlag.Short('v')
 	kingpin.CommandLine.HelpFlag.Short('h')
 	kingpin.Parse()
@@ -53,14 +53,14 @@ func main() {
 
 	// loading data (the URL was specified in the Request earlier)
 	a.LoadFromURL(req)
-	a.GenerateChecksum(appcast.SHA256HomebrewCask)
+	a.GenerateChecksum(appcast.SHA256)
 	a.ExtractReleases()
 
 	fmt.Fprintf(w, "%c[2K", 27) // clear previous line
 	w.Stop()
 
-	// display only checkpoint
-	if *checkpoint {
+	// display only checksum
+	if *checksum {
 		fmt.Println(a.GetChecksum())
 		os.Exit(0)
 	}
@@ -102,7 +102,7 @@ func reviewAppcast(a *appcast.BaseAppcast) {
 	t.Wrap = true
 
 	t.AddRow("Appcast:", a.GetURL())
-	t.AddRow("Checkpoint:", a.GetChecksum())
+	t.AddRow("Checksum (SHA256):", a.GetChecksum())
 	t.AddRow("Provider:", a.GetProvider().String())
 	t.AddRow("User-Agent:", *userAgent)
 
